@@ -31,27 +31,36 @@ h1{margin:2px 0 4px;font-size:26px}
 .hero{background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;border-radius:14px;padding:22px;margin-bottom:16px}
 .hero h2{margin:0 0 6px}.hero p{margin:0 0 14px;opacity:.9}
 .bar{height:10px;background:#e3edf1;border-radius:99px;overflow:hidden;margin:8px 0}
-.bar i{display:block;height:100%;background:var(--brand)}
-button,.btn{font:inherit;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:var(--brand);color:#fff;font-size:14px}
-button.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
-button.sm{padding:4px 10px;font-size:12px}
+.bar i{display:block;height:100%;background:var(--brand);transition:width .3s}
+button,.btn{font:inherit;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:var(--brand);color:#fff;font-size:14px;text-decoration:none;display:inline-block}
+button.ghost,.btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+button.sm,.btn.sm{padding:4px 10px;font-size:12px}
+button:disabled{opacity:.5;cursor:not-allowed}
 .hero button{background:#fff;color:var(--brand2);font-weight:700}
 input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
+input:disabled,select:disabled{background:#f1f5f7}
+input[type=checkbox]{width:auto}
 textarea{min-height:70px}
 label{font-size:12px;color:var(--mute);display:block;margin-bottom:3px}
-.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:10px 0}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:10px 0}
 .tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
 .tabs button{background:#fff;color:var(--ink);border:1px solid var(--line)}
 .tabs button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{color:var(--mute);font-weight:500;font-size:12px}
+.tablewrap{overflow-x:auto}
 .empty{color:var(--mute);text-align:center;padding:28px}
-.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;background:#e6f3f5;color:var(--brand2)}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;background:#e6f3f5;color:var(--brand2);white-space:nowrap}
 .tag.red{background:#fde8e8;color:var(--red)}.tag.yellow{background:#fef3c7;color:var(--yellow)}.tag.green{background:#dcfce7;color:var(--ok)}
 .sp{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .notice{font-size:12px;color:var(--mute);margin:8px 0}
-#toast{position:fixed;right:18px;bottom:18px;background:#17323f;color:#fff;padding:10px 16px;border-radius:8px;display:none;z-index:9}
+.frame{width:100%;height:68vh;border:1px solid var(--line);border-radius:10px;background:#fff}
+video.player{width:100%;max-height:68vh;border-radius:10px;background:#000}
+.fieldset{border:1px dashed var(--line);border-radius:10px;padding:12px;margin:12px 0}
+.fieldset legend{font-size:12px;color:var(--brand);padding:0 6px;font-weight:700}
+.hint{font-size:12px;color:var(--mute);margin-top:3px}
+#toast{position:fixed;right:18px;bottom:18px;background:#17323f;color:#fff;padding:10px 16px;border-radius:8px;display:none;z-index:9;max-width:80vw}
 @media(max-width:760px){body{flex-direction:column}aside{width:100%;flex-direction:row;overflow-x:auto;padding:8px}aside a{white-space:nowrap}.logo,.sep{display:none}main{padding:16px}}
 </style>
 </head>
@@ -83,13 +92,16 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 const CONFIG = {
   GAS_URL: "",          // 例如 "https://script.google.com/macros/s/XXXXXXXX/exec"；留空 = 示範資料模式（存在瀏覽器）
   ANNUAL_TARGET: 8,     // 年度採認時數目標
-  ADMIN_ROLES: ["管理者", "管理員", "admin"]
+  ADMIN_ROLES: ["管理者", "管理員", "admin"],
+  MAX_UPLOAD_MB: 20,    // 單檔上傳上限（經 GAS 轉存 Google Drive）
+  DEFAULT_VIDEO_PCT: 80,   // 影片類：有效觀看比例達標（%）
+  DEFAULT_DWELL_MIN: 10    // PDF / PPT / iframe：頁面停留達標（分鐘）
 };
 /* ============================================================ */
 
 const TABLES = {
   Members:   ["email","name","role","unit"],
-  Courses:   ["id","title","pathogen","topic","hours","jit","content"],
+  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule"],
   Tasks:     ["id","title","assignee","due","status"],
   Records:   ["email","course_id","course_title","hours","date","category"],
   FitTests:  ["email","date","model","result"],
@@ -99,21 +111,28 @@ const TABLES = {
   Surveys:   ["email","survey","answer","time"],
   Attendance:["course_id","date","count","reporter"]
 };
+const MEDIA_TYPES = [["none","純文字教材（無檔案）"],["mp4","MP4 影片"],["hls","HLS 串流（.m3u8）"],["pdf","PDF"],["ppt","PPT / PPTX"],["iframe","iframe / 網頁嵌入（含 YouTube）"]];
+const MEDIA_LABEL = Object.fromEntries(MEDIA_TYPES);
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const today = () => new Date().toISOString().slice(0,10);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5);
-let DB = {}, user = null, tabState = {};
+const fmtDT = s => s ? String(s).replace("T"," ") : "";
+let DB = {}, user = null, tabState = {}, T = {};   // T：目前課程頁的計時器 / hls 實例
 
 /* ---------- 後端存取 ---------- */
 const DEMO = !CONFIG.GAS_URL;
 function demoSeed(){
+  const d = n => { const x = new Date(Date.now()+n*864e5); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,16); };
   return {
     Members:[{email:"demo@example.com",name:"示範學員",role:"學員",unit:"內科病房"},
              {email:"admin@example.com",name:"示範管理者",role:"管理者",unit:"感染管制中心"}],
-    Courses:[{id:"C1",title:"個人防護裝備穿脫（示範）",pathogen:"通用",topic:"PPE",hours:1,jit:"Y",content:"示範教材，僅供操作展示，不作為臨床指示。"},
-             {id:"C2",title:"N95 密合度測試說明（示範）",pathogen:"呼吸道",topic:"密合度",hours:2,jit:"Y",content:"示範教材，僅供操作展示。"}],
-    Tasks:[{id:"T1",title:"完成 PPE 穿脫課程",assignee:"demo@example.com",due:today(),status:"待完成"}],
+    Courses:[
+      {id:"C1",title:"個人防護裝備穿脫（示範影片）",pathogen:"通用",topic:"PPE",hours:1,jit:"Y",content:"示範教材，僅供操作展示，不作為臨床指示。",required:"必修",media_type:"mp4",media_url:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80},
+      {id:"C2",title:"N95 密合度測試說明（示範 HLS）",pathogen:"呼吸道",topic:"密合度",hours:2,jit:"Y",content:"示範教材，僅供操作展示。",required:"選修",media_type:"hls",media_url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80},
+      {id:"C3",title:"下月新進人員感控訓練（示範排程）",pathogen:"通用",topic:"感控基礎",hours:1,jit:"N",content:"尚未開放的排程課程示範。",required:"必修",media_type:"none",media_url:"",schedule_start:d(14),schedule_end:d(21),credit_mode:"manual",credit_rule:""}
+    ],
+    Tasks:[{id:"T1",title:"完成課程：個人防護裝備穿脫（示範影片）",assignee:"demo@example.com",due:today(),status:"待完成"}],
     Records:[],FitTests:[],External:[],
     News:[{id:"N1",type:"alert",title:"示範：流感活動度提升",level:"黃",date:today(),body:"虛構資料，尚未串接官方疫情來源。"},
           {id:"N2",type:"announce",title:"示範：本月訓練場次公告",level:"",date:today(),body:"虛構公告。"}],
@@ -123,6 +142,7 @@ function demoSeed(){
 async function loadAll(){
   if (DEMO){
     try{ DB = JSON.parse(localStorage.getItem("hcid_demo_db")) || demoSeed(); }catch(e){ DB = demoSeed(); }
+    Object.keys(TABLES).forEach(k => DB[k] = DB[k] || []);
     return;
   }
   const r = await fetch(CONFIG.GAS_URL + "?action=listAll");
@@ -131,27 +151,34 @@ async function loadAll(){
   DB = j.data;
   Object.keys(TABLES).forEach(k => DB[k] = DB[k] || []);
 }
-async function addRow(sheet, row){
-  if (DEMO){ DB[sheet].push(row); localStorage.setItem("hcid_demo_db", JSON.stringify(DB)); return; }
+const persistDemo = () => localStorage.setItem("hcid_demo_db", JSON.stringify(DB));
+async function post(payload){
   // 使用 text/plain 可避開 CORS 預檢（preflight）
   const r = await fetch(CONFIG.GAS_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
-    body: JSON.stringify({action:"add", sheet, row, user: user.email})});
+    body: JSON.stringify({...payload, user: user.email})});
   const j = await r.json();
-  if(!j.ok) throw new Error(j.error || "寫入失敗");
+  if(!j.ok) throw new Error(j.error || "後端錯誤");
+  return j;
+}
+async function addRow(sheet, row){
+  if (DEMO){ DB[sheet].push(row); persistDemo(); return; }
+  await post({action:"add", sheet, row});
   DB[sheet].push(row);
 }
 async function updateRow(sheet, key, keyVal, patch){
-  if (DEMO){
-    const t = DB[sheet].find(x => x[key] == keyVal); Object.assign(t, patch);
-    localStorage.setItem("hcid_demo_db", JSON.stringify(DB)); return;
-  }
-  const r = await fetch(CONFIG.GAS_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
-    body: JSON.stringify({action:"update", sheet, key, keyVal, patch, user: user.email})});
-  const j = await r.json();
-  if(!j.ok) throw new Error(j.error || "更新失敗");
+  if (DEMO){ Object.assign(DB[sheet].find(x => x[key] == keyVal), patch); persistDemo(); return; }
+  await post({action:"update", sheet, key, keyVal, patch});
   Object.assign(DB[sheet].find(x => x[key] == keyVal), patch);
 }
-function toast(m){ const t=$("#toast"); t.textContent=m; t.style.display="block"; setTimeout(()=>t.style.display="none",2200); }
+async function uploadFile(f){
+  if (f.size > CONFIG.MAX_UPLOAD_MB*1024*1024) throw new Error(`檔案超過 ${CONFIG.MAX_UPLOAD_MB}MB，請改貼雲端連結`);
+  if (DEMO){ toast("示範模式：檔案僅供本次瀏覽預覽，重新整理後失效"); return URL.createObjectURL(f); }
+  toast("檔案上傳中，請稍候…");
+  const data = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=()=>rej(new Error("讀取檔案失敗")); r.readAsDataURL(f); });
+  const j = await post({action:"upload", filename:f.name, mime:f.type||"application/octet-stream", data});
+  return j.url;
+}
+function toast(m){ const t=$("#toast"); t.textContent=m; t.style.display="block"; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display="none",2600); }
 
 /* ---------- 使用者 ---------- */
 function initUser(){
@@ -160,7 +187,7 @@ function initUser(){
   setUser(e);
 }
 function setUser(e){
-  const m = (DB.Members||[]).find(x => x.email.toLowerCase() === e);
+  const m = (DB.Members||[]).find(x => String(x.email).toLowerCase() === e);
   user = {email:e, name: m?.name || e.split("@")[0], role: m?.role || "學員"};
   $("#who").textContent = `${user.email} · ${user.role}`;
 }
@@ -174,8 +201,8 @@ function head(title, sub){
 }
 function table(cols, rows, empty="目前沒有資料"){
   if(!rows.length) return `<div class="empty">${empty}</div>`;
-  return `<table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>` +
-    rows.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("") + `</tbody></table>`;
+  return `<div class="tablewrap"><table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>` +
+    rows.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("") + `</tbody></table></div>`;
 }
 function tabs(id, items, def){
   const cur = tabState[id] || def;
@@ -183,7 +210,8 @@ function tabs(id, items, def){
 }
 function setTab(id,k){ tabState[id]=k; route(); }
 function curTab(id, def){ return tabState[id] || def; }
-function field(id,label,type="text",ph=""){ return `<div><label>${label}</label><input id="${id}" type="${type}" placeholder="${ph}"></div>`; }
+function field(id,label,type="text",ph="",value=""){ return `<div><label>${label}</label><input id="${id}" type="${type}" placeholder="${esc(ph)}" value="${esc(value)}"></div>`; }
+const opts = (list,cur) => list.map(([v,l])=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`).join("");
 const val = id => $("#"+id).value.trim();
 async function submit(fn){ try{ await fn(); route(); }catch(e){ toast("失敗：" + e.message); } }
 
@@ -197,6 +225,126 @@ function stats(){
   const members = DB.Members, ok = members.filter(m => hoursOf(m.email) >= CONFIG.ANNUAL_TARGET).length;
   return {members:members.length, ok, pct: members.length ? Math.round(ok/members.length*100) : 0,
     courses: DB.Courses.length, openTasks: DB.Tasks.filter(t=>t.status!=="已完成").length, fits: DB.FitTests.length};
+}
+
+/* ---------- 教材：網址處理 ---------- */
+function safeUrl(u){ try{ const x = new URL(String(u||"").trim()); return /^https?:$/.test(x.protocol) ? x.href : ""; }catch(e){ return ""; } }
+function extractSrc(s){ const m = String(s||"").match(/src=["']([^"']+)["']/i); return m ? m[1] : String(s||"").trim(); }
+function driveId(u){ const m = String(u).match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:[^#]*&)?id=)([\w-]+)/); return m ? m[1] : null; }
+function ytId(u){ const m = String(u).match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/); return m ? m[1] : null; }
+function embedUrl(c){
+  const u = safeUrl(extractSrc(c.media_url)); if(!u) return "";
+  const d = driveId(u); if(d) return `https://drive.google.com/file/d/${d}/preview`;
+  const y = ytId(u); if(y) return `https://www.youtube.com/embed/${y}`;
+  if(c.media_type === "ppt") return "https://view.officeapps.live.com/op/embed.aspx?src=" + encodeURIComponent(u);
+  return u;
+}
+/* video：可精準追蹤觀看秒數；dwell：以頁面停留時間計算（PDF/PPT/iframe/YouTube/Drive 預覽）；none：無教材 */
+function playKind(c){
+  if(!c.media_type || c.media_type==="none") return "none";
+  const u = safeUrl(c.media_url);
+  if((c.media_type==="mp4" || c.media_type==="hls") && u && !driveId(u) && !ytId(u)) return "video";
+  return u ? "dwell" : "none";
+}
+function ruleOf(c){
+  const n = Number(c.credit_rule);
+  if(n > 0) return n;
+  return playKind(c)==="video" ? CONFIG.DEFAULT_VIDEO_PCT : CONFIG.DEFAULT_DWELL_MIN;
+}
+
+/* ---------- 課程排程 ---------- */
+function schedState(c){
+  const now = Date.now(), s = c.schedule_start ? new Date(c.schedule_start).getTime() : null, e = c.schedule_end ? new Date(c.schedule_end).getTime() : null;
+  if(s && now < s) return "upcoming";
+  if(e && now > e) return "ended";
+  return "open";
+}
+const SCHED = {upcoming:["未開放","yellow"], ended:["已結束","red"], open:["開放中","green"]};
+const schedTag = c => { const [l,k] = SCHED[schedState(c)]; return `<span class="tag ${k}">${l}</span>`; };
+const schedText = c => (c.schedule_start||c.schedule_end) ? `${fmtDT(c.schedule_start)||"即日起"} ～ ${fmtDT(c.schedule_end)||"不限"}` : "不限時間";
+const canOpen = c => isAdmin() || c.jit==="Y" || schedState(c)==="open";
+
+/* ---------- 學習進度與自動學分 ---------- */
+const progKey = cid => `hcid_prog_${user.email}_${cid}`;
+function getProg(cid){ try{ return JSON.parse(localStorage.getItem(progKey(cid))) || {sec:0,dur:0}; }catch(e){ return {sec:0,dur:0}; } }
+function saveProg(cid,p){ try{ localStorage.setItem(progKey(cid), JSON.stringify(p)); }catch(e){} }
+const hasCredit = cid => DB.Records.some(r => r.email===user.email && r.course_id===cid);
+function progPct(c){
+  const p = getProg(c.id), kind = playKind(c);
+  if(kind==="video") return p.dur ? Math.min(100, Math.round(p.sec/p.dur*100)) : 0;
+  if(kind==="dwell") return Math.min(100, Math.round(p.sec/(ruleOf(c)*60)*100));
+  return 0;
+}
+function reached(c){
+  const p = getProg(c.id), kind = playKind(c);
+  if(kind==="video") return p.dur > 0 && (p.sec/p.dur*100) >= ruleOf(c);
+  if(kind==="dwell") return p.sec >= ruleOf(c)*60;
+  return false;
+}
+function updateProgressUI(c){
+  const bar = $("#pbar"); if(!bar) return;
+  const kind = playKind(c), p = getProg(c.id), done = hasCredit(c.id), rule = ruleOf(c);
+  const mm = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+  bar.style.width = (done ? 100 : progPct(c)) + "%";
+  let txt = "";
+  if(done) txt = `已採認 ${c.hours} 小時，紀錄已寫入個人學習履歷。`;
+  else if(c.credit_mode==="manual") txt = "此課程由學員自行標記完成後採認學分。";
+  else if(kind==="video") txt = `有效觀看 ${progPct(c)}%（${mm(p.sec)} / ${p.dur?mm(p.dur):"--:--"}），達 ${rule}% 自動採認 ${c.hours} 小時。快轉跳過的片段不計入。`;
+  else if(kind==="dwell") txt = `已停留 ${mm(p.sec)} / ${rule} 分鐘，達標自動採認 ${c.hours} 小時（頁籤需保持在前景）。`;
+  else txt = "此課程無教材檔案，請由管理者設定採認方式。";
+  $("#ptxt").textContent = txt;
+  const st = $("#cstate"); st.textContent = done ? "已採認" : "進行中"; st.className = "tag " + (done?"green":"yellow");
+  const mb = $("#markBtn"); if(mb) mb.disabled = done;
+}
+async function awardCredit(c){
+  if(hasCredit(c.id) || T.awarding) return;
+  T.awarding = true;
+  try{
+    await addRow("Records",{email:user.email,course_id:c.id,course_title:c.title,hours:c.hours,date:today(),category:c.required||"選修"});
+    const tt = "完成課程：" + c.title;
+    for(const t of DB.Tasks.filter(t=>t.assignee===user.email && t.title===tt && t.status!=="已完成")){
+      try{ await updateRow("Tasks","id",t.id,{status:"已完成"}); }catch(e){}
+    }
+    toast(`已自動採認 ${c.hours} 小時`);
+  }catch(e){ toast("採認失敗：" + e.message); }
+  finally{ T.awarding = false; updateProgressUI(c); }
+}
+function tick(c, seconds, dur){
+  const p = getProg(c.id); p.sec += seconds; if(dur) p.dur = dur;
+  if(Date.now() - (tick.last||0) > 3000){ saveProg(c.id,p); tick.last = Date.now(); }
+  else { try{ sessionStorage.setItem("hcid_tmp_"+c.id, JSON.stringify(p)); }catch(e){} saveProgSoon(c.id,p); }
+  updateProgressUI(c);
+  if(c.credit_mode !== "manual" && !hasCredit(c.id) && reached(c)){ saveProg(c.id,p); awardCredit(c); }
+}
+function saveProgSoon(cid,p){ clearTimeout(saveProgSoon.t); saveProgSoon.t = setTimeout(()=>saveProg(cid,p), 3000); }
+function initCourse(){
+  const c = DB.Courses.find(x => x.id === tabState.cid);
+  if(!c || !canOpen(c)) return;
+  const kind = playKind(c);
+  updateProgressUI(c);
+  if(kind === "video"){
+    const v = $("#player"), url = safeUrl(c.media_url); let last = null;
+    if(c.media_type === "hls" && !v.canPlayType("application/vnd.apple.mpegurl")){
+      loadScript("https://cdn.jsdelivr.net/npm/hls.js@1").then(()=>{
+        if(window.Hls && Hls.isSupported()){ T.hls = new Hls(); T.hls.loadSource(url); T.hls.attachMedia(v); }
+        else toast("此瀏覽器不支援 HLS 播放");
+      }).catch(()=>toast("HLS 播放元件載入失敗"));
+    } else v.src = url;
+    v.addEventListener("loadedmetadata", ()=>{ const p=getProg(c.id); p.dur = v.duration||p.dur; saveProg(c.id,p); updateProgressUI(c); });
+    v.addEventListener("play",   ()=>{ last = v.currentTime; });
+    v.addEventListener("seeked", ()=>{ last = v.currentTime; });
+    v.addEventListener("timeupdate", ()=>{
+      if(v.paused || v.seeking){ last = v.currentTime; return; }
+      if(last !== null){ const d = v.currentTime - last; if(d > 0 && d < 1.5) tick(c, d, v.duration); }
+      last = v.currentTime;
+    });
+  } else if(kind === "dwell"){
+    T.timer = setInterval(()=>{ if(document.visibilityState === "visible") tick(c, 1); }, 1000);
+  }
+}
+function loadScript(src){
+  return new Promise((res,rej)=>{ if(document.querySelector(`script[src="${src}"]`)) return res();
+    const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
 }
 
 /* ---------- 各頁 ---------- */
@@ -221,22 +369,68 @@ const VIEWS = {
       <div class="card"><div class="sp"><b>近期任務</b><button class="ghost sm" onclick="location.hash='tasks'">全部任務</button></div>
         ${table([["任務",r=>esc(r.title)],["期限",r=>esc(r.due)]],tasks,"目前沒有任務")}</div>
       <div class="card"><div class="sp"><b>即時訓練捷徑</b><button class="ghost sm" onclick="location.hash='jit'">全部即時訓練</button></div>
-        ${table([["課程",r=>esc(r.title)],["主題",r=>esc(r.topic)]],jit,"目前沒有資料")}</div>
+        ${table([["課程",r=>`<a href="#course/${esc(r.id)}">${esc(r.title)}</a>`],["主題",r=>esc(r.topic)]],jit,"目前沒有資料")}</div>
     </div>`;
   },
 
   courses(){
+    const t = curTab("ct","list");
     const q = (tabState.cq||"").toLowerCase();
-    const rows = DB.Courses.filter(c => !q || JSON.stringify(c).toLowerCase().includes(q));
-    return head("課程與教材","依授權範圍管理與查閱資料。") + `
-    <div class="card"><input placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.cq||"")}" oninput="tabState.cq=this.value;route(true)" id="cq">
-    <div style="height:10px"></div>
-    ${table([["課程",r=>esc(r.title)],["病原",r=>esc(r.pathogen)],["主題",r=>esc(r.topic)],["時數",r=>esc(r.hours)],
-      ["教材",r=>esc(r.content)],["",r=>`<button class="sm" onclick="completeCourse('${esc(r.id)}')">標記完成</button>`]],rows,"沒有符合的課程或教材")}</div>
-    ${isAdmin()?`<div class="card" style="margin-top:14px"><b>新增課程（管理者）</b><div class="row">
-      ${field("c_title","課程名稱")}${field("c_path","病原")}${field("c_topic","主題")}${field("c_hours","時數","number")}
-      <div><label>列入即時訓練</label><select id="c_jit"><option value="Y">是</option><option value="N">否</option></select></div></div>
-      <label>教材內容</label><textarea id="c_content"></textarea><br><br><button onclick="addCourse()">新增</button></div>`:""}`;
+    const admin = isAdmin();
+    const tabBtns = `<div class="tabs">
+      <button class="${t==="list"?"on":""}" onclick="setTab('ct','list')">課程列表</button>
+      <button class="${t==="sched"?"on":""}" onclick="setTab('ct','sched')">課程排程</button>
+      ${admin?`<button class="${t==="form"?"on":""}" onclick="newCourse()">${tabState.editId?"編輯課程":"新增課程"}</button>`:""}</div>`;
+    let body = "";
+    if(t==="list"){
+      const rows = DB.Courses.filter(c => !q || JSON.stringify(c).toLowerCase().includes(q));
+      body = `<div class="card"><input id="cq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.cq||"")}" oninput="tabState.cq=this.value;route(true)">
+      <div style="height:10px"></div>` + table([
+        ["課程",r=>`<b>${esc(r.title)}</b><div class="hint">${esc(r.pathogen)} · ${esc(r.topic)}${r.jit==="Y"?" · 即時訓練":""}</div>`],
+        ["教材",r=>`<span class="tag">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span>`],
+        ["排程",r=>`${schedTag(r)}<div class="hint">${esc(schedText(r))}</div>`],
+        ["類別 / 學分",r=>`${esc(r.required||"選修")} · ${esc(r.hours)} 小時<div class="hint">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
+        [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id).length+" 人"
+            : (hasCredit(r.id)?`<span class="tag green">已採認</span>`:(progPct(r)?`<span class="tag yellow">${progPct(r)}%</span>`:`<span class="tag">未開始</span>`))],
+        ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button>`:"")]
+      ], rows, "沒有符合的課程或教材") + `</div>`;
+    }
+    if(t==="sched"){
+      const rows = [...DB.Courses].sort((a,b)=>String(a.schedule_start||"9999").localeCompare(String(b.schedule_start||"9999")));
+      body = `<div class="card">` + table([
+        ["排程時間",r=>esc(schedText(r))],["課程",r=>esc(r.title)],["類別",r=>esc(r.required||"選修")],["時數",r=>esc(r.hours)],["狀態",r=>schedTag(r)]
+      ], rows, "尚無課程排程") + `</div>`;
+    }
+    if(t==="form" && admin) body = courseForm();
+    return head("課程與教材","依授權範圍管理與查閱資料。") + tabBtns + body;
+  },
+
+  course(){
+    const c = DB.Courses.find(x => x.id === tabState.cid);
+    const back = `<p><a href="#courses">← 返回課程列表</a></p>`;
+    if(!c) return head("課程","找不到此課程") + back + `<div class="empty">課程不存在或已被移除</div>`;
+    if(!canOpen(c)) return head(c.title,"目前無法開啟") + back + `<div class="card empty">${schedTag(c)}<br><br>開放時間：${esc(schedText(c))}</div>`;
+    const kind = playKind(c), emb = embedUrl(c), raw = safeUrl(extractSrc(c.media_url));
+    let media = "";
+    if(kind==="video") media = `<video id="player" class="player" controls playsinline controlsList="nodownload"></video>`;
+    else if(kind==="dwell"){
+      const sandbox = c.media_type==="pdf" ? "" : `sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"`;
+      media = `<iframe class="frame" src="${esc(emb)}" ${sandbox} allow="fullscreen; autoplay; encrypted-media" allowfullscreen loading="lazy"></iframe>
+        <div class="notice">若內容無法顯示（來源網站禁止嵌入），請 <a href="${esc(raw)}" target="_blank" rel="noopener">在新分頁開啟</a>；開啟新分頁期間本頁不會計時。</div>`;
+    }
+    return head(esc(c.title), `${esc(c.pathogen)} · ${esc(c.topic)} · ${esc(c.required||"選修")} · ${esc(c.hours)} 小時`) + back + `
+    <div class="card">
+      <div class="sp"><div>${schedTag(c)} <span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span> <span class="hint">${esc(schedText(c))}</span></div></div>
+      ${c.content?`<p>${esc(c.content)}</p>`:""}
+      ${media}
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="sp"><b>學習進度與學分</b><span id="cstate" class="tag"></span></div>
+      <div class="bar"><i id="pbar" style="width:0%"></i></div>
+      <div id="ptxt" class="notice"></div>
+      ${c.credit_mode==="manual"||kind==="none"?`<button id="markBtn" onclick="markDone('${esc(c.id)}')">標記完成並採認學分</button>`:""}
+    </div>
+    <div class="notice">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>`;
   },
 
   jit(){
@@ -245,7 +439,8 @@ const VIEWS = {
     return head("即時訓練","快速找到情境需要的訓練與作業資料。") + `
     <div class="card"><input id="jq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.jq||"")}" oninput="tabState.jq=this.value;route(true)">
     <div class="notice">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>
-    ${rows.length? rows.map(c=>`<div class="card" style="margin-top:10px"><b>${esc(c.title)}</b> <span class="tag">${esc(c.topic)}</span> <span class="tag">${esc(c.pathogen)}</span><p>${esc(c.content)}</p></div>`).join("") : `<div class="empty">沒有符合的課程或教材</div>`}</div>`;
+    ${rows.length? rows.map(c=>`<div class="card" style="margin-top:10px"><div class="sp"><div><b>${esc(c.title)}</b> <span class="tag">${esc(c.topic)}</span> <span class="tag">${esc(c.pathogen)}</span> <span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span></div>
+      <a class="btn sm" href="#course/${esc(c.id)}">開啟教材</a></div><p>${esc(c.content)}</p></div>`).join("") : `<div class="empty">沒有符合的課程或教材</div>`}</div>`;
   },
 
   tasks(){
@@ -292,11 +487,11 @@ const VIEWS = {
   knowledge(){
     const q = (tabState.kq||"").toLowerCase();
     const hits = q ? [
-      ...DB.Courses.filter(c=>JSON.stringify(c).toLowerCase().includes(q)).map(c=>({kind:"課程",title:c.title,body:c.content})),
+      ...DB.Courses.filter(c=>JSON.stringify(c).toLowerCase().includes(q)).map(c=>({kind:"課程",title:c.title,body:c.content,link:`#course/${c.id}`})),
       ...DB.News.filter(n=>JSON.stringify(n).toLowerCase().includes(q)).map(n=>({kind:n.type==="alert"?"疫情":"公告",title:n.title,body:n.body}))] : [];
     return head("知識檢索","依授權範圍管理與查閱資料。") + `<div class="card">
     <input id="kq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.kq||"")}" oninput="tabState.kq=this.value;route(true)">
-    <div style="height:10px"></div>${hits.length ? hits.map(h=>`<div class="card" style="margin-bottom:8px"><span class="tag">${h.kind}</span> <b>${esc(h.title)}</b><p>${esc(h.body)}</p></div>`).join("") : `<div class="empty">沒有符合的課程或教材</div>`}</div>`;
+    <div style="height:10px"></div>${hits.length ? hits.map(h=>`<div class="card" style="margin-bottom:8px"><span class="tag">${h.kind}</span> <b>${h.link?`<a href="${esc(h.link)}">${esc(h.title)}</a>`:esc(h.title)}</b><p>${esc(h.body)}</p></div>`).join("") : `<div class="empty">沒有符合的課程或教材</div>`}</div>`;
   },
 
   forms(){
@@ -315,12 +510,87 @@ const VIEWS = {
   }
 };
 
+/* ---------- 課程表單（管理者） ---------- */
+function courseForm(){
+  const e = tabState.editId ? (DB.Courses.find(x=>x.id===tabState.editId) || {}) : {};
+  const editing = !!e.id;
+  return `<div class="card"><div class="sp"><b>${editing?"編輯課程":"新增課程"}（管理者）</b>${editing?`<button class="ghost sm" onclick="newCourse()">改為新增</button>`:""}</div>
+  <fieldset class="fieldset"><legend>基本資料</legend><div class="row">
+    ${field("c_title","課程名稱","text","",e.title)}${field("c_path","病原","text","",e.pathogen)}${field("c_topic","主題","text","",e.topic)}
+    ${field("c_hours","學分時數（小時）","number","1",e.hours ?? 1)}
+    <div><label>類別</label><select id="c_req">${opts([["必修","必修"],["選修","選修"]], e.required||"選修")}</select></div>
+    <div><label>列入即時訓練</label><select id="c_jit">${opts([["Y","是（不受排程限制）"],["N","否"]], e.jit||"N")}</select></div></div>
+    <label>說明 / 文字教材</label><textarea id="c_content">${esc(e.content)}</textarea></fieldset>
+
+  <fieldset class="fieldset"><legend>教材上傳 / 連結</legend><div class="row">
+    <div><label>教材格式</label><select id="c_type" onchange="syncMedia()">${opts(MEDIA_TYPES, e.media_type||"none")}</select></div>
+    ${field("c_url","教材網址（或 iframe 嵌入碼）","text","https://…",e.media_url)}
+    <div><label>或上傳檔案（上限 ${CONFIG.MAX_UPLOAD_MB}MB）</label><input id="c_file" type="file"></div></div>
+    <div class="hint" id="c_urlhint"></div>
+    <div class="hint">有選擇檔案時，會優先上傳檔案並取代上方網址。HLS 與 iframe 只能貼網址。上傳需後端 GAS 支援 upload 動作。</div></fieldset>
+
+  <fieldset class="fieldset"><legend>課程排程</legend><div class="row">
+    ${field("c_start","開放時間","datetime-local","",e.schedule_start)}${field("c_end","截止時間","datetime-local","",e.schedule_end)}</div>
+    <div class="hint">留空代表不限時間。學員只能在開放期間開啟課程（即時訓練課程不受限）。</div>
+    ${editing?"":`<label style="margin-top:8px"><input type="checkbox" id="c_assign"> 同時指派為全體成員的任務（期限＝截止日期）</label>`}</fieldset>
+
+  <fieldset class="fieldset"><legend>學分採認</legend><div class="row">
+    <div><label>採認方式</label><select id="c_cmode">${opts([["auto","自動採認（依學習行為）"],["manual","學員自行標記完成"]], e.credit_mode||"auto")}</select></div>
+    ${field("c_rule","達標條件","number","影片：80（%）／其他：10（分鐘）",e.credit_rule)}</div>
+    <div class="hint">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。</div></fieldset>
+
+  <button onclick="saveCourse()">${editing?"儲存變更":"新增課程"}</button></div>`;
+}
+const MEDIA_HINT = {
+  none:"純文字教材不需網址。",
+  mp4:"MP4 直連網址（來源需允許跨站播放），或 Google Drive 分享連結（Drive 預覽改以停留時間計算）。",
+  hls:"貼上 .m3u8 串流網址（來源需開放 CORS）。",
+  pdf:"PDF 網址或 Google Drive 分享連結。",
+  ppt:"公開可存取的 .ppt / .pptx 網址（以 Office Online 檢視）或 Google Drive 分享連結。",
+  iframe:"貼上網址或整段 <iframe …> 嵌入碼（YouTube、Google 簡報等）。"
+};
+window.syncMedia = ()=>{
+  const t = $("#c_type"); if(!t) return;
+  const map = {mp4:"video/mp4", pdf:".pdf,application/pdf", ppt:".ppt,.pptx"};
+  const f = $("#c_file"); f.disabled = !map[t.value]; f.accept = map[t.value] || "";
+  $("#c_url").disabled = t.value === "none";
+  $("#c_urlhint").textContent = MEDIA_HINT[t.value];
+};
+window.newCourse = ()=>{ tabState.editId = null; tabState.ct = "form"; route(); };
+window.editCourse = id => { tabState.editId = id; tabState.ct = "form"; route(); };
+window.saveCourse = act0(async()=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  if(!val("c_title")) throw new Error("請輸入課程名稱");
+  const type = val("c_type"); let url = val("c_url");
+  const f = $("#c_file").files[0];
+  if(type !== "none"){
+    if(f) url = await uploadFile(f);
+    else if(type === "iframe") url = extractSrc(url);
+    if(!url) throw new Error("請貼上教材網址或選擇檔案");
+    if(!url.startsWith("blob:") && !safeUrl(url)) throw new Error("教材網址必須是 http(s) 開頭");
+  } else url = "";
+  const s = val("c_start"), e = val("c_end");
+  if(s && e && new Date(e) <= new Date(s)) throw new Error("截止時間必須晚於開放時間");
+  const data = {title:val("c_title"),pathogen:val("c_path"),topic:val("c_topic"),hours:val("c_hours")||0,jit:val("c_jit"),content:val("c_content"),
+    required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:val("c_cmode"),credit_rule:val("c_rule")};
+  if(tabState.editId){
+    await updateRow("Courses","id",tabState.editId,data); toast("已儲存變更");
+  } else {
+    await addRow("Courses",{id:"C"+uid(),...data});
+    if($("#c_assign")?.checked){
+      for(const m of DB.Members){
+        await addRow("Tasks",{id:"T"+uid(),title:"完成課程："+data.title,assignee:String(m.email).toLowerCase(),due:(e||"").slice(0,10),status:"待完成"});
+      }
+    }
+    toast("已新增課程");
+  }
+  tabState.editId = null; tabState.ct = "list";
+});
+function act0(fn){ return (...a) => submit(() => fn(...a)); }
+
 /* ---------- 動作 ---------- */
-const act = fn => (...a) => submit(() => fn(...a));
-window.completeCourse = act(async id=>{ const c=DB.Courses.find(x=>x.id===id);
-  await addRow("Records",{email:user.email,course_id:id,course_title:c.title,hours:c.hours,date:today(),category:"選修"}); toast("已記錄修課"); });
-window.addCourse = act(async()=>{ if(!val("c_title")) throw new Error("請輸入課程名稱");
-  await addRow("Courses",{id:"C"+uid(),title:val("c_title"),pathogen:val("c_path"),topic:val("c_topic"),hours:val("c_hours")||0,jit:val("c_jit"),content:val("c_content")}); toast("已新增"); });
+const act = act0;
+window.markDone = async id => { const c = DB.Courses.find(x=>x.id===id); if(c){ await awardCredit(c); } };
 window.addTask = act(async()=>{ if(!val("t_title")||!val("t_who")) throw new Error("請填寫任務與對象");
   await addRow("Tasks",{id:"T"+uid(),title:val("t_title"),assignee:val("t_who").toLowerCase(),due:val("t_due"),status:"待完成"}); toast("已指派"); });
 window.doneTask = act(async id=>{ await updateRow("Tasks","id",id,{status:"已完成"}); toast("已完成"); });
@@ -345,14 +615,21 @@ window.downloadCSV = ()=>{
 
 /* ---------- 路由 ---------- */
 function route(keepFocus){
-  const k = (location.hash||"#overview").slice(1);
+  clearInterval(T.timer); clearTimeout(saveProgSoon.t);
+  if(T.hls){ try{T.hls.destroy();}catch(e){} T.hls = null; }
+  const [k,arg] = (location.hash||"#overview").slice(1).split("/");
+  if(k === "course") tabState.cid = decodeURIComponent(arg||"");
   const v = VIEWS[k] || VIEWS.overview;
   const focusId = document.activeElement?.id, pos = document.activeElement?.selectionStart;
   $("#view").innerHTML = v();
-  document.querySelectorAll("aside a").forEach(a=>a.classList.toggle("on", a.getAttribute("href")==="#"+k));
+  const active = k === "course" ? "courses" : k;
+  document.querySelectorAll("aside a").forEach(a=>a.classList.toggle("on", a.getAttribute("href")==="#"+active));
   if(keepFocus && focusId){ const el=document.getElementById(focusId); if(el){ el.focus(); try{el.setSelectionRange(pos,pos)}catch(e){} } }
+  if(k === "course") initCourse();
+  if(k === "courses") syncMedia();
 }
 window.addEventListener("hashchange",()=>route());
+window.addEventListener("beforeunload",()=>{ document.querySelectorAll("video").forEach(v=>v.pause()); });
 (async function(){
   try{ await loadAll(); }catch(e){ $("#view").innerHTML = `<div class="banner">無法連線後端：${esc(e.message)}。請檢查 CONFIG.GAS_URL 與 GAS 部署權限。</div>`; return; }
   initUser(); route();
