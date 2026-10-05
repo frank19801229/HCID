@@ -170,6 +170,11 @@ async function updateRow(sheet, key, keyVal, patch){
   await post({action:"update", sheet, key, keyVal, patch});
   Object.assign(DB[sheet].find(x => x[key] == keyVal), patch);
 }
+async function deleteRow(sheet, key, keyVal){
+  if (DEMO){ DB[sheet] = DB[sheet].filter(x => x[key] != keyVal); persistDemo(); return; }
+  await post({action:"delete", sheet, key, keyVal});
+  DB[sheet] = DB[sheet].filter(x => x[key] != keyVal);
+}
 async function uploadFile(f){
   if (f.size > CONFIG.MAX_UPLOAD_MB*1024*1024) throw new Error(`檔案超過 ${CONFIG.MAX_UPLOAD_MB}MB，請改貼雲端連結`);
   if (DEMO){ toast("示範模式：檔案僅供本次瀏覽預覽，重新整理後失效"); return URL.createObjectURL(f); }
@@ -392,7 +397,7 @@ const VIEWS = {
         ["類別 / 學分",r=>`${esc(r.required||"選修")} · ${esc(r.hours)} 小時<div class="hint">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
         [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id).length+" 人"
             : (hasCredit(r.id)?`<span class="tag green">已採認</span>`:(progPct(r)?`<span class="tag yellow">${progPct(r)}%</span>`:`<span class="tag">未開始</span>`))],
-        ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button>`:"")]
+        ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="ghost sm" style="color:var(--red);border-color:var(--red)" onclick="deleteCourse('${esc(r.id)}')">刪除</button>`:"")]
       ], rows, "沒有符合的課程或教材") + `</div>`;
     }
     if(t==="sched"){
@@ -539,7 +544,8 @@ function courseForm(){
     ${field("c_rule","達標條件","number","影片：80（%）／其他：10（分鐘）",e.credit_rule)}</div>
     <div class="hint">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。</div></fieldset>
 
-  <button onclick="saveCourse()">${editing?"儲存變更":"新增課程"}</button></div>`;
+  <button onclick="saveCourse()">${editing?"儲存變更":"新增課程"}</button>
+  ${editing?` <button class="ghost" style="color:var(--red);border-color:var(--red)" onclick="deleteCourse('${esc(e.id)}')">刪除此課程</button>`:""}</div>`;
 }
 const MEDIA_HINT = {
   none:"純文字教材不需網址。",
@@ -558,6 +564,17 @@ window.syncMedia = ()=>{
 };
 window.newCourse = ()=>{ tabState.editId = null; tabState.ct = "form"; route(); };
 window.editCourse = id => { tabState.editId = id; tabState.ct = "form"; route(); };
+window.deleteCourse = act0(async id=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const c = DB.Courses.find(x=>x.id===id); if(!c) return;
+  const done = DB.Records.filter(r=>r.course_id===id).length;
+  if(!confirm(`確定要刪除課程「${c.title}」嗎？\n\n` + (done ? `已有 ${done} 筆學員修課紀錄，這些紀錄會保留在學習履歷中。\n` : "") + `此動作無法復原。`)) return;
+  await deleteRow("Courses","id",id);
+  try{ localStorage.removeItem(progKey(id)); }catch(e){}
+  if(tabState.editId === id) tabState.editId = null;
+  tabState.ct = "list";
+  toast("已刪除課程");
+});
 window.saveCourse = act0(async()=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   if(!val("c_title")) throw new Error("請輸入課程名稱");
