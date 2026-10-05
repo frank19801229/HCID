@@ -667,7 +667,7 @@ function importForm(){
 function memberView(){
   const email = viewEmail(), admin = isAdmin();
   const m = DB.Members.find(x=>eq(x.email,email)) || {email, name: email.split("@")[0], role:"學員"};
-  const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET, t = curTab("pt","rec");
+  const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET, t = admin ? "rec" : curTab("pt","rec");
   const eff = effRecords(email, yr).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
   const done = hoursOf(email, yr), enr = sumH(eff.filter(r=>stOf(r)==="已選課"));
   const dp = Math.min(100, done/tgt*100), ep = Math.min(100-dp, enr/tgt*100), rp = Math.max(0, 100-dp-ep);
@@ -700,7 +700,7 @@ function memberView(){
     <div class="legend"><span><i class="sq g"></i>已完成之時數：${Math.round(dp)}%（${done} / ${tgt} 小時）</span><span><i class="sq o"></i>已選課，未完成之時數：${Math.round(ep)}%（${enr} 小時）</span><span><i class="sq n"></i>未完成之時數：${Math.round(rp)}%</span></div>
     <div class="hint">已完成時數包含合格課程與外部訓練佐證；目標為年度 ${tgt} 小時。</div></div>
   <h2 class="sec">🕒 課程參與紀錄</h2>` +
-  tabs("pt",[["rec","課程參與紀錄"],["fit","N95 密合度"],["ext","外部訓練佐證"]],"rec") + `<div class="card" style="padding:${t==="rec"?"0 8px 8px":"16px"}">${body}</div>`;
+  (admin ? "" : tabs("pt",[["rec","課程參與紀錄"],["fit","N95 密合度"],["ext","外部訓練佐證"]],"rec")) + `<div class="card" style="padding:${t==="rec"?"0 8px 8px":"16px"}">${body}</div>`;
 }
 /* ---------- 課程表單（管理者） ---------- */
 function courseForm(){
