@@ -80,6 +80,12 @@ details.grp .gname{flex:1;min-width:0}
 details.grp .gbody{padding:0 8px 12px;background:#fff}
 .dot{display:inline-block;width:16px;height:16px;border-radius:50%;margin-left:5px;vertical-align:middle}
 .dot.ok{background:var(--g)}.dot.enr{background:var(--o)}.dot.no{background:#c4c9cc}
+#loginMask{position:fixed;inset:0;background:rgba(23,50,63,.55);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+#loginBox{background:#fff;border-radius:14px;padding:22px;width:100%;max-width:400px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+#loginBox h3{margin:0 0 6px;font-size:18px}
+#loginBox .quick{display:flex;gap:8px;margin:12px 0}
+#loginBox .quick button{flex:1}
+#loginBox .acts{display:flex;gap:8px;margin-top:12px}
 #toast{position:fixed;right:18px;bottom:18px;background:#17323f;color:#fff;padding:10px 16px;border-radius:8px;display:none;z-index:9;max-width:80vw}
 @media(max-width:760px){body{flex-direction:column}aside{width:100%;flex-direction:row;overflow-x:auto;padding:8px}aside a{white-space:nowrap}.logo,.sep{display:none}main{padding:16px}}
 </style>
@@ -106,6 +112,13 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
   <div class="notice">HCID Readiness & JIT Training System　教育訓練與團隊應變支援</div>
 </main>
 <div id="toast"></div>
+<div id="loginMask"><div id="loginBox">
+  <h3>切換使用者</h3>
+  <p class="hint" id="loginHint" style="margin:0"></p>
+  <div class="quick" id="loginQuick"></div>
+  <label>Email</label><input id="loginEmail" type="email" placeholder="name@hospital.org" onkeydown="if(event.key==='Enter')loginSubmit()">
+  <div class="acts"><button onclick="loginSubmit()">登入</button><button class="ghost" id="loginCancel" onclick="closeLogin()">取消</button></div>
+</div></div>
 
 <script>
 /* ============ 設定區：部署 GAS 後，把網址貼在這裡 ============ */
@@ -188,7 +201,7 @@ async function loadAll(){
   DB = j.data;
   Object.keys(TABLES).forEach(k => DB[k] = DB[k] || []);
 }
-const persistDemo = () => localStorage.setItem("hcid_demo_db", JSON.stringify(DB));
+const persistDemo = () => { try{ localStorage.setItem("hcid_demo_db", JSON.stringify(DB)); }catch(e){} };
 async function post(payload){
   // 使用 text/plain 可避開 CORS 預檢（preflight）
   const r = await fetch(CONFIG.GAS_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
@@ -223,18 +236,45 @@ async function uploadFile(f){
 function toast(m){ const t=$("#toast"); t.textContent=m; t.style.display="block"; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display="none",3200); }
 
 /* ---------- 使用者 ---------- */
+const _mem = {};
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return _mem[k] ?? null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){ _mem[k]=v; } },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){ delete _mem[k]; } }
+};
 function initUser(){
-  let e = localStorage.getItem("hcid_user");
-  if(!e){ e = (prompt("請輸入 Email 以登入（示範模式可用 demo@example.com 或 admin@example.com）") || "").trim().toLowerCase(); if(!e) e="guest@example.com"; localStorage.setItem("hcid_user", e); }
-  setUser(e);
+  const e = store.get("hcid_user");
+  if(e){ setUser(e); return; }
+  setUser("guest@example.com");   // 先以訪客顯示，再開登入視窗
+  openLogin(false);
 }
+function openLogin(canCancel){
+  // 不使用 prompt()：在 iframe / 沙箱環境中 prompt 會被瀏覽器封鎖而直接回傳 null，導致永遠無法切換身分
+  $("#loginHint").textContent = DEMO ? "示範模式：可直接選擇身分，或輸入 Email 登入。" : "請輸入 Email 以登入。";
+  $("#loginQuick").innerHTML = DEMO ? `<button onclick="loginAs('admin@example.com')">管理者（admin）</button><button class="ghost" onclick="loginAs('demo@example.com')">學員（demo）</button>` : "";
+  $("#loginEmail").value = "";
+  $("#loginCancel").style.display = canCancel ? "" : "none";
+  $("#loginMask").style.display = "flex";
+  setTimeout(()=>$("#loginEmail").focus(), 0);
+}
+function closeLogin(){ $("#loginMask").style.display = "none"; }
+function loginAs(email){
+  email = String(email||"").trim().toLowerCase();
+  if(!/^\S+@\S+\.\S+$/.test(email)){ toast("請輸入有效的 Email"); return; }
+  store.set("hcid_user", email);
+  setUser(email); tabState.pm = null; tabState.er = null;
+  closeLogin();
+  location.hash = "#overview";
+  route();
+}
+function loginSubmit(){ loginAs($("#loginEmail").value); }
 function setUser(e){
   const m = (DB.Members||[]).find(x => eq(x.email, e));
   user = {email:e, name: m?.name || e.split("@")[0], role: m?.role || "學員"};
   $("#who").textContent = `${user.email} · ${user.role}`;
   $("#navProfile").textContent = isAdmin() ? "學員名單管理" : "個人學習履歷";
 }
-function changeUser(){ localStorage.removeItem("hcid_user"); tabState.pm = null; initUser(); route(); }
+function changeUser(){ openLogin(true); }
 const isAdmin = () => CONFIG.ADMIN_ROLES.includes(user.role);
 const viewEmail = () => (isAdmin() && tabState.pm) ? tabState.pm : user.email;
 
