@@ -635,7 +635,6 @@ function rosterList(){
       ["單位",r=>esc(r.unit)],
       ["角色",r=>`<span class="tag ${CONFIG.ADMIN_ROLES.includes(r.role)?"yellow":""}">${esc(r.role)}</span>`],
       [`${yr} 年度時數`,r=>`<div style="min-width:130px"><b>${r.h}</b> / ${tgt} 小時<div class="bar"><i style="width:${Math.min(100,r.h/tgt*100)}%"></i></div></div>`],
-      ["狀態",r=>(isActive(r)?"":`<span class="tag gray">停用</span> `)+(r.h>=tgt?`<span class="tag green">已達標</span>`:`<span class="tag yellow">未達標</span>`)],
       ["",r=>`<button class="sm" onclick="viewMember('${esc(r.email)}')">檢視履歷</button> <button class="ghost sm" onclick="editMember('${esc(r.email)}')">編輯</button>`]
     ], rows, "沒有符合的學員") + `</div>`;
 }
