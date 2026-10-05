@@ -655,10 +655,10 @@ function memberForm(){
 }
 function importForm(){
   return `<div class="card"><b>批次匯入學員</b>
-  <p class="hint">第一列為欄位名稱，支援：email（或 Email、信箱）、name（姓名）、unit（單位）、role（角色）、emp_id（職編）、job（職類）、active（狀態，N 或「停用」代表停用）。已存在的 Email 會自動略過。</p>
+  <p class="hint">第一列為欄位名稱，支援：email（或 Email、信箱）、name（姓名）、unit（單位）、role（角色）、emp_id（職編）、job（職類）、active（狀態，N 或「停用」代表停用）、class_id（課程編號）、class_name（課程名稱）、class_host（開課單位）、class_way（上課方式）、class_t（時數）、class_d（日期）、class_tag（狀態：合格／已選課／未完成）。已存在的 Email 不會重複新增學員；有填課程欄位時，會為該學員新增修課紀錄。</p>
   <button class="ghost sm" onclick="downloadTemplate()">下載範本</button>
   <div style="height:10px"></div>
-  <label>貼上 CSV 內容</label><textarea id="m_csv" placeholder="email,name,unit,role,emp_id,job&#10;a@hospital.org,王小明,內科病房,學員,B001,護理師"></textarea>
+  <label>貼上 CSV 內容</label><textarea id="m_csv" placeholder="email,name,unit,role,emp_id,job,active,class_id,class_name,class_host,class_way,class_t,class_d,class_tag&#10;a@hospital.org,王小明,內科病房,學員,B001,護理師,Y,DEMO-001,個人防護裝備穿脫,感染管制中心,線上,1,2026-01-15,合格"></textarea>
   <div class="row"><div><label>或選擇 CSV 檔（優先使用）</label><input id="m_file" type="file" accept=".csv,text/csv"></div></div>
   <button onclick="importMembers()">開始匯入</button></div>`;
 }
@@ -795,7 +795,7 @@ window.saveCourse = act0(async()=>{
 });
 
 /* ---------- 學員管理動作 ---------- */
-const ALIAS = {email:"email","e-mail":"email",信箱:"email",電子郵件:"email",name:"name",姓名:"name",unit:"unit",單位:"unit",role:"role",角色:"role",emp_id:"emp_id",職編:"emp_id",job:"job",職類:"job",active:"active",狀態:"active"};
+const ALIAS = {email:"email","e-mail":"email",信箱:"email",電子郵件:"email",name:"name",姓名:"name",unit:"unit",單位:"unit",role:"role",角色:"role",emp_id:"emp_id",職編:"emp_id",job:"job",職類:"job",active:"active",狀態:"active",class_id:"class_id",課程編號:"class_id",class_name:"class_name",課程名稱:"class_name",class_host:"class_host",開課單位:"class_host",class_way:"class_way",上課方式:"class_way",class_t:"class_t",時數:"class_t",class_d:"class_d",日期:"class_d",class_tag:"class_tag"};
 function normMember(o){
   return {email:String(o.email).toLowerCase(), name:o.name || String(o.email).split("@")[0],
     role: CONFIG.ADMIN_ROLES.includes(o.role) ? o.role : "學員", unit:o.unit||"", emp_id:o.emp_id||"", job:o.job||"",
@@ -827,23 +827,36 @@ window.deleteMember = act0(async email=>{
   await deleteRow("Members","email",m.email);
   tabState.em = null; tabState.rt = "list"; toast("已刪除學員");
 });
-window.downloadTemplate = ()=> downloadText("學員匯入範本.csv", "email,name,unit,role,emp_id,job,active\nexample@hospital.org,王小明,內科病房,學員,B001,護理師,Y\n");
+window.downloadTemplate = ()=> downloadText("學員匯入範本.csv", "email,name,unit,role,emp_id,job,active,class_id,class_name,class_host,class_way,class_t,class_d,class_tag\nexample@hospital.org,王小明,內科病房,學員,B001,護理師,Y,DEMO-001,個人防護裝備穿脫,感染管制中心,線上,1,2026-01-15,合格\n");
 window.importMembers = act0(async()=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   let text = val("m_csv"); const f = $("#m_file").files[0]; if(f) text = await f.text();
   if(!text) throw new Error("請貼上 CSV 內容或選擇檔案");
   const rows = parseCSV(text), headRow = rows.shift().map(h=>ALIAS[h.trim().toLowerCase()]||"");
   if(!headRow.includes("email")) throw new Error("找不到 email（Email／信箱）欄位");
-  let added=0, skipped=0, bad=0;
+  let added=0, skipped=0, bad=0, recAdded=0, recSkipped=0;
   for(const r of rows){
     const o = {}; headRow.forEach((k,i)=>{ if(k) o[k] = (r[i]||"").trim(); });
     const email = (o.email||"").toLowerCase();
     if(!/^\S+@\S+\.\S+$/.test(email)){ bad++; continue; }
-    if(DB.Members.some(x=>eq(x.email,email))){ skipped++; continue; }
-    await addRow("Members", normMember({...o,email})); added++;
+    if(DB.Members.some(x=>eq(x.email,email))) skipped++;
+    else { await addRow("Members", normMember({...o,email})); added++; }
+    // 課程欄位（class_*）：有填課程編號或名稱時，一併建立該學員的修課紀錄
+    if(o.class_id || o.class_name){
+      const c = DB.Courses.find(x=>x.id===o.class_id || (x.code && x.code===o.class_id)) || {};
+      const title = o.class_name || c.title || "";
+      const status = o.class_tag || "合格";
+      if(!title || !STATUS_RANK[status]){ recSkipped++; continue; }
+      const date = o.class_d || today();
+      if(DB.Records.some(x=>eq(x.email,email) && (x.course_title||"")===title && String(x.date||"")===date)){ recSkipped++; continue; }
+      await addRow("Records",{id:"R"+uid(),email,course_id:c.id||"",code:o.class_id||c.code||"",course_title:title,
+        unit:o.class_host||c.unit||"",topic:c.topic||"",method:o.class_way||c.method||"線上",hours:o.class_t||c.hours||0,date,
+        status,category:c.required||"必修"});
+      recAdded++;
+    }
   }
   tabState.rt = "list";
-  toast(`匯入完成：新增 ${added} 位、略過重複 ${skipped} 位、格式錯誤 ${bad} 列`);
+  toast(`匯入完成：新增 ${added} 位、略過重複 ${skipped} 位、格式錯誤 ${bad} 列` + (recAdded||recSkipped ? `；修課紀錄新增 ${recAdded} 筆、略過 ${recSkipped} 筆` : ""));
 });
 window.exportRoster = ()=>{
   const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
