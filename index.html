@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HCID 智慧應變與即時訓練平台</title>
 <style>
-:root{--bg:#f4f7fa;--card:#fff;--ink:#17323f;--mute:#6b7f8a;--line:#dde6ec;--brand:#0f6e7a;--brand2:#0b4f58;--warn:#c2410c;--ok:#15803d;--red:#b91c1c;--yellow:#a16207}
+:root{--bg:#f4f7fa;--card:#fff;--ink:#17323f;--mute:#6b7f8a;--line:#dde6ec;--brand:#0f6e7a;--brand2:#0b4f58;--warn:#c2410c;--ok:#15803d;--red:#b91c1c;--yellow:#a16207;--g:#6aa621;--o:#e8900c}
 *{box-sizing:border-box}
 body{margin:0;font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;min-height:100vh}
 aside{width:236px;background:var(--brand2);color:#e6f3f5;padding:18px 12px;flex-shrink:0;display:flex;flex-direction:column;gap:4px}
@@ -20,6 +20,7 @@ main{flex:1;min-width:0;padding:22px 28px 40px}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
 .eyebrow{font-size:12px;letter-spacing:2px;color:var(--brand);font-weight:700}
 h1{margin:2px 0 4px;font-size:26px}
+h2.sec{font-size:20px;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
 .sub{color:var(--mute);margin:0 0 14px}
 .banner{background:#fff7e6;border:1px solid #f3d9a4;color:#7a5200;padding:8px 12px;border-radius:8px;font-size:13px;margin-bottom:16px}
 .user{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mute)}
@@ -32,8 +33,16 @@ h1{margin:2px 0 4px;font-size:26px}
 .hero h2{margin:0 0 6px}.hero p{margin:0 0 14px;opacity:.9}
 .bar{height:10px;background:#e3edf1;border-radius:99px;overflow:hidden;margin:8px 0}
 .bar i{display:block;height:100%;background:var(--brand);transition:width .3s}
+.seg{height:16px;background:#d9dcdd;border-radius:4px;overflow:hidden;display:flex}
+.seg i{display:block;height:100%}.seg .g{background:var(--g)}.seg .o{background:var(--o)}
+.scale{display:grid;grid-template-columns:repeat(10,1fr);text-align:center;font-size:12px;color:var(--mute);margin-top:4px}
+.scale span{border-left:1px solid var(--line)}
+.legend{font-size:14px;margin-top:8px;display:flex;gap:16px;flex-wrap:wrap}
+.sq{display:inline-block;width:12px;height:12px;margin-right:5px;vertical-align:-1px}
+.sq.g{background:var(--g)}.sq.o{background:var(--o)}.sq.n{background:#d9dcdd}
 button,.btn{font:inherit;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:var(--brand);color:#fff;font-size:14px;text-decoration:none;display:inline-block}
 button.ghost,.btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+button.danger{background:#fff;color:var(--red);border:1px solid var(--red)}
 button.sm,.btn.sm{padding:4px 10px;font-size:12px}
 button:disabled{opacity:.5;cursor:not-allowed}
 .hero button{background:#fff;color:var(--brand2);font-weight:700}
@@ -52,7 +61,7 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 .tablewrap{overflow-x:auto}
 .empty{color:var(--mute);text-align:center;padding:28px}
 .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;background:#e6f3f5;color:var(--brand2);white-space:nowrap}
-.tag.red{background:#fde8e8;color:var(--red)}.tag.yellow{background:#fef3c7;color:var(--yellow)}.tag.green{background:#dcfce7;color:var(--ok)}
+.tag.red{background:#fde8e8;color:var(--red)}.tag.yellow{background:#fef3c7;color:var(--yellow)}.tag.green{background:#dcfce7;color:var(--ok)}.tag.gray{background:#eceff1;color:#546e7a}
 .sp{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .notice{font-size:12px;color:var(--mute);margin:8px 0}
 .frame{width:100%;height:68vh;border:1px solid var(--line);border-radius:10px;background:#fff}
@@ -60,6 +69,17 @@ video.player{width:100%;max-height:68vh;border-radius:10px;background:#000}
 .fieldset{border:1px dashed var(--line);border-radius:10px;padding:12px;margin:12px 0}
 .fieldset legend{font-size:12px;color:var(--brand);padding:0 6px;font-weight:700}
 .hint{font-size:12px;color:var(--mute);margin-top:3px}
+.filters{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:10px;margin-bottom:12px}
+@media(max-width:900px){.filters{grid-template-columns:1fr 1fr}}
+details.grp{border-top:1px solid var(--line);background:#fafafa}
+details.grp summary{cursor:pointer;padding:12px 8px;display:flex;align-items:center;gap:10px;list-style:none}
+details.grp summary::-webkit-details-marker{display:none}
+details.grp summary::before{content:"›";font-weight:700;transition:transform .15s}
+details.grp[open] summary::before{transform:rotate(90deg)}
+details.grp .gname{flex:1;min-width:0}
+details.grp .gbody{padding:0 8px 12px;background:#fff}
+.dot{display:inline-block;width:16px;height:16px;border-radius:50%;margin-left:5px;vertical-align:middle}
+.dot.ok{background:var(--g)}.dot.enr{background:var(--o)}.dot.no{background:#c4c9cc}
 #toast{position:fixed;right:18px;bottom:18px;background:#17323f;color:#fff;padding:10px 16px;border-radius:8px;display:none;z-index:9;max-width:80vw}
 @media(max-width:760px){body{flex-direction:column}aside{width:100%;flex-direction:row;overflow-x:auto;padding:8px}aside a{white-space:nowrap}.logo,.sep{display:none}main{padding:16px}}
 </style>
@@ -72,7 +92,7 @@ video.player{width:100%;max-height:68vh;border-radius:10px;background:#000}
   <a href="#courses">課程與教材</a>
   <a href="#jit">即時訓練</a>
   <a href="#tasks">任務與通知</a>
-  <a href="#profile">個人學習履歷</a>
+  <a href="#profile" id="navProfile">個人學習履歷</a>
   <a href="#news">疫情與公告</a>
   <a href="#knowledge">知識檢索</a>
   <a href="#forms">同意書與問卷</a>
@@ -100,10 +120,10 @@ const CONFIG = {
 /* ============================================================ */
 
 const TABLES = {
-  Members:   ["email","name","role","unit"],
-  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule"],
+  Members:   ["email","name","role","unit","emp_id","job","active"],
+  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule","code","unit","method"],
   Tasks:     ["id","title","assignee","due","status"],
-  Records:   ["email","course_id","course_title","hours","date","category"],
+  Records:   ["id","email","course_id","code","course_title","unit","topic","method","hours","date","status","category"],
   FitTests:  ["email","date","model","result"],
   External:  ["email","title","hours","date","note"],
   News:      ["id","type","title","level","date","body"],
@@ -113,32 +133,49 @@ const TABLES = {
 };
 const MEDIA_TYPES = [["none","純文字教材（無檔案）"],["mp4","MP4 影片"],["hls","HLS 串流（.m3u8）"],["pdf","PDF"],["ppt","PPT / PPTX"],["iframe","iframe / 網頁嵌入（含 YouTube）"]];
 const MEDIA_LABEL = Object.fromEntries(MEDIA_TYPES);
+const METHODS = ["線上","實體","混成"];
 const $ = s => document.querySelector(s);
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const today = () => new Date().toISOString().slice(0,10);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5);
 const fmtDT = s => s ? String(s).replace("T"," ") : "";
+const eq = (a,b) => String(a||"").toLowerCase() === String(b||"").toLowerCase();
+const curYear = () => new Date().getFullYear();
+const yearOf = d => { const m = String(d||"").match(/^(\d{4})/); return m ? Number(m[1]) : null; };
 let DB = {}, user = null, tabState = {}, T = {};   // T：目前課程頁的計時器 / hls 實例
 
 /* ---------- 後端存取 ---------- */
 const DEMO = !CONFIG.GAS_URL;
 function demoSeed(){
   const d = n => { const x = new Date(Date.now()+n*864e5); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,16); };
+  const y = curYear();
+  const rec = (i,email,code,title,unit,topic,method,hours,date,status) => ({id:"R"+i,email,course_id:"",code,course_title:title,unit,topic,method,hours,date,status,category:"必修"});
   return {
-    Members:[{email:"demo@example.com",name:"示範學員",role:"學員",unit:"內科病房"},
-             {email:"admin@example.com",name:"示範管理者",role:"管理者",unit:"感染管制中心"}],
+    Members:[
+      {email:"demo@example.com",name:"示範學員",role:"學員",unit:"呼吸治療科",emp_id:"A001",job:"呼吸治療師",active:"Y"},
+      {email:"nurse2@example.com",name:"示範護理師",role:"學員",unit:"內科病房",emp_id:"A002",job:"護理師",active:"Y"},
+      {email:"nurse3@example.com",name:"示範新進人員",role:"學員",unit:"內科病房",emp_id:"A003",job:"護理師",active:"Y"},
+      {email:"admin@example.com",name:"示範管理者",role:"管理者",unit:"感染管制中心",emp_id:"A000",job:"感控師",active:"Y"}],
     Courses:[
-      {id:"C1",title:"個人防護裝備穿脫（示範影片）",pathogen:"通用",topic:"PPE",hours:1,jit:"Y",content:"示範教材，僅供操作展示，不作為臨床指示。",required:"必修",media_type:"mp4",media_url:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80},
-      {id:"C2",title:"N95 密合度測試說明（示範 HLS）",pathogen:"呼吸道",topic:"密合度",hours:2,jit:"Y",content:"示範教材，僅供操作展示。",required:"選修",media_type:"hls",media_url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80},
-      {id:"C3",title:"下月新進人員感控訓練（示範排程）",pathogen:"通用",topic:"感控基礎",hours:1,jit:"N",content:"尚未開放的排程課程示範。",required:"必修",media_type:"none",media_url:"",schedule_start:d(14),schedule_end:d(21),credit_mode:"manual",credit_rule:""}
+      {id:"C1",title:"個人防護裝備穿脫（示範影片）",pathogen:"通用",topic:"感染管制",hours:1,jit:"Y",content:"示範教材，僅供操作展示，不作為臨床指示。",required:"必修",media_type:"mp4",media_url:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80,code:"DEMO-001",unit:"感染管制中心",method:"線上"},
+      {id:"C2",title:"N95 密合度測試說明（示範 HLS）",pathogen:"呼吸道",topic:"感染管制",hours:2,jit:"Y",content:"示範教材，僅供操作展示。",required:"選修",media_type:"hls",media_url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80,code:"DEMO-002",unit:"感染管制中心",method:"線上"},
+      {id:"C3",title:"下月新進人員感控訓練（示範排程）",pathogen:"通用",topic:"感控基礎",hours:1,jit:"N",content:"尚未開放的排程課程示範。",required:"必修",media_type:"none",media_url:"",schedule_start:d(14),schedule_end:d(21),credit_mode:"manual",credit_rule:"",code:"DEMO-003",unit:"感染管制中心",method:"實體"}
     ],
     Tasks:[{id:"T1",title:"完成課程：個人防護裝備穿脫（示範影片）",assignee:"demo@example.com",due:today(),status:"待完成"}],
-    Records:[],FitTests:[],External:[],
+    Records:[
+      rec(1,"demo@example.com","DEMO-R01","示範課程：結核病防治概論","感染管制中心","感染管制","線上",1,y+"-03-10","合格"),
+      rec(2,"demo@example.com","DEMO-R02","示範課程：新興傳染病應變","感染管制中心","感染管制","線上",1,y+"-04-02","合格"),
+      rec(3,"demo@example.com","DEMO-R03","示範課程：行政中立宣導","呼吸治療科","行政中立","實體",2,y+"-05-15","合格"),
+      rec(4,"demo@example.com","DEMO-R04","示範課程：性別主流化","人事室","性別主流","線上",1,y+"-06-01","已選課"),
+      rec(5,"nurse2@example.com","DEMO-R05","示範課程：結核病防治概論","感染管制中心","感染管制","線上",1,y+"-03-12","合格"),
+      rec(6,"nurse2@example.com","DEMO-R06","示範課程：危機處理","總務室","危機處理","實體",2,y+"-07-08","合格")],
+    FitTests:[],External:[],
     News:[{id:"N1",type:"alert",title:"示範：流感活動度提升",level:"黃",date:today(),body:"虛構資料，尚未串接官方疫情來源。"},
           {id:"N2",type:"announce",title:"示範：本月訓練場次公告",level:"",date:today(),body:"虛構公告。"}],
     Consents:[],Surveys:[],Attendance:[]
   };
 }
+window.resetDemo = ()=>{ if(confirm("清除示範資料並重設為預設內容？")){ localStorage.removeItem("hcid_demo_db"); location.reload(); } };
 async function loadAll(){
   if (DEMO){
     try{ DB = JSON.parse(localStorage.getItem("hcid_demo_db")) || demoSeed(); }catch(e){ DB = demoSeed(); }
@@ -183,7 +220,7 @@ async function uploadFile(f){
   const j = await post({action:"upload", filename:f.name, mime:f.type||"application/octet-stream", data});
   return j.url;
 }
-function toast(m){ const t=$("#toast"); t.textContent=m; t.style.display="block"; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display="none",2600); }
+function toast(m){ const t=$("#toast"); t.textContent=m; t.style.display="block"; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display="none",3200); }
 
 /* ---------- 使用者 ---------- */
 function initUser(){
@@ -192,17 +229,19 @@ function initUser(){
   setUser(e);
 }
 function setUser(e){
-  const m = (DB.Members||[]).find(x => String(x.email).toLowerCase() === e);
+  const m = (DB.Members||[]).find(x => eq(x.email, e));
   user = {email:e, name: m?.name || e.split("@")[0], role: m?.role || "學員"};
   $("#who").textContent = `${user.email} · ${user.role}`;
+  $("#navProfile").textContent = isAdmin() ? "學員名單管理" : "個人學習履歷";
 }
-function changeUser(){ localStorage.removeItem("hcid_user"); initUser(); route(); }
+function changeUser(){ localStorage.removeItem("hcid_user"); tabState.pm = null; initUser(); route(); }
 const isAdmin = () => CONFIG.ADMIN_ROLES.includes(user.role);
+const viewEmail = () => (isAdmin() && tabState.pm) ? tabState.pm : user.email;
 
 /* ---------- 共用元件 ---------- */
 function head(title, sub){
   return `<h1>${title}</h1><p class="sub">${sub}</p>` +
-    (DEMO ? `<div class="banner">建置展示版：示範資料均為虛構，存在本機瀏覽器；尚未串接院內帳號、手機推播與官方疫情來源。</div>` : "");
+    (DEMO ? `<div class="banner">建置展示版：示範資料均為虛構，存在本機瀏覽器；尚未串接院內帳號、手機推播與官方疫情來源。 <a href="#" onclick="resetDemo();return false">重設示範資料</a></div>` : "");
 }
 function table(cols, rows, empty="目前沒有資料"){
   if(!rows.length) return `<div class="empty">${empty}</div>`;
@@ -215,21 +254,61 @@ function tabs(id, items, def){
 }
 function setTab(id,k){ tabState[id]=k; route(); }
 function curTab(id, def){ return tabState[id] || def; }
-function field(id,label,type="text",ph="",value=""){ return `<div><label>${label}</label><input id="${id}" type="${type}" placeholder="${esc(ph)}" value="${esc(value)}"></div>`; }
-const opts = (list,cur) => list.map(([v,l])=>`<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`).join("");
+function field(id,label,type="text",ph="",value="",extra=""){ return `<div><label>${label}</label><input id="${id}" type="${type}" placeholder="${esc(ph)}" value="${esc(value)}" ${extra}></div>`; }
+const opts = (list,cur) => list.map(x=>{ const [v,l] = Array.isArray(x)?x:[x,x]; return `<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`; }).join("");
 const val = id => $("#"+id).value.trim();
 async function submit(fn){ try{ await fn(); route(); }catch(e){ toast("失敗：" + e.message); } }
-
-/* ---------- 統計 ---------- */
-function hoursOf(email){
-  const a = DB.Records.filter(r=>r.email===email).reduce((s,r)=>s+Number(r.hours||0),0);
-  const b = DB.External.filter(r=>r.email===email).reduce((s,r)=>s+Number(r.hours||0),0);
-  return a+b;
+function act0(fn){ return (...a) => submit(() => fn(...a)); }
+const act = act0;
+function downloadText(name, text, type="text/csv"){
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff"+text],{type})); a.download = name; a.click();
 }
+const csvLine = arr => arr.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",");
+function parseCSV(text){
+  const rows=[]; let row=[], cur="", q=false; text = text.replace(/^\ufeff/,"");
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){ if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else if(ch==='"') q=true;
+    else if(ch===","){ row.push(cur); cur=""; }
+    else if(ch==="\n"||ch==="\r"){ if(ch==="\r"&&text[i+1]==="\n") i++; row.push(cur); cur=""; if(row.some(c=>c.trim()!=="")) rows.push(row); row=[]; }
+    else cur+=ch;
+  }
+  row.push(cur); if(row.some(c=>c.trim()!=="")) rows.push(row);
+  return rows;
+}
+
+/* ---------- 時數統計（以「年度」計；同一課程只取最佳狀態） ---------- */
+const STATUS_RANK = {"合格":3,"已選課":2,"未完成":1};
+const stOf = r => r.status || "合格";
+const stCls = s => ({"合格":"ok","已選課":"enr","未完成":"no"}[s] || "no");
+const stTag = s => `<span class="tag ${({"合格":"green","已選課":"yellow","未完成":"gray"})[s]||"gray"}">${esc(s)}</span>`;
+function effRecords(email, year){
+  const rows = DB.Records.filter(r => eq(r.email,email) && (!year || !yearOf(r.date) || yearOf(r.date)===year));
+  const byCourse = {}, out = [];
+  rows.forEach(r=>{
+    if(!r.course_id){ out.push(r); return; }
+    const cur = byCourse[r.course_id];
+    if(!cur || (STATUS_RANK[stOf(r)]||0) > (STATUS_RANK[stOf(cur)]||0)) byCourse[r.course_id] = r;
+  });
+  return out.concat(Object.values(byCourse));
+}
+const sumH = rows => rows.reduce((s,r)=>s+Number(r.hours||0),0);
+function extOf(email, year){ return DB.External.filter(r=>eq(r.email,email) && (!yearOf(r.date) || yearOf(r.date)===year)); }
+function hoursOf(email, year=curYear()){
+  return sumH(effRecords(email,year).filter(r=>stOf(r)==="合格")) + sumH(extOf(email,year));
+}
+const isActive = m => m.active !== "N";
 function stats(){
-  const members = DB.Members, ok = members.filter(m => hoursOf(m.email) >= CONFIG.ANNUAL_TARGET).length;
+  const members = DB.Members.filter(isActive), ok = members.filter(m => hoursOf(m.email) >= CONFIG.ANNUAL_TARGET).length;
   return {members:members.length, ok, pct: members.length ? Math.round(ok/members.length*100) : 0,
     courses: DB.Courses.length, openTasks: DB.Tasks.filter(t=>t.status!=="已完成").length, fits: DB.FitTests.length};
+}
+function yearOptions(email){
+  const ys = new Set([curYear()]);
+  DB.Records.filter(r=>!email||eq(r.email,email)).forEach(r=>{ const y=yearOf(r.date); if(y) ys.add(y); });
+  DB.External.filter(r=>!email||eq(r.email,email)).forEach(r=>{ const y=yearOf(r.date); if(y) ys.add(y); });
+  return [...ys].sort((a,b)=>b-a);
 }
 
 /* ---------- 教材：網址處理 ---------- */
@@ -244,7 +323,7 @@ function embedUrl(c){
   if(c.media_type === "ppt") return "https://view.officeapps.live.com/op/embed.aspx?src=" + encodeURIComponent(u);
   return u;
 }
-/* video：可精準追蹤觀看秒數；dwell：以頁面停留時間計算（PDF/PPT/iframe/YouTube/Drive 預覽）；none：無教材 */
+/* video：可精準追蹤觀看秒數；dwell：以頁面停留時間計算；none：無教材 */
 function playKind(c){
   if(!c.media_type || c.media_type==="none") return "none";
   const u = safeUrl(c.media_url);
@@ -269,11 +348,20 @@ const schedTag = c => { const [l,k] = SCHED[schedState(c)]; return `<span class=
 const schedText = c => (c.schedule_start||c.schedule_end) ? `${fmtDT(c.schedule_start)||"即日起"} ～ ${fmtDT(c.schedule_end)||"不限"}` : "不限時間";
 const canOpen = c => isAdmin() || c.jit==="Y" || schedState(c)==="open";
 
-/* ---------- 學習進度與自動學分 ---------- */
+/* ---------- 學習進度、選課與自動學分 ---------- */
 const progKey = cid => `hcid_prog_${user.email}_${cid}`;
 function getProg(cid){ try{ return JSON.parse(localStorage.getItem(progKey(cid))) || {sec:0,dur:0}; }catch(e){ return {sec:0,dur:0}; } }
 function saveProg(cid,p){ try{ localStorage.setItem(progKey(cid), JSON.stringify(p)); }catch(e){} }
-const hasCredit = cid => DB.Records.some(r => r.email===user.email && r.course_id===cid);
+const hasCredit = cid => DB.Records.some(r => eq(r.email,user.email) && r.course_id===cid && stOf(r)==="合格");
+function recFromCourse(c, status, email){
+  return {id:"R"+uid(), email, course_id:c.id, code:c.code||"", course_title:c.title, unit:c.unit||"", topic:c.topic||"", method:c.method||"線上",
+    hours:c.hours, date:today(), status, category:c.required||"選修"};
+}
+async function ensureEnrolled(c){
+  if(isAdmin()) return;
+  if(DB.Records.some(r => eq(r.email,user.email) && r.course_id===c.id)) return;
+  try{ await addRow("Records", recFromCourse(c,"已選課",user.email)); }catch(e){}
+}
 function progPct(c){
   const p = getProg(c.id), kind = playKind(c);
   if(kind==="video") return p.dur ? Math.min(100, Math.round(p.sec/p.dur*100)) : 0;
@@ -305,9 +393,9 @@ async function awardCredit(c){
   if(hasCredit(c.id) || T.awarding) return;
   T.awarding = true;
   try{
-    await addRow("Records",{email:user.email,course_id:c.id,course_title:c.title,hours:c.hours,date:today(),category:c.required||"選修"});
+    await addRow("Records", recFromCourse(c,"合格",user.email));   // 同課程取最佳狀態，合格會覆蓋「已選課」
     const tt = "完成課程：" + c.title;
-    for(const t of DB.Tasks.filter(t=>t.assignee===user.email && t.title===tt && t.status!=="已完成")){
+    for(const t of DB.Tasks.filter(t=>eq(t.assignee,user.email) && t.title===tt && t.status!=="已完成")){
       try{ await updateRow("Tasks","id",t.id,{status:"已完成"}); }catch(e){}
     }
     toast(`已自動採認 ${c.hours} 小時`);
@@ -317,16 +405,16 @@ async function awardCredit(c){
 function tick(c, seconds, dur){
   const p = getProg(c.id); p.sec += seconds; if(dur) p.dur = dur;
   if(Date.now() - (tick.last||0) > 3000){ saveProg(c.id,p); tick.last = Date.now(); }
-  else { try{ sessionStorage.setItem("hcid_tmp_"+c.id, JSON.stringify(p)); }catch(e){} saveProgSoon(c.id,p); }
+  else { clearTimeout(tick.t); tick.t = setTimeout(()=>saveProg(c.id,p), 3000); }
   updateProgressUI(c);
   if(c.credit_mode !== "manual" && !hasCredit(c.id) && reached(c)){ saveProg(c.id,p); awardCredit(c); }
 }
-function saveProgSoon(cid,p){ clearTimeout(saveProgSoon.t); saveProgSoon.t = setTimeout(()=>saveProg(cid,p), 3000); }
 function initCourse(){
   const c = DB.Courses.find(x => x.id === tabState.cid);
   if(!c || !canOpen(c)) return;
   const kind = playKind(c);
   updateProgressUI(c);
+  ensureEnrolled(c);
   if(kind === "video"){
     const v = $("#player"), url = safeUrl(c.media_url); let last = null;
     if(c.media_type === "hls" && !v.canPlayType("application/vnd.apple.mpegurl")){
@@ -391,13 +479,13 @@ const VIEWS = {
       const rows = DB.Courses.filter(c => !q || JSON.stringify(c).toLowerCase().includes(q));
       body = `<div class="card"><input id="cq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.cq||"")}" oninput="tabState.cq=this.value;route(true)">
       <div style="height:10px"></div>` + table([
-        ["課程",r=>`<b>${esc(r.title)}</b><div class="hint">${esc(r.pathogen)} · ${esc(r.topic)}${r.jit==="Y"?" · 即時訓練":""}</div>`],
-        ["教材",r=>`<span class="tag">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span>`],
+        ["課程",r=>`<b>${esc(r.title)}</b><div class="hint">${esc(r.code?r.code+" · ":"")}${esc(r.unit?r.unit+" · ":"")}${esc(r.pathogen)} · ${esc(r.topic)}${r.jit==="Y"?" · 即時訓練":""}</div>`],
+        ["教材",r=>`<span class="tag">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span><div class="hint">${esc(r.method||"")}</div>`],
         ["排程",r=>`${schedTag(r)}<div class="hint">${esc(schedText(r))}</div>`],
         ["類別 / 學分",r=>`${esc(r.required||"選修")} · ${esc(r.hours)} 小時<div class="hint">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
-        [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id).length+" 人"
+        [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id && stOf(x)==="合格").length+" 人"
             : (hasCredit(r.id)?`<span class="tag green">已採認</span>`:(progPct(r)?`<span class="tag yellow">${progPct(r)}%</span>`:`<span class="tag">未開始</span>`))],
-        ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="ghost sm" style="color:var(--red);border-color:var(--red)" onclick="deleteCourse('${esc(r.id)}')">刪除</button>`:"")]
+        ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="danger sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button>`:"")]
       ], rows, "沒有符合的課程或教材") + `</div>`;
     }
     if(t==="sched"){
@@ -414,7 +502,7 @@ const VIEWS = {
     const c = DB.Courses.find(x => x.id === tabState.cid);
     const back = `<p><a href="#courses">← 返回課程列表</a></p>`;
     if(!c) return head("課程","找不到此課程") + back + `<div class="empty">課程不存在或已被移除</div>`;
-    if(!canOpen(c)) return head(c.title,"目前無法開啟") + back + `<div class="card empty">${schedTag(c)}<br><br>開放時間：${esc(schedText(c))}</div>`;
+    if(!canOpen(c)) return head(esc(c.title),"目前無法開啟") + back + `<div class="card empty">${schedTag(c)}<br><br>開放時間：${esc(schedText(c))}</div>`;
     const kind = playKind(c), emb = embedUrl(c), raw = safeUrl(extractSrc(c.media_url));
     let media = "";
     if(kind==="video") media = `<video id="player" class="player" controls playsinline controlsList="nodownload"></video>`;
@@ -449,7 +537,7 @@ const VIEWS = {
   },
 
   tasks(){
-    const mine = isAdmin() ? DB.Tasks : DB.Tasks.filter(t=>t.assignee===user.email);
+    const mine = isAdmin() ? DB.Tasks : DB.Tasks.filter(t=>eq(t.assignee,user.email));
     const reminders = mine.filter(t=>t.status!=="已完成" && t.due && t.due <= today());
     const t = curTab("tt","assign");
     return head("任務與通知","依授權範圍管理與查閱資料。") + tabs("tt",[["assign","任務指派"],["remind",`站內提醒 ${reminders.length}`]],"assign") +
@@ -462,20 +550,8 @@ const VIEWS = {
   },
 
   profile(){
-    const h = hoursOf(user.email), pct = Math.min(100, Math.round(h/CONFIG.ANNUAL_TARGET*100));
-    const t = curTab("pt","rec");
-    const rec = DB.Records.filter(r=>r.email===user.email), fit = DB.FitTests.filter(r=>r.email===user.email), ext = DB.External.filter(r=>r.email===user.email);
-    return head("個人學習履歷","集中查看你的課程、時數與防護裝備紀錄。") + `
-    <div class="card sp"><div><b>${esc(user.name)}</b><div class="sub" style="margin:0">${esc(user.email)} · ${esc(user.role)}</div></div>
-      <div style="min-width:220px"><div><b style="font-size:22px">${h} / ${CONFIG.ANNUAL_TARGET} 小時</b></div><div class="bar"><i style="width:${pct}%"></i></div>
-      <small style="color:var(--mute)">本年度已採認時數 · 必修與選修</small></div>
-      <button class="ghost" onclick="downloadCSV()">下載履歷</button></div><div style="height:12px"></div>` +
-    tabs("pt",[["rec","修課紀錄"],["fit","N95 密合度"],["ext","外部訓練佐證"]],"rec") + `<div class="card">` +
-    (t==="rec" ? table([["課程",r=>esc(r.course_title)],["時數",r=>esc(r.hours)],["日期",r=>esc(r.date)],["類別",r=>esc(r.category)]],rec,"尚無修課紀錄") :
-     t==="fit" ? table([["日期",r=>esc(r.date)],["型號",r=>esc(r.model)],["結果",r=>`<span class="tag ${r.result==="通過"?"green":"red"}">${esc(r.result)}</span>`]],fit,"尚無密合度紀錄") +
-       `<div class="row">${field("f_date","測試日期","date")}${field("f_model","N95 型號")}<div><label>結果</label><select id="f_res"><option>通過</option><option>未通過</option></select></div></div><button onclick="addFit()">新增紀錄</button>` :
-       table([["名稱",r=>esc(r.title)],["時數",r=>esc(r.hours)],["日期",r=>esc(r.date)],["備註",r=>esc(r.note)]],ext,"尚無外部佐證") +
-       `<div class="row">${field("e_title","訓練名稱")}${field("e_hours","時數","number")}${field("e_date","日期","date")}${field("e_note","備註 / 證明連結")}</div><button onclick="addExt()">新增佐證</button>`) + `</div>`;
+    if(isAdmin() && !tabState.pm) return rosterView();
+    return memberView();
   },
 
   news(){
@@ -502,7 +578,7 @@ const VIEWS = {
   forms(){
     const t = curTab("ft","consent");
     const consents = ["個人資料蒐集同意書","訓練影像紀錄同意書","N95 密合度測試同意書"];
-    const signed = DB.Consents.filter(c=>c.email===user.email);
+    const signed = DB.Consents.filter(c=>eq(c.email,user.email));
     let body="";
     if(t==="consent") body = table([["同意書",r=>esc(r)],["狀態",r=>{const s=signed.find(x=>x.consent===r);return s?`<span class="tag green">已簽署 ${esc(s.signed_at)}</span>`:`<button class="sm" onclick="sign('${r}')">線上簽署</button>`}]],consents);
     if(t==="survey") body = `<div class="row"><div><label>問卷</label><select id="s_name"><option>課後滿意度</option><option>需求調查</option></select></div>
@@ -515,13 +591,139 @@ const VIEWS = {
   }
 };
 
+/* ---------- 學員名單管理（管理者） ---------- */
+function rosterView(){
+  const t = curTab("rt","list");
+  const tabBtns = `<div class="tabs">
+    <button class="${t==="list"?"on":""}" onclick="setTab('rt','list')">學員名單</button>
+    <button class="${t==="form"?"on":""}" onclick="newMember()">${tabState.em?"編輯學員":"新增學員"}</button>
+    <button class="${t==="import"?"on":""}" onclick="setTab('rt','import')">批次匯入</button></div>`;
+  let body = "";
+  if(t==="list") body = rosterList();
+  if(t==="form") body = memberForm();
+  if(t==="import") body = importForm();
+  return head("學員名單管理","管理學員資料、年度時數與修課紀錄。") + tabBtns + body;
+}
+function rosterList(){
+  const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
+  const q = (tabState.rq||"").toLowerCase(), fu = tabState.ru||"", fr = tabState.rr||"", fs = tabState.rs||"";
+  const all = DB.Members.map(m => ({...m, h: hoursOf(m.email, yr)}));
+  const units = [...new Set(DB.Members.map(m=>m.unit).filter(Boolean))].sort();
+  const rows = all.filter(m =>
+    (!q || [m.name,m.email,m.emp_id,m.job].join(" ").toLowerCase().includes(q)) &&
+    (!fu || m.unit===fu) &&
+    (!fr || (fr==="admin" ? CONFIG.ADMIN_ROLES.includes(m.role) : !CONFIG.ADMIN_ROLES.includes(m.role))) &&
+    (!fs || (fs==="ok" ? m.h>=tgt : m.h<tgt)));
+  const act = all.filter(isActive), okN = act.filter(m=>m.h>=tgt).length, avg = act.length ? (act.reduce((s,m)=>s+m.h,0)/act.length) : 0;
+  return `
+  <div class="grid kpis">
+    <div class="card kpi"><div class="l">學員總數</div><div class="n">${all.length}</div></div>
+    <div class="card kpi"><div class="l">${yr} 年度達標（≥ ${tgt} 小時）</div><div class="n">${okN} / ${act.length}</div></div>
+    <div class="card kpi"><div class="l">達標比例</div><div class="n">${act.length?Math.round(okN/act.length*100):0} %</div></div>
+    <div class="card kpi"><div class="l">平均時數</div><div class="n">${avg.toFixed(1)}</div></div></div>
+  <div class="card">
+    <div class="filters">
+      <input id="rq" placeholder="搜尋姓名、Email、職編、職類" value="${esc(tabState.rq||"")}" oninput="tabState.rq=this.value;route(true)">
+      <select onchange="tabState.ru=this.value;route()"><option value="">全部單位</option>${opts(units,fu)}</select>
+      <select onchange="tabState.rr=this.value;route()">${opts([["","全部角色"],["learner","學員"],["admin","管理者"]],fr)}</select>
+      <select onchange="tabState.rs=this.value;route()">${opts([["","全部達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select>
+      <select onchange="tabState.py=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),yr)}</select></div>
+    <div class="sp"><span class="hint">共 ${rows.length} 位</span><button class="ghost sm" onclick="exportRoster()">匯出名單 CSV</button></div>` +
+    table([
+      ["姓名",r=>`<b>${esc(r.name)}</b><div class="hint">${esc(r.email)}</div>`],
+      ["職編 / 職類",r=>`${esc(r.emp_id)}<div class="hint">${esc(r.job)}</div>`],
+      ["單位",r=>esc(r.unit)],
+      ["角色",r=>`<span class="tag ${CONFIG.ADMIN_ROLES.includes(r.role)?"yellow":""}">${esc(r.role)}</span>`],
+      [`${yr} 年度時數`,r=>`<div style="min-width:130px"><b>${r.h}</b> / ${tgt} 小時<div class="bar"><i style="width:${Math.min(100,r.h/tgt*100)}%"></i></div></div>`],
+      ["狀態",r=>(isActive(r)?"":`<span class="tag gray">停用</span> `)+(r.h>=tgt?`<span class="tag green">已達標</span>`:`<span class="tag yellow">未達標</span>`)],
+      ["",r=>`<button class="sm" onclick="viewMember('${esc(r.email)}')">檢視履歷</button> <button class="ghost sm" onclick="editMember('${esc(r.email)}')">編輯</button>`]
+    ], rows, "沒有符合的學員") + `</div>`;
+}
+function memberForm(){
+  const e = tabState.em ? (DB.Members.find(m=>eq(m.email,tabState.em)) || {}) : {};
+  const editing = !!e.email;
+  return `<div class="card"><div class="sp"><b>${editing?"編輯學員":"新增學員"}</b>${editing?`<button class="ghost sm" onclick="newMember()">改為新增</button>`:""}</div>
+  <div class="row">
+    ${field("m_email","Email（登入帳號）","email","name@hospital.org",e.email,editing?"disabled":"")}
+    ${field("m_name","姓名","text","",e.name)}
+    ${field("m_emp","職編","text","",e.emp_id)}
+    ${field("m_job","職類","text","例：護理師",e.job)}
+    ${field("m_unit","單位","text","",e.unit)}
+    <div><label>角色</label><select id="m_role">${opts([["學員","學員"],["管理者","管理者"]], CONFIG.ADMIN_ROLES.includes(e.role)?"管理者":"學員")}</select></div>
+    <div><label>帳號狀態</label><select id="m_active">${opts([["Y","啟用"],["N","停用（不列入達標統計）"]], e.active==="N"?"N":"Y")}</select></div></div>
+  <button onclick="saveMember()">${editing?"儲存變更":"新增學員"}</button>
+  ${editing?` <button class="danger" onclick="deleteMember('${esc(e.email)}')">刪除學員</button>`:""}</div>`;
+}
+function importForm(){
+  return `<div class="card"><b>批次匯入學員</b>
+  <p class="hint">第一列為欄位名稱，支援：email（或 Email、信箱）、name（姓名）、unit（單位）、role（角色）、emp_id（職編）、job（職類）、active（狀態，N 或「停用」代表停用）。已存在的 Email 會自動略過。</p>
+  <button class="ghost sm" onclick="downloadTemplate()">下載範本</button>
+  <div style="height:10px"></div>
+  <label>貼上 CSV 內容</label><textarea id="m_csv" placeholder="email,name,unit,role,emp_id,job&#10;a@hospital.org,王小明,內科病房,學員,B001,護理師"></textarea>
+  <div class="row"><div><label>或選擇 CSV 檔（優先使用）</label><input id="m_file" type="file" accept=".csv,text/csv"></div></div>
+  <button onclick="importMembers()">開始匯入</button></div>`;
+}
+
+/* ---------- 個人履歷（學員本人 / 管理者檢視學員） ---------- */
+function memberView(){
+  const email = viewEmail(), admin = isAdmin();
+  const m = DB.Members.find(x=>eq(x.email,email)) || {email, name: email.split("@")[0], role:"學員"};
+  const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET, t = curTab("pt","rec");
+  const eff = effRecords(email, yr).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+  const done = hoursOf(email, yr), enr = sumH(eff.filter(r=>stOf(r)==="已選課"));
+  const dp = Math.min(100, done/tgt*100), ep = Math.min(100-dp, enr/tgt*100), rp = Math.max(0, 100-dp-ep);
+  const fit = DB.FitTests.filter(r=>eq(r.email,email)), ext = extOf(email, yr);
+  const back = admin ? `<p><a href="#profile" onclick="backRoster();return false">← 返回學員名單</a></p>` : "";
+  let body = "";
+
+  if(t==="rec"){
+    const groups = {};
+    eff.forEach(r=>{ const k = (r.unit||"未分類單位") + "　>　" + (r.topic||"未分類主題"); (groups[k] = groups[k] || []).push(r); });
+    body = Object.keys(groups).length ? Object.entries(groups).map(([k,list])=>`
+      <details class="grp"><summary><span class="gname">${esc(k)} <small>(${list.length})</small></span><span>${list.map(r=>`<span class="dot ${stCls(stOf(r))}" title="${esc(r.course_title)}：${esc(stOf(r))}"></span>`).join("")}</span></summary>
+      <div class="gbody">${table([
+        ["課程編號",r=>esc(r.code||r.course_id)],["課程名稱",r=>esc(r.course_title)],["開課單位",r=>esc(r.unit)],["上課方式",r=>esc(r.method)],
+        ["時數",r=>esc(r.hours)],["日期",r=>esc(r.date)],["狀態",r=>stTag(stOf(r))],
+        ...(admin?[["",r=>r.id?`<button class="danger sm" onclick="delRecord('${esc(r.id)}')">刪除</button>`:""]]:[])
+      ], list)}</div></details>`).join("") : `<div class="empty">${yr} 年度尚無修課紀錄</div>`;
+    if(admin) body += recordForm();
+  }
+  if(t==="fit") body = table([["日期",r=>esc(r.date)],["型號",r=>esc(r.model)],["結果",r=>`<span class="tag ${r.result==="通過"?"green":"red"}">${esc(r.result)}</span>`]],fit,"尚無密合度紀錄") +
+    `<div class="row">${field("f_date","測試日期","date")}${field("f_model","N95 型號")}<div><label>結果</label><select id="f_res"><option>通過</option><option>未通過</option></select></div></div><button onclick="addFit()">新增紀錄</button>`;
+  if(t==="ext") body = table([["名稱",r=>esc(r.title)],["時數",r=>esc(r.hours)],["日期",r=>esc(r.date)],["備註",r=>esc(r.note)]],ext,`${yr} 年度尚無外部佐證`) +
+    `<div class="row">${field("e_title","訓練名稱")}${field("e_hours","時數","number")}${field("e_date","日期","date")}${field("e_note","備註 / 證明連結")}</div><button onclick="addExt()">新增佐證</button>`;
+
+  return head(admin ? esc(m.name)+" 的學習履歷" : "個人學習履歷", admin ? "檢視並維護此學員的年度時數與修課紀錄。" : "集中查看你的課程、時數與防護裝備紀錄。") + back + `
+  <div class="card sp"><div><b style="font-size:18px">${esc(m.name)}</b><div class="sub" style="margin:0">${esc(m.email)} · ${esc(m.role)}${m.unit?" · "+esc(m.unit):""}${m.emp_id?" · 職編 "+esc(m.emp_id):""}</div></div>
+    <div style="display:flex;gap:8px;align-items:center"><select style="width:auto" onchange="tabState.py=Number(this.value);route()">${opts(yearOptions(email).map(y=>[y,y+" 年度"]),yr)}</select>
+    <button class="ghost" onclick="downloadCSV()">下載履歷</button></div></div>
+  <h2 class="sec">⏳ 整體進度</h2>
+  <div class="card"><div class="seg"><i class="g" style="width:${dp}%"></i><i class="o" style="width:${ep}%"></i></div>
+    <div class="scale">${[10,20,30,40,50,60,70,80,90,100].map(n=>`<span>${n}</span>`).join("")}</div>
+    <div class="legend"><span><i class="sq g"></i>已完成之時數：${Math.round(dp)}%（${done} / ${tgt} 小時）</span><span><i class="sq o"></i>已選課，未完成之時數：${Math.round(ep)}%（${enr} 小時）</span><span><i class="sq n"></i>未完成之時數：${Math.round(rp)}%</span></div>
+    <div class="hint">已完成時數包含合格課程與外部訓練佐證；目標為年度 ${tgt} 小時。</div></div>
+  <h2 class="sec">🕒 課程參與紀錄</h2>` +
+  tabs("pt",[["rec","課程參與紀錄"],["fit","N95 密合度"],["ext","外部訓練佐證"]],"rec") + `<div class="card" style="padding:${t==="rec"?"0 8px 8px":"16px"}">${body}</div>`;
+}
+function recordForm(){
+  return `<div class="fieldset" style="margin:14px 8px 8px"><legend>補登修課紀錄（管理者）</legend><div class="row">
+    <div><label>課程庫（選擇後自動帶入）</label><select id="rc_course"><option value="">（自訂 / 外部課程）</option>${DB.Courses.map(c=>`<option value="${esc(c.id)}">${esc(c.title)}</option>`).join("")}</select></div>
+    ${field("rc_title","課程名稱（自訂時必填）")}${field("rc_code","課程編號")}${field("rc_unit","開課單位")}${field("rc_topic","主題")}
+    <div><label>上課方式</label><select id="rc_method">${opts(METHODS,"實體")}</select></div>
+    ${field("rc_hours","時數","number","",1)}${field("rc_date","日期","date","",today())}
+    <div><label>狀態</label><select id="rc_status">${opts(["合格","已選課","未完成"],"合格")}</select></div></div>
+    <button onclick="addRecord()">新增紀錄</button></div>`;
+}
+
 /* ---------- 課程表單（管理者） ---------- */
 function courseForm(){
   const e = tabState.editId ? (DB.Courses.find(x=>x.id===tabState.editId) || {}) : {};
   const editing = !!e.id;
   return `<div class="card"><div class="sp"><b>${editing?"編輯課程":"新增課程"}（管理者）</b>${editing?`<button class="ghost sm" onclick="newCourse()">改為新增</button>`:""}</div>
   <fieldset class="fieldset"><legend>基本資料</legend><div class="row">
-    ${field("c_title","課程名稱","text","",e.title)}${field("c_path","病原","text","",e.pathogen)}${field("c_topic","主題","text","",e.topic)}
+    ${field("c_title","課程名稱","text","",e.title)}${field("c_code","課程編號","text","",e.code)}${field("c_unit","開課單位","text","",e.unit)}
+    ${field("c_path","病原","text","",e.pathogen)}${field("c_topic","主題","text","",e.topic)}
+    <div><label>上課方式</label><select id="c_method">${opts(METHODS, e.method||"線上")}</select></div>
     ${field("c_hours","學分時數（小時）","number","1",e.hours ?? 1)}
     <div><label>類別</label><select id="c_req">${opts([["必修","必修"],["選修","選修"]], e.required||"選修")}</select></div>
     <div><label>列入即時訓練</label><select id="c_jit">${opts([["Y","是（不受排程限制）"],["N","否"]], e.jit||"N")}</select></div></div>
@@ -542,10 +744,10 @@ function courseForm(){
   <fieldset class="fieldset"><legend>學分採認</legend><div class="row">
     <div><label>採認方式</label><select id="c_cmode">${opts([["auto","自動採認（依學習行為）"],["manual","學員自行標記完成"]], e.credit_mode||"auto")}</select></div>
     ${field("c_rule","達標條件","number","影片：80（%）／其他：10（分鐘）",e.credit_rule)}</div>
-    <div class="hint">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。</div></fieldset>
+    <div class="hint">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。學員第一次開啟課程時會自動記為「已選課」，達標後轉為「合格」。</div></fieldset>
 
   <button onclick="saveCourse()">${editing?"儲存變更":"新增課程"}</button>
-  ${editing?` <button class="ghost" style="color:var(--red);border-color:var(--red)" onclick="deleteCourse('${esc(e.id)}')">刪除此課程</button>`:""}</div>`;
+  ${editing?` <button class="danger" onclick="deleteCourse('${esc(e.id)}')">刪除此課程</button>`:""}</div>`;
 }
 const MEDIA_HINT = {
   none:"純文字教材不需網址。",
@@ -589,13 +791,14 @@ window.saveCourse = act0(async()=>{
   const s = val("c_start"), e = val("c_end");
   if(s && e && new Date(e) <= new Date(s)) throw new Error("截止時間必須晚於開放時間");
   const data = {title:val("c_title"),pathogen:val("c_path"),topic:val("c_topic"),hours:val("c_hours")||0,jit:val("c_jit"),content:val("c_content"),
-    required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:val("c_cmode"),credit_rule:val("c_rule")};
+    required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:val("c_cmode"),credit_rule:val("c_rule"),
+    code:val("c_code"),unit:val("c_unit"),method:val("c_method")};
   if(tabState.editId){
     await updateRow("Courses","id",tabState.editId,data); toast("已儲存變更");
   } else {
     await addRow("Courses",{id:"C"+uid(),...data});
     if($("#c_assign")?.checked){
-      for(const m of DB.Members){
+      for(const m of DB.Members.filter(isActive)){
         await addRow("Tasks",{id:"T"+uid(),title:"完成課程："+data.title,assignee:String(m.email).toLowerCase(),due:(e||"").slice(0,10),status:"待完成"});
       }
     }
@@ -603,18 +806,91 @@ window.saveCourse = act0(async()=>{
   }
   tabState.editId = null; tabState.ct = "list";
 });
-function act0(fn){ return (...a) => submit(() => fn(...a)); }
 
-/* ---------- 動作 ---------- */
-const act = act0;
+/* ---------- 學員管理動作 ---------- */
+const ALIAS = {email:"email","e-mail":"email",信箱:"email",電子郵件:"email",name:"name",姓名:"name",unit:"unit",單位:"unit",role:"role",角色:"role",emp_id:"emp_id",職編:"emp_id",job:"job",職類:"job",active:"active",狀態:"active"};
+function normMember(o){
+  return {email:String(o.email).toLowerCase(), name:o.name || String(o.email).split("@")[0],
+    role: CONFIG.ADMIN_ROLES.includes(o.role) ? o.role : "學員", unit:o.unit||"", emp_id:o.emp_id||"", job:o.job||"",
+    active: /^(n|no|0|false|停用)$/i.test(o.active||"") ? "N" : "Y"};
+}
+window.viewMember = email => { tabState.pm = email; tabState.pt = "rec"; route(); };
+window.backRoster = () => { tabState.pm = null; route(); };
+window.newMember = ()=>{ tabState.em = null; tabState.rt = "form"; route(); };
+window.editMember = email => { tabState.em = email; tabState.rt = "form"; route(); };
+window.saveMember = act0(async()=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const editing = tabState.em, email = (editing || val("m_email")).toLowerCase();
+  if(!/^\S+@\S+\.\S+$/.test(email)) throw new Error("請輸入有效的 Email");
+  if(!val("m_name")) throw new Error("請輸入姓名");
+  const data = {name:val("m_name"),role:val("m_role"),unit:val("m_unit"),emp_id:val("m_emp"),job:val("m_job"),active:val("m_active")};
+  if(editing){
+    await updateRow("Members","email",DB.Members.find(m=>eq(m.email,editing)).email,data); toast("已儲存變更");
+  } else {
+    if(DB.Members.some(m=>eq(m.email,email))) throw new Error("此 Email 已存在");
+    await addRow("Members",normMember({email,...data})); toast("已新增學員");
+  }
+  tabState.em = null; tabState.rt = "list";
+});
+window.deleteMember = act0(async email=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  if(eq(email,user.email)) throw new Error("無法刪除目前登入的帳號");
+  const m = DB.Members.find(x=>eq(x.email,email)); if(!m) return;
+  if(!confirm(`確定要刪除學員「${m.name}」（${m.email}）嗎？\n\n其修課紀錄會保留在資料庫中；若只是離職，建議改為「停用」。\n此動作無法復原。`)) return;
+  await deleteRow("Members","email",m.email);
+  tabState.em = null; tabState.rt = "list"; toast("已刪除學員");
+});
+window.downloadTemplate = ()=> downloadText("學員匯入範本.csv", "email,name,unit,role,emp_id,job,active\nexample@hospital.org,王小明,內科病房,學員,B001,護理師,Y\n");
+window.importMembers = act0(async()=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  let text = val("m_csv"); const f = $("#m_file").files[0]; if(f) text = await f.text();
+  if(!text) throw new Error("請貼上 CSV 內容或選擇檔案");
+  const rows = parseCSV(text), headRow = rows.shift().map(h=>ALIAS[h.trim().toLowerCase()]||"");
+  if(!headRow.includes("email")) throw new Error("找不到 email（Email／信箱）欄位");
+  let added=0, skipped=0, bad=0;
+  for(const r of rows){
+    const o = {}; headRow.forEach((k,i)=>{ if(k) o[k] = (r[i]||"").trim(); });
+    const email = (o.email||"").toLowerCase();
+    if(!/^\S+@\S+\.\S+$/.test(email)){ bad++; continue; }
+    if(DB.Members.some(x=>eq(x.email,email))){ skipped++; continue; }
+    await addRow("Members", normMember({...o,email})); added++;
+  }
+  tabState.rt = "list";
+  toast(`匯入完成：新增 ${added} 位、略過重複 ${skipped} 位、格式錯誤 ${bad} 列`);
+});
+window.exportRoster = ()=>{
+  const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
+  const lines = [csvLine(["姓名","Email","職編","職類","單位","角色","帳號狀態",yr+"年度時數","是否達標"])];
+  DB.Members.forEach(m=>{ const h = hoursOf(m.email,yr); lines.push(csvLine([m.name,m.email,m.emp_id,m.job,m.unit,m.role,isActive(m)?"啟用":"停用",h,h>=tgt?"是":"否"])); });
+  downloadText(`學員名單_${yr}.csv`, lines.join("\n"));
+};
+window.addRecord = act0(async()=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const cid = val("rc_course"), c = DB.Courses.find(x=>x.id===cid) || {};
+  const title = val("rc_title") || c.title;
+  if(!title) throw new Error("請選擇課程或輸入課程名稱");
+  const hours = val("rc_hours") || c.hours || 0;
+  await addRow("Records",{id:"R"+uid(),email:viewEmail(),course_id:cid,code:val("rc_code")||c.code||"",course_title:title,
+    unit:val("rc_unit")||c.unit||"",topic:val("rc_topic")||c.topic||"",method:val("rc_method"),hours,date:val("rc_date")||today(),
+    status:val("rc_status"),category:c.required||"必修"});
+  toast("已新增紀錄");
+});
+window.delRecord = act0(async id=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const r = DB.Records.find(x=>x.id===id); if(!r) return;
+  if(!confirm(`確定要刪除這筆紀錄「${r.course_title}」嗎？`)) return;
+  await deleteRow("Records","id",id); toast("已刪除紀錄");
+});
+
+/* ---------- 其他動作 ---------- */
 window.markDone = async id => { const c = DB.Courses.find(x=>x.id===id); if(c){ await awardCredit(c); } };
 window.addTask = act(async()=>{ if(!val("t_title")||!val("t_who")) throw new Error("請填寫任務與對象");
   await addRow("Tasks",{id:"T"+uid(),title:val("t_title"),assignee:val("t_who").toLowerCase(),due:val("t_due"),status:"待完成"}); toast("已指派"); });
 window.doneTask = act(async id=>{ await updateRow("Tasks","id",id,{status:"已完成"}); toast("已完成"); });
 window.addFit = act(async()=>{ if(!val("f_date")) throw new Error("請選擇日期");
-  await addRow("FitTests",{email:user.email,date:val("f_date"),model:val("f_model"),result:val("f_res")}); toast("已新增"); });
+  await addRow("FitTests",{email:viewEmail(),date:val("f_date"),model:val("f_model"),result:val("f_res")}); toast("已新增"); });
 window.addExt = act(async()=>{ if(!val("e_title")) throw new Error("請輸入訓練名稱");
-  await addRow("External",{email:user.email,title:val("e_title"),hours:val("e_hours")||0,date:val("e_date"),note:val("e_note")}); toast("已新增"); });
+  await addRow("External",{email:viewEmail(),title:val("e_title"),hours:val("e_hours")||0,date:val("e_date")||today(),note:val("e_note")}); toast("已新增"); });
 window.addNews = act(async type=>{ if(!val("n_title")) throw new Error("請輸入標題");
   await addRow("News",{id:"N"+uid(),type,title:val("n_title"),level:type==="alert"?val("n_level"):"",date:today(),body:val("n_body")}); toast("已發布"); });
 window.sign = act(async c=>{ await addRow("Consents",{email:user.email,consent:c,signed_at:today()}); toast("已簽署"); });
@@ -622,17 +898,18 @@ window.addSurvey = act(async()=>{ await addRow("Surveys",{email:user.email,surve
 window.addAtt = act(async()=>{ if(!val("a_date")||!val("a_count")) throw new Error("請填寫日期與人數");
   await addRow("Attendance",{course_id:val("a_course"),date:val("a_date"),count:val("a_count"),reporter:user.email}); toast("已填報"); });
 window.downloadCSV = ()=>{
-  const rows = [["類型","名稱","時數","日期"],
-    ...DB.Records.filter(r=>r.email===user.email).map(r=>["修課",r.course_title,r.hours,r.date]),
-    ...DB.External.filter(r=>r.email===user.email).map(r=>["外部",r.title,r.hours,r.date]),
-    ...DB.FitTests.filter(r=>r.email===user.email).map(r=>["N95密合度",r.model,"",r.date+" "+r.result])];
-  const csv = "\ufeff" + rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
-  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download = "個人學習履歷.csv"; a.click();
+  const email = viewEmail(), yr = Number(tabState.py) || curYear();
+  const m = DB.Members.find(x=>eq(x.email,email)) || {name:email};
+  const lines = [csvLine(["姓名",m.name,"Email",email,"年度",yr]), csvLine(["類型","課程編號","名稱","開課單位","上課方式","時數","日期","狀態"])];
+  effRecords(email,yr).forEach(r=>lines.push(csvLine(["修課",r.code||r.course_id,r.course_title,r.unit,r.method,r.hours,r.date,stOf(r)])));
+  extOf(email,yr).forEach(r=>lines.push(csvLine(["外部","",r.title,"","",r.hours,r.date,"合格"])));
+  DB.FitTests.filter(r=>eq(r.email,email)).forEach(r=>lines.push(csvLine(["N95密合度","",r.model,"","","",r.date,r.result])));
+  downloadText(`學習履歷_${m.name}_${yr}.csv`, lines.join("\n"));
 };
 
 /* ---------- 路由 ---------- */
 function route(keepFocus){
-  clearInterval(T.timer); clearTimeout(saveProgSoon.t);
+  clearInterval(T.timer); clearTimeout(tick.t);
   if(T.hls){ try{T.hls.destroy();}catch(e){} T.hls = null; }
   const [k,arg] = (location.hash||"#overview").slice(1).split("/");
   if(k === "course") tabState.cid = decodeURIComponent(arg||"");
