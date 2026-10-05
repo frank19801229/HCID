@@ -683,9 +683,9 @@ function memberView(){
       <div class="gbody">${table([
         ["課程編號",r=>esc(r.code||r.course_id)],["課程名稱",r=>esc(r.course_title)],["開課單位",r=>esc(r.unit)],["上課方式",r=>esc(r.method)],
         ["時數",r=>esc(r.hours)],["日期",r=>esc(r.date)],["狀態",r=>stTag(stOf(r))],
-        ...(admin?[["",r=>r.id?`<button class="danger sm" onclick="delRecord('${esc(r.id)}')">刪除</button>`:""]]:[])
+        ...(admin?[["",r=>r.id?`<button class="ghost sm" onclick="editRecord('${esc(r.id)}')">編輯</button>`:""]]:[])
       ], list)}</div></details>`).join("") : `<div class="empty">${yr} 年度尚無修課紀錄</div>`;
-    if(admin) body += recordForm();
+    if(admin && tabState.er) body = recordEditForm() + body;
   }
   if(t==="fit") body = table([["日期",r=>esc(r.date)],["型號",r=>esc(r.model)],["結果",r=>`<span class="tag ${r.result==="通過"?"green":"red"}">${esc(r.result)}</span>`]],fit,"尚無密合度紀錄") +
     `<div class="row">${field("f_date","測試日期","date")}${field("f_model","N95 型號")}<div><label>結果</label><select id="f_res"><option>通過</option><option>未通過</option></select></div></div><button onclick="addFit()">新增紀錄</button>`;
@@ -704,14 +704,15 @@ function memberView(){
   <h2 class="sec">🕒 課程參與紀錄</h2>` +
   tabs("pt",[["rec","課程參與紀錄"],["fit","N95 密合度"],["ext","外部訓練佐證"]],"rec") + `<div class="card" style="padding:${t==="rec"?"0 8px 8px":"16px"}">${body}</div>`;
 }
-function recordForm(){
-  return `<div class="fieldset" style="margin:14px 8px 8px"><legend>補登修課紀錄（管理者）</legend><div class="row">
-    <div><label>課程庫（選擇後自動帶入）</label><select id="rc_course"><option value="">（自訂 / 外部課程）</option>${DB.Courses.map(c=>`<option value="${esc(c.id)}">${esc(c.title)}</option>`).join("")}</select></div>
-    ${field("rc_title","課程名稱（自訂時必填）")}${field("rc_code","課程編號")}${field("rc_unit","開課單位")}${field("rc_topic","主題")}
-    <div><label>上課方式</label><select id="rc_method">${opts(METHODS,"實體")}</select></div>
-    ${field("rc_hours","時數","number","",1)}${field("rc_date","日期","date","",today())}
-    <div><label>狀態</label><select id="rc_status">${opts(["合格","已選課","未完成"],"合格")}</select></div></div>
-    <button onclick="addRecord()">新增紀錄</button></div>`;
+function recordEditForm(){
+  const r = DB.Records.find(x=>x.id===tabState.er);
+  if(!r) return "";
+  return `<div id="rc_edit" class="fieldset" style="margin:14px 8px 8px"><legend>編輯修課紀錄（管理者）</legend><div class="row">
+    ${field("rc_title","課程名稱","text","",r.course_title)}${field("rc_code","課程編號","text","",r.code||r.course_id)}${field("rc_unit","開課單位","text","",r.unit)}${field("rc_topic","主題","text","",r.topic)}
+    <div><label>上課方式</label><select id="rc_method">${opts(METHODS,r.method||"實體")}</select></div>
+    ${field("rc_hours","時數","number","",r.hours)}${field("rc_date","日期","date","",r.date)}
+    <div><label>狀態</label><select id="rc_status">${opts(["合格","已選課","未完成"],stOf(r))}</select></div></div>
+    <button onclick="saveRecord()">儲存變更</button> <button class="ghost" onclick="cancelRecordEdit()">取消</button></div>`;
 }
 
 /* ---------- 課程表單（管理者） ---------- */
@@ -813,8 +814,8 @@ function normMember(o){
     role: CONFIG.ADMIN_ROLES.includes(o.role) ? o.role : "學員", unit:o.unit||"", emp_id:o.emp_id||"", job:o.job||"",
     active: /^(n|no|0|false|停用)$/i.test(o.active||"") ? "N" : "Y"};
 }
-window.viewMember = email => { tabState.pm = email; tabState.pt = "rec"; route(); };
-window.backRoster = () => { tabState.pm = null; route(); };
+window.viewMember = email => { tabState.pm = email; tabState.er = null; tabState.pt = "rec"; route(); };
+window.backRoster = () => { tabState.pm = null; tabState.er = null; route(); };
 window.newMember = ()=>{ tabState.em = null; tabState.rt = "form"; route(); };
 window.editMember = email => { tabState.em = email; tabState.rt = "form"; route(); };
 window.saveMember = act0(async()=>{
@@ -863,22 +864,18 @@ window.exportRoster = ()=>{
   DB.Members.forEach(m=>{ const h = hoursOf(m.email,yr); lines.push(csvLine([m.name,m.email,m.emp_id,m.job,m.unit,m.role,isActive(m)?"啟用":"停用",h,h>=tgt?"是":"否"])); });
   downloadText(`學員名單_${yr}.csv`, lines.join("\n"));
 };
-window.addRecord = act0(async()=>{
+window.editRecord = id => { if(!isAdmin()) return; tabState.er = id; route(); setTimeout(()=>{ const el=document.getElementById("rc_edit"); if(el) el.scrollIntoView({behavior:"smooth",block:"center"}); },0); };
+window.cancelRecordEdit = () => { tabState.er = null; route(); };
+window.saveRecord = act0(async()=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
-  const cid = val("rc_course"), c = DB.Courses.find(x=>x.id===cid) || {};
-  const title = val("rc_title") || c.title;
-  if(!title) throw new Error("請選擇課程或輸入課程名稱");
-  const hours = val("rc_hours") || c.hours || 0;
-  await addRow("Records",{id:"R"+uid(),email:viewEmail(),course_id:cid,code:val("rc_code")||c.code||"",course_title:title,
-    unit:val("rc_unit")||c.unit||"",topic:val("rc_topic")||c.topic||"",method:val("rc_method"),hours,date:val("rc_date")||today(),
-    status:val("rc_status"),category:c.required||"必修"});
-  toast("已新增紀錄");
-});
-window.delRecord = act0(async id=>{
-  if(!isAdmin()) throw new Error("僅管理者可操作");
-  const r = DB.Records.find(x=>x.id===id); if(!r) return;
-  if(!confirm(`確定要刪除這筆紀錄「${r.course_title}」嗎？`)) return;
-  await deleteRow("Records","id",id); toast("已刪除紀錄");
+  const id = tabState.er, r = DB.Records.find(x=>x.id===id);
+  if(!r) throw new Error("找不到這筆紀錄");
+  const title = val("rc_title");
+  if(!title) throw new Error("請輸入課程名稱");
+  await updateRow("Records","id",id,{course_title:title,code:val("rc_code"),unit:val("rc_unit"),topic:val("rc_topic"),
+    method:val("rc_method"),hours:val("rc_hours")||0,date:val("rc_date")||today(),status:val("rc_status")});
+  tabState.er = null;
+  toast("已更新紀錄");
 });
 
 /* ---------- 其他動作 ---------- */
