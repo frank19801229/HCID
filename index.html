@@ -94,7 +94,6 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
   <a href="#tasks">任務與通知</a>
   <a href="#profile" id="navProfile">個人學習履歷</a>
   <a href="#news">疫情與公告</a>
-  <a href="#knowledge">知識檢索</a>
   <a href="#forms">同意書與問卷</a>
 </aside>
 <main>
@@ -570,16 +569,6 @@ const VIEWS = {
     (isAdmin()?`<div class="card" style="margin-top:14px"><b>發布訊息（管理者）</b><div class="row">${field("n_title","標題")}
       <div><label>燈號（僅疫情）</label><select id="n_level"><option value="">—</option><option>綠</option><option>黃</option><option>紅</option></select></div></div>
       <label>內容</label><textarea id="n_body"></textarea><br><br><button onclick="addNews('${t}')">發布</button></div>`:"");
-  },
-
-  knowledge(){
-    const q = (tabState.kq||"").toLowerCase();
-    const hits = q ? [
-      ...DB.Courses.filter(c=>JSON.stringify(c).toLowerCase().includes(q)).map(c=>({kind:"課程",title:c.title,body:c.content,link:`#course/${c.id}`})),
-      ...DB.News.filter(n=>JSON.stringify(n).toLowerCase().includes(q)).map(n=>({kind:n.type==="alert"?"疫情":"公告",title:n.title,body:n.body}))] : [];
-    return head("知識檢索","依授權範圍管理與查閱資料。") + `<div class="card">
-    <input id="kq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.kq||"")}" oninput="tabState.kq=this.value;route(true)">
-    <div style="height:10px"></div>${hits.length ? hits.map(h=>`<div class="card" style="margin-bottom:8px"><span class="tag">${h.kind}</span> <b>${h.link?`<a href="${esc(h.link)}">${esc(h.title)}</a>`:esc(h.title)}</b><p>${esc(h.body)}</p></div>`).join("") : `<div class="empty">沒有符合的課程或教材</div>`}</div>`;
   },
 
   forms(){
