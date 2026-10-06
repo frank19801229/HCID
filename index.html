@@ -656,8 +656,10 @@
             const rec = (i, email, code, title, unit, topic, method, hours, date, status) => ({ id: "R" + i, email, course_id: "", code, course_title: title, unit, topic, method, hours, date, status, category: "必修" });
             return {
                 Members: [
-                    { email: "demo@example.com", name: "示範學員", role: "一般學員", unit: "呼吸治療科", emp_id: "A001", job: "呼吸治療師", active: "Y" },
-                    { email: "nurse2@example.com", name: "示範護理師", role: "觀察員", unit: "內科病房", emp_id: "A002", job: "護理師", active: "Y" },
+                    { email: "demo@example.com", name: "示範學員", role: "學員", unit: "呼吸治療科", emp_id: "A001", job: "呼吸治療師", active: "Y" },
+                    { email: "nurse2@example.com", name: "示範護理師", role: "學員", unit: "內科病房", emp_id: "A002", job: "護理師", active: "Y" },
+                    { email: "nurse3@example.com", name: "示範新進人員", role: "學員", unit: "內科病房", emp_id: "A003", job: "護理師", active: "Y" },
+                    { email: "admin@example.com", name: "示範管理者", role: "管理者", unit: "感染管制中心", emp_id: "A000", job: "感控師", active: "Y" }],
                 Courses: [
                     { id: "C1", title: "個人防護裝備穿脫（示範影片）", pathogen: "通用", topic: "感染管制", hours: 1, jit: "Y", content: "示範教材，僅供操作展示，不作為臨床指示。", required: "必修", media_type: "mp4", media_url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", schedule_start: d(-1), schedule_end: d(30), credit_mode: "auto", credit_rule: 80, code: "DEMO-001", unit: "感染管制中心", method: "線上" },
                     { id: "C2", title: "N95 密合度測試說明（示範 HLS）", pathogen: "呼吸道", topic: "感染管制", hours: 2, jit: "Y", content: "示範教材，僅供操作展示。", required: "選修", media_type: "hls", media_url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", schedule_start: d(-1), schedule_end: d(30), credit_mode: "auto", credit_rule: 80, code: "DEMO-002", unit: "感染管制中心", method: "線上" },
