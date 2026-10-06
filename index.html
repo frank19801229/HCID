@@ -644,6 +644,10 @@ function rosterView(){
   if(t==="import") body = importForm();
   return head("學員名單管理","管理學員資料、年度時數與修課紀錄。") + tabBtns + body;
 }
+/* 角色：可用選項 = 預設（學員、管理者）+ 資料庫／匯入出現過的所有角色值 */
+function roleList(){
+  return [...new Set(["學員","管理者",...DB.Members.map(m=>String(m.role||"").trim()).filter(Boolean)])];
+}
 function rosterList(){
   const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
   const q = (tabState.rq||"").toLowerCase(), fu = tabState.ru||"", fr = tabState.rr||"", fs = tabState.rs||"";
@@ -652,7 +656,7 @@ function rosterList(){
   const rows = all.filter(m =>
     (!q || [m.name,m.email,m.emp_id,m.job].join(" ").toLowerCase().includes(q)) &&
     (!fu || m.unit===fu) &&
-    (!fr || (fr==="admin" ? CONFIG.ADMIN_ROLES.includes(m.role) : !CONFIG.ADMIN_ROLES.includes(m.role))) &&
+    (!fr || (fr==="admin" ? CONFIG.ADMIN_ROLES.includes(m.role) : fr==="learner" ? !CONFIG.ADMIN_ROLES.includes(m.role) : fr.startsWith("r:") ? (m.role||"學員")===fr.slice(2) : true)) &&
     (!fs || (fs==="ok" ? m.h>=tgt : m.h<tgt)));
   const act = all.filter(isActive), okN = act.filter(m=>m.h>=tgt).length, avg = act.length ? (act.reduce((s,m)=>s+m.h,0)/act.length) : 0;
   return `
@@ -665,7 +669,7 @@ function rosterList(){
     <div class="filters">
       <input id="rq" placeholder="搜尋姓名、Email、職編、職類" value="${esc(tabState.rq||"")}" oninput="tabState.rq=this.value;route(true)">
       <select onchange="tabState.ru=this.value;route()"><option value="">全部單位</option>${opts(units,fu)}</select>
-      <select onchange="tabState.rr=this.value;route()">${opts([["","全部角色"],["learner","學員"],["admin","管理者"]],fr)}</select>
+      <select onchange="tabState.rr=this.value;route()">${opts([["","全部角色"],["learner","一般學員（非管理者）"],["admin","管理者權限"],...roleList().map(r=>["r:"+r,"角色：" + r])],fr)}</select>
       <select onchange="tabState.rs=this.value;route()">${opts([["","全部達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select>
       <select onchange="tabState.py=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),yr)}</select></div>
     <div class="sp"><span class="hint">共 ${rows.length} 位</span><button class="ghost sm" onclick="exportRoster()">匯出名單 CSV</button></div>` +
@@ -688,14 +692,14 @@ function memberForm(){
     ${field("m_emp","職編","text","",e.emp_id)}
     ${field("m_job","職類","text","例：護理師",e.job)}
     ${field("m_unit","單位","text","",e.unit)}
-    <div><label>角色</label><select id="m_role">${opts([["學員","學員"],["管理者","管理者"]], CONFIG.ADMIN_ROLES.includes(e.role)?"管理者":"學員")}</select></div>
+    <div><label>角色</label><select id="m_role">${opts(roleList().map(r=>[r,r]), e.role||"學員")}</select></div>
     <div><label>帳號狀態</label><select id="m_active">${opts([["Y","啟用"],["N","停用（不列入達標統計）"]], e.active==="N"?"N":"Y")}</select></div></div>
   <button onclick="saveMember()">${editing?"儲存變更":"新增學員"}</button>
   ${editing?` <button class="danger" onclick="deleteMember('${esc(e.email)}')">刪除學員</button>`:""}</div>`;
 }
 function importForm(){
   return `<div class="card"><b>批次匯入學員</b>
-  <p class="hint">第一列為欄位名稱，支援：email（或 Email、信箱）、name（姓名）、unit（單位）、role（角色）、emp_id（職編）、job（職類）、active（狀態，N 或「停用」代表停用）、class_id（課程編號）、class_name（課程名稱）、class_host（開課單位）、class_way（上課方式）、class_t（時數）、class_d（日期）、class_tag（狀態：合格／已選課／未完成）。已存在的 Email 不會重複新增學員；有填課程欄位時，會為該學員新增修課紀錄。</p>
+  <p class="hint">第一列為欄位名稱，支援：email（或 Email、信箱）、name（姓名）、unit（單位）、role（角色，原樣寫入並顯示於名單「角色」欄；留空為「學員」；管理者／管理員／admin 具管理權限）、emp_id（職編）、job（職類）、active（狀態，N 或「停用」代表停用）、class_id（課程編號）、class_name（課程名稱）、class_host（開課單位）、class_way（上課方式）、class_t（時數）、class_d（日期）、class_tag（狀態：合格／已選課／未完成）。已存在的 Email 不會重複新增學員（但若有填 role 會更新其角色）；有填課程欄位時，會為該學員新增修課紀錄。</p>
   <button class="ghost sm" onclick="downloadTemplate()">下載範本</button>
   <div style="height:10px"></div>
   <label>貼上 CSV 內容</label><textarea id="m_csv" placeholder="email,name,unit,role,emp_id,job,active,class_id,class_name,class_host,class_way,class_t,class_d,class_tag&#10;a@hospital.org,王小明,內科病房,學員,B001,護理師,Y,DEMO-001,個人防護裝備穿脫,感染管制中心,線上,1,2026-01-15,合格"></textarea>
@@ -838,7 +842,7 @@ window.saveCourse = act0(async()=>{
 const ALIAS = {email:"email","e-mail":"email",信箱:"email",電子郵件:"email",name:"name",姓名:"name",unit:"unit",單位:"unit",role:"role",角色:"role",emp_id:"emp_id",職編:"emp_id",job:"job",職類:"job",active:"active",狀態:"active",class_id:"class_id",課程編號:"class_id",class_name:"class_name",課程名稱:"class_name",class_host:"class_host",開課單位:"class_host",class_way:"class_way",上課方式:"class_way",class_t:"class_t",時數:"class_t",class_d:"class_d",日期:"class_d",class_tag:"class_tag"};
 function normMember(o){
   return {email:String(o.email).toLowerCase(), name:o.name || String(o.email).split("@")[0],
-    role: CONFIG.ADMIN_ROLES.includes(o.role) ? o.role : "學員", unit:o.unit||"", emp_id:o.emp_id||"", job:o.job||"",
+    role: String(o.role||"").trim() || "學員", unit:o.unit||"", emp_id:o.emp_id||"", job:o.job||"",
     active: /^(n|no|0|false|停用)$/i.test(o.active||"") ? "N" : "Y"};
 }
 window.viewMember = email => { tabState.pm = email; tabState.pt = "rec"; route(); };
@@ -874,13 +878,17 @@ window.importMembers = act0(async()=>{
   if(!text) throw new Error("請貼上 CSV 內容或選擇檔案");
   const rows = parseCSV(text), headRow = rows.shift().map(h=>ALIAS[h.trim().toLowerCase()]||"");
   if(!headRow.includes("email")) throw new Error("找不到 email（Email／信箱）欄位");
-  let added=0, skipped=0, bad=0, recAdded=0, recSkipped=0;
+  let added=0, skipped=0, bad=0, recAdded=0, recSkipped=0, roleUpd=0;
   for(const r of rows){
     const o = {}; headRow.forEach((k,i)=>{ if(k) o[k] = (r[i]||"").trim(); });
     const email = (o.email||"").toLowerCase();
     if(!/^\S+@\S+\.\S+$/.test(email)){ bad++; continue; }
-    if(DB.Members.some(x=>eq(x.email,email))) skipped++;
-    else { await addRow("Members", normMember({...o,email})); added++; }
+    const exist = DB.Members.find(x=>eq(x.email,email));
+    if(exist){
+      skipped++;
+      // 已存在的學員：若 CSV 有填 role 且與現有不同，更新其角色
+      if(o.role && o.role!==exist.role){ await updateRow("Members","email",exist.email,{role:o.role}); roleUpd++; }
+    } else { await addRow("Members", normMember({...o,email})); added++; }
     // 課程欄位（class_*）：有填課程編號或名稱時，一併建立該學員的修課紀錄
     if(o.class_id || o.class_name){
       const c = DB.Courses.find(x=>x.id===o.class_id || (x.code && x.code===o.class_id)) || {};
@@ -896,7 +904,7 @@ window.importMembers = act0(async()=>{
     }
   }
   tabState.rt = "list";
-  toast(`匯入完成：新增 ${added} 位、略過重複 ${skipped} 位、格式錯誤 ${bad} 列` + (recAdded||recSkipped ? `；修課紀錄新增 ${recAdded} 筆、略過 ${recSkipped} 筆` : ""));
+  toast(`匯入完成：新增 ${added} 位、略過重複 ${skipped} 位、格式錯誤 ${bad} 列` + (roleUpd ? `；更新角色 ${roleUpd} 位` : "") + (recAdded||recSkipped ? `；修課紀錄新增 ${recAdded} 筆、略過 ${recSkipped} 筆` : ""));
 });
 window.exportRoster = ()=>{
   const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
