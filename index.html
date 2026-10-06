@@ -139,6 +139,7 @@ const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const today = () => new Date().toISOString().slice(0,10);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5);
 const fmtDT = s => s ? String(s).replace("T"," ") : "";
+const reqLabel = v => (!v || v==="選修") ? "進階" : v;
 const eq = (a,b) => String(a||"").toLowerCase() === String(b||"").toLowerCase();
 const curYear = () => new Date().getFullYear();
 const yearOf = d => { const m = String(d||"").match(/^(\d{4})/); return m ? Number(m[1]) : null; };
@@ -158,7 +159,7 @@ function demoSeed(){
       {email:"admin@example.com",name:"示範管理者",role:"管理者",unit:"感染管制中心",emp_id:"A000",job:"感控師",active:"Y"}],
     Courses:[
       {id:"C1",title:"個人防護裝備穿脫（示範影片）",pathogen:"通用",topic:"感染管制",hours:1,jit:"Y",content:"示範教材，僅供操作展示，不作為臨床指示。",required:"必修",media_type:"mp4",media_url:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80,code:"DEMO-001",unit:"感染管制中心",method:"線上"},
-      {id:"C2",title:"N95 密合度測試說明（示範 HLS）",pathogen:"呼吸道",topic:"感染管制",hours:2,jit:"Y",content:"示範教材，僅供操作展示。",required:"選修",media_type:"hls",media_url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80,code:"DEMO-002",unit:"感染管制中心",method:"線上"},
+      {id:"C2",title:"N95 密合度測試說明（示範 HLS）",pathogen:"呼吸道",topic:"感染管制",hours:2,jit:"Y",content:"示範教材，僅供操作展示。",required:"進階",media_type:"hls",media_url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80,code:"DEMO-002",unit:"感染管制中心",method:"線上"},
       {id:"C3",title:"下月新進人員感控訓練（示範排程）",pathogen:"通用",topic:"感控基礎",hours:1,jit:"N",content:"尚未開放的排程課程示範。",required:"必修",media_type:"none",media_url:"",schedule_start:d(14),schedule_end:d(21),credit_mode:"manual",credit_rule:"",code:"DEMO-003",unit:"感染管制中心",method:"實體"}
     ],
     Tasks:[{id:"T1",title:"完成課程：個人防護裝備穿脫（示範影片）",assignee:"demo@example.com",due:today(),status:"待完成"}],
@@ -364,7 +365,7 @@ function saveProg(cid,p){ try{ localStorage.setItem(progKey(cid), JSON.stringify
 const hasCredit = cid => DB.Records.some(r => eq(r.email,user.email) && r.course_id===cid && stOf(r)==="合格");
 function recFromCourse(c, status, email){
   return {id:"R"+uid(), email, course_id:c.id, code:c.code||"", course_title:c.title, unit:c.unit||"", topic:c.topic||"", method:c.method||"線上",
-    hours:c.hours, date:today(), status, category:c.required||"選修"};
+    hours:c.hours, date:today(), status, category:reqLabel(c.required)};
 }
 async function ensureEnrolled(c){
   if(isAdmin()) return;
@@ -491,7 +492,7 @@ const VIEWS = {
         ["課程",r=>`<b>${esc(r.title)}</b><div class="hint">${esc(r.code?r.code+" · ":"")}${esc(r.unit?r.unit+" · ":"")}${esc(r.pathogen)} · ${esc(r.topic)}${r.jit==="Y"?" · 即時訓練":""}</div>`],
         ["教材",r=>`<span class="tag">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span><div class="hint">${esc(r.method||"")}</div>`],
         ["排程",r=>`${schedTag(r)}<div class="hint">${esc(schedText(r))}</div>`],
-        ["類別 / 學分",r=>`${esc(r.required||"選修")} · ${esc(r.hours)} 小時<div class="hint">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
+        ["類別 / 學分",r=>`${esc(reqLabel(r.required))} · ${esc(r.hours)} 小時<div class="hint">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
         [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id && stOf(x)==="合格").length+" 人"
             : (hasCredit(r.id)?`<span class="tag green">已採認</span>`:(progPct(r)?`<span class="tag yellow">${progPct(r)}%</span>`:`<span class="tag">未開始</span>`))],
         ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="danger sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button>`:"")]
@@ -500,7 +501,7 @@ const VIEWS = {
     if(t==="sched"){
       const rows = [...DB.Courses].sort((a,b)=>String(a.schedule_start||"9999").localeCompare(String(b.schedule_start||"9999")));
       body = `<div class="card">` + table([
-        ["排程時間",r=>esc(schedText(r))],["課程",r=>esc(r.title)],["類別",r=>esc(r.required||"選修")],["時數",r=>esc(r.hours)],["狀態",r=>schedTag(r)]
+        ["排程時間",r=>esc(schedText(r))],["課程",r=>esc(r.title)],["類別",r=>esc(reqLabel(r.required))],["時數",r=>esc(r.hours)],["狀態",r=>schedTag(r)]
       ], rows, "尚無課程排程") + `</div>`;
     }
     if(t==="form" && admin) body = courseForm();
@@ -520,7 +521,7 @@ const VIEWS = {
       media = `<iframe class="frame" src="${esc(emb)}" ${sandbox} allow="fullscreen; autoplay; encrypted-media" allowfullscreen loading="lazy"></iframe>
         <div class="notice">若內容無法顯示（來源網站禁止嵌入），請 <a href="${esc(raw)}" target="_blank" rel="noopener">在新分頁開啟</a>；開啟新分頁期間本頁不會計時。</div>`;
     }
-    return head(esc(c.title), `${esc(c.pathogen)} · ${esc(c.topic)} · ${esc(c.required||"選修")} · ${esc(c.hours)} 小時`) + back + `
+    return head(esc(c.title), `${esc(c.pathogen)} · ${esc(c.topic)} · ${esc(reqLabel(c.required))} · ${esc(c.hours)} 小時`) + back + `
     <div class="card">
       <div class="sp"><div>${schedTag(c)} <span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span> <span class="hint">${esc(schedText(c))}</span></div></div>
       ${c.content?`<p>${esc(c.content)}</p>`:""}
@@ -728,7 +729,7 @@ function courseForm(){
     ${field("c_path","病原","text","",e.pathogen)}${field("c_topic","主題","text","",e.topic)}
     <div><label>上課方式</label><select id="c_method">${opts(METHODS, e.method||"線上")}</select></div>
     ${field("c_hours","學分時數（小時）","number","1",e.hours ?? 1)}
-    <div><label>類別</label><select id="c_req">${opts([["必修","必修"],["選修","選修"]], e.required||"選修")}</select></div>
+    <div><label>類別</label><select id="c_req">${opts([["必修","必修"],["進階","進階"]], reqLabel(e.required))}</select></div>
     <div><label>列入即時訓練</label><select id="c_jit">${opts([["Y","是（不受排程限制）"],["N","否"]], e.jit||"N")}</select></div></div>
     <label>說明 / 文字教材</label><textarea id="c_content">${esc(e.content)}</textarea></fieldset>
 
