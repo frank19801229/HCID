@@ -137,6 +137,7 @@ const TABLES = {
   News:      ["id","type","title","level","date","body"],
   Consents:  ["email","consent","signed_at"],
   Surveys:   ["email","course_id","course_title","survey","answer","time"],
+  QuizResults: ["email","course_id","course_title","score","total","answers","time"],
   SurveyQuestions: ["id","order","text","type","options","required"],
   Attendance:["course_id","date","count","reporter"]
 };
@@ -498,6 +499,28 @@ function quizRow(q){
     <select class="qz_ans">${QUIZ_OPTS.map((o,k)=>`<option value="${k}" ${q.a===k?"selected":""}>正解：${"AB"[k]}. ${o}</option>`).join("")}</select>
     <button type="button" class="danger sm" onclick="this.closest('.qrow').remove()">刪除</button></div>`;
 }
+const lastQuiz = c => (DB.QuizResults||[]).filter(x=>eq(x.email,user.email) && String(x.course_id||"")===String(c.id))
+  .sort((a,b)=>String(b.time).localeCompare(String(a.time)))[0];
+function courseQuizLearner(c){
+  const qs = parseQuiz(c); if(!qs.length) return "";
+  const last = lastQuiz(c), retake = tabState.qzRetake === c.id;
+  const cid = esc(c.id);
+  if(last && !retake){
+    let ans = []; try{ ans = JSON.parse(last.answers||"[]"); }catch(e){}
+    const tries = DB.QuizResults.filter(x=>eq(x.email,user.email) && String(x.course_id||"")===String(c.id)).length;
+    return `<div class="card"><div class="sp"><b>課後測驗</b><span class="tag green">最近成績：${esc(last.score)} / ${esc(last.total)}</span></div>
+      <div class="notice">已作答 ${tries} 次，最近一次：${esc(fmtDT(last.time).slice(0,16))}</div>` +
+      qs.map((q,i)=>{ const a = ans[i]; const ok = a && Number(a.a) === q.a;
+        return `<div class="card" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b>
+          <div class="opt" style="cursor:default;color:${ok?"var(--ok)":"var(--red)"}">${ok?"✓":"✗"} 您的答案：${a?`${"AB"[Number(a.a)]}. ${QUIZ_OPTS[Number(a.a)]}`:"未作答"}</div>
+          ${ok?"":`<div class="opt" style="cursor:default">正確答案：${"AB"[q.a]}. ${QUIZ_OPTS[q.a]}</div>`}</div>`; }).join("") +
+      `<button onclick="retakeQuiz('${cid}')">重新作答</button></div>`;
+  }
+  return `<div class="card"><div class="sp"><b>課後測驗（共 ${qs.length} 題）</b>${last?`<span class="hint">上次成績：${esc(last.score)} / ${esc(last.total)}</span>`:""}</div>` +
+    qs.map((q,i)=>`<div class="card" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b> <span class="req">*</span>
+      ${QUIZ_OPTS.map((o,k)=>`<label class="opt"><input type="radio" name="qz_${i}" value="${k}"> ${"AB"[k]}. ${o}</label>`).join("")}</div>`).join("") +
+    `<button onclick="addQuiz('${cid}')">提交測驗</button></div>`;
+}
 function courseQuizAdmin(c){
   const qs = parseQuiz(c);
   const head = `<div class="sp"><b>課後測驗（共 ${qs.length} 題）</b><button class="ghost sm" onclick="editCourse('${esc(c.id)}',true)">編輯測驗</button></div>`;
@@ -604,7 +627,8 @@ const VIEWS = {
     }
     const survey = courseSurvey(c);
     const surveyDone = (DB.Surveys||[]).some(x => eq(x.email,user.email) && String(x.course_id||"")===String(c.id));
-    const quizPanel = isAdmin() ? courseQuizAdmin(c) : "";
+    const quizPanel = isAdmin() ? courseQuizAdmin(c) : courseQuizLearner(c);
+    const quizDone = !isAdmin() && !!lastQuiz(c);
     const ctab = (tabState.cst === "survey" && survey) ? "survey" : (tabState.cst === "quiz" && quizPanel) ? "quiz" : "progress";
     return head(esc(c.title), `${esc(c.pathogen)} · ${esc(c.topic)} · ${esc(reqLabel(c.required))} · ${esc(c.hours)} 小時`) + back + `
     <div class="card">
@@ -614,7 +638,7 @@ const VIEWS = {
     </div>
     <div class="tabs" id="ctabs" style="margin-top:12px">
       <button data-k="progress" class="${ctab==="progress"?"on":""}" onclick="cTab('progress')">學習進度與學分</button>
-      ${quizPanel?`<button data-k="quiz" class="${ctab==="quiz"?"on":""}" onclick="cTab('quiz')">課後測驗</button>`:""}
+      ${quizPanel?`<button data-k="quiz" class="${ctab==="quiz"?"on":""}" onclick="cTab('quiz')">課後測驗${quizDone?" ✓":""}</button>`:""}
       ${survey?`<button data-k="survey" class="${ctab==="survey"?"on":""}" onclick="cTab('survey')">課後滿意度問卷${surveyDone?" ✓":""}</button>`:""}
     </div>
     <div data-cp="progress" style="${ctab==="progress"?"":"display:none"}">
@@ -1008,6 +1032,21 @@ window.addSurvey = act(async cid=>{
   await addRow("Surveys",{email:user.email,course_id:c.id,course_title:c.title,survey:"課後滿意度",answer:JSON.stringify(ans),time:new Date().toISOString()});
   toast("感謝填寫");
 });
+window.addQuiz = act(async cid=>{
+  const c = DB.Courses.find(x=>x.id===cid); if(!c) throw new Error("找不到課程");
+  const qs = parseQuiz(c); if(!qs.length) throw new Error("此課程沒有測驗題目");
+  const ans = [];
+  for(let i=0;i<qs.length;i++){
+    const sel = [...document.getElementsByName("qz_"+i)].find(x=>x.checked);
+    if(!sel) throw new Error(`請回答第 ${i+1} 題`);
+    ans.push({q:qs[i].q, a:Number(sel.value), correct:Number(sel.value)===qs[i].a});
+  }
+  const score = ans.filter(x=>x.correct).length;
+  tabState.cst = "quiz"; tabState.qzRetake = null;
+  await addRow("QuizResults",{email:user.email,course_id:c.id,course_title:c.title,score,total:qs.length,answers:JSON.stringify(ans),time:new Date().toISOString()});
+  toast(`測驗完成：答對 ${score} / ${qs.length} 題`);
+});
+window.retakeQuiz = cid => { tabState.qzRetake = cid; tabState.cst = "quiz"; route(); };
 window.cTab = k => {
   tabState.cst = k;
   document.querySelectorAll("[data-cp]").forEach(el => el.style.display = el.dataset.cp === k ? "" : "none");
