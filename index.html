@@ -29,8 +29,6 @@ h2.sec{font-size:20px;margin:22px 0 10px;display:flex;align-items:center;gap:8px
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
 .kpi .n{font-size:30px;font-weight:700;color:var(--brand)}
 .kpi .l{color:var(--mute);font-size:13px}
-.hero{background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;border-radius:14px;padding:22px;margin-bottom:16px}
-.hero h2{margin:0 0 6px}.hero p{margin:0 0 14px;opacity:.9}
 .bar{height:10px;background:#e3edf1;border-radius:99px;overflow:hidden;margin:8px 0}
 .bar i{display:block;height:100%;background:var(--brand);transition:width .3s}
 .seg{height:16px;background:#d9dcdd;border-radius:4px;overflow:hidden;display:flex}
@@ -45,7 +43,6 @@ button.ghost,.btn.ghost{background:#fff;color:var(--brand);border:1px solid var(
 button.danger{background:#fff;color:var(--red);border:1px solid var(--red)}
 button.sm,.btn.sm{padding:4px 10px;font-size:12px}
 button:disabled{opacity:.5;cursor:not-allowed}
-.hero button{background:#fff;color:var(--brand2);font-weight:700}
 input,select,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
 input:disabled,select:disabled{background:#f1f5f7}
 input[type=checkbox]{width:auto}
@@ -561,7 +558,6 @@ const VIEWS = {
     const tasks = DB.Tasks.filter(t=>t.status!=="已完成").slice(0,5);
     const jit = DB.Courses.filter(c=>c.jit==="Y").slice(0,4);
     return head("整備總覽","掌握團隊整備進度，讓每一次應變都有準備。") + `
-    <div class="hero"><h2>平時練熟，應變時即用。</h2><p>年度訓練、團隊名單與即時任務，集中在同一個工作空間。</p><button onclick="location.hash='jit'">開啟即時訓練</button></div>
     <div class="card" style="margin-bottom:16px"><b>年度時數達標比例</b>
       <div class="kpi"><div class="n">${s.pct} %</div></div>
       <div class="bar"><i style="width:${s.pct}%"></i></div>
