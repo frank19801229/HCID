@@ -470,9 +470,9 @@ function courseSurvey(c){
   const done = (DB.Surveys||[]).find(x => eq(x.email,user.email) && String(x.course_id||"")===String(c.id));
   const qs = sortedQs();
   const title = `<div class="sp"><b>課後滿意度問卷</b>${done?`<span class="tag green">已填寫 ${esc(fmtDT(done.time).slice(0,16))}</span>`:""}</div>`;
-  if(done) return `<div class="card" style="margin-top:12px">${title}<div class="notice">感謝您的回饋，此課程的問卷已送出。</div></div>`;
-  if(!qs.length) return isAdmin() ? `<div class="card" style="margin-top:12px">${title}<div class="empty">目前沒有問卷題目，請至「同意書與問卷 → 問卷題目管理」新增或載入預設題目</div></div>` : "";
-  return `<div class="card" style="margin-top:12px">${title}` + qs.map(q=>`<div class="card" style="margin-bottom:10px">
+  if(done) return `<div class="card">${title}<div class="notice">感謝您的回饋，此課程的問卷已送出。</div></div>`;
+  if(!qs.length) return isAdmin() ? `<div class="card">${title}<div class="empty">目前沒有問卷題目，請至「同意書與問卷 → 問卷題目管理」新增或載入預設題目</div></div>` : "";
+  return `<div class="card">${title}` + qs.map(q=>`<div class="card" style="margin-bottom:10px">
     <b>${esc(q.text)}</b>${isReqQ(q)?` <span class="req">*</span>`:""}
     ${q.type==="text"
       ? `<div style="height:8px"></div><input id="sa_${esc(q.id)}" placeholder="您的回答">`
@@ -577,19 +577,28 @@ const VIEWS = {
       media = `<iframe class="frame" src="${esc(emb)}" ${sandbox} allow="fullscreen; autoplay; encrypted-media" allowfullscreen loading="lazy"></iframe>
         <div class="notice">若內容無法顯示（來源網站禁止嵌入），請 <a href="${esc(raw)}" target="_blank" rel="noopener">在新分頁開啟</a>；開啟新分頁期間本頁不會計時。</div>`;
     }
+    const survey = courseSurvey(c);
+    const surveyDone = (DB.Surveys||[]).some(x => eq(x.email,user.email) && String(x.course_id||"")===String(c.id));
+    const ctab = (tabState.cst === "survey" && survey) ? "survey" : "progress";
     return head(esc(c.title), `${esc(c.pathogen)} · ${esc(c.topic)} · ${esc(reqLabel(c.required))} · ${esc(c.hours)} 小時`) + back + `
     <div class="card">
       <div class="sp"><div>${schedTag(c)} <span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span> <span class="hint">${esc(schedText(c))}</span></div></div>
       ${c.content?`<p>${esc(c.content)}</p>`:""}
       ${media}
     </div>
-    <div class="card" style="margin-top:12px">
+    <div class="tabs" id="ctabs" style="margin-top:12px">
+      <button data-k="progress" class="${ctab==="progress"?"on":""}" onclick="cTab('progress')">學習進度與學分</button>
+      ${survey?`<button data-k="survey" class="${ctab==="survey"?"on":""}" onclick="cTab('survey')">課後滿意度問卷${surveyDone?" ✓":""}</button>`:""}
+    </div>
+    <div data-cp="progress" style="${ctab==="progress"?"":"display:none"}">
+    <div class="card">
       <div class="sp"><b>學習進度與學分</b><span id="cstate" class="tag"></span></div>
       <div class="bar"><i id="pbar" style="width:0%"></i></div>
       <div id="ptxt" class="notice"></div>
       ${c.credit_mode==="manual"||kind==="none"?`<button id="markBtn" onclick="markDone('${esc(c.id)}')">標記完成並採認學分</button>`:""}
     </div>
-    ${courseSurvey(c)}
+    </div>
+    ${survey?`<div data-cp="survey" style="${ctab==="survey"?"":"display:none"}">${survey}</div>`:""}
     <div class="notice">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>`;
   },
 
@@ -955,9 +964,15 @@ window.addSurvey = act(async cid=>{
     if(isReqQ(q) && !a) throw new Error("請回答：" + q.text);
     ans.push({q:q.text, a});
   }
+  tabState.cst = "survey";
   await addRow("Surveys",{email:user.email,course_id:c.id,course_title:c.title,survey:"課後滿意度",answer:JSON.stringify(ans),time:new Date().toISOString()});
   toast("感謝填寫");
 });
+window.cTab = k => {
+  tabState.cst = k;
+  document.querySelectorAll("[data-cp]").forEach(el => el.style.display = el.dataset.cp === k ? "" : "none");
+  document.querySelectorAll("#ctabs button").forEach(b => b.classList.toggle("on", b.dataset.k === k));
+};
 window.saveSQ = act(async()=>{
   const text = val("sq_text"), type = val("sq_type");
   if(!text) throw new Error("請輸入題目");
@@ -1013,7 +1028,7 @@ function route(keepFocus){
   clearInterval(T.timer); clearTimeout(tick.t);
   if(T.hls){ try{T.hls.destroy();}catch(e){} T.hls = null; }
   const [k,arg] = (location.hash||"#overview").slice(1).split("/");
-  if(k === "course") tabState.cid = decodeURIComponent(arg||"");
+  if(k === "course"){ const id = decodeURIComponent(arg||""); if(tabState.cid !== id) tabState.cst = null; tabState.cid = id; }
   const v = VIEWS[k] || VIEWS.overview;
   const focusId = document.activeElement?.id, pos = document.activeElement?.selectionStart;
   $("#view").innerHTML = v();
