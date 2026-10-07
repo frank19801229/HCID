@@ -84,6 +84,14 @@ details.grp summary::before{content:"›";font-weight:700;transition:transform .
 details.grp[open] summary::before{transform:rotate(90deg)}
 details.grp .gname{flex:1;min-width:0}
 details.grp .gbody{padding:0 8px 12px;background:#fff}
+.switch{display:inline-flex;align-items:center;gap:6px;cursor:pointer;vertical-align:middle;margin-left:4px;font-size:12px;color:var(--mute);position:relative}
+.switch input{position:absolute;opacity:0;width:0;height:0;padding:0;border:0}
+.switch .slider{position:relative;width:38px;height:22px;border-radius:99px;background:#c4c9cc;transition:background .2s;flex-shrink:0}
+.switch .slider::before{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .2s}
+.switch input:checked + .slider{background:var(--g)}
+.switch input:checked + .slider::before{transform:translateX(16px)}
+.switch input:focus-visible + .slider{outline:2px solid var(--brand);outline-offset:2px}
+.switch em{font-style:normal;min-width:36px}
 .dot{display:inline-block;width:16px;height:16px;border-radius:50%;margin-left:5px;vertical-align:middle}
 .dot.ok{background:var(--g)}.dot.enr{background:var(--o)}.dot.no{background:#c4c9cc}
 #toast{position:fixed;right:18px;bottom:18px;background:#17323f;color:#fff;padding:10px 16px;border-radius:8px;display:none;z-index:9;max-width:80vw}
@@ -596,7 +604,7 @@ const VIEWS = {
         ["類別 / 學分",r=>`${esc(reqLabel(r.required))} · ${esc(r.hours)} 小時<div class="hint">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
         [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id && stOf(x)==="合格").length+" 人"
             : (hasCredit(r.id)?`<span class="tag green">已採認</span>`:(progPct(r)?`<span class="tag yellow">${progPct(r)}%</span>`:`<span class="tag">未開始</span>`))],
-        ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="danger sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button> <button class="${isClosed(r)?"":"ghost "}sm" onclick="toggleOpen('${esc(r.id)}')">${isClosed(r)?"設為開放":"設為未開放"}</button>`:"")]
+        ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="danger sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button> <label class="switch" title="${isClosed(r)?"目前未開放，滑動以開放":"目前開放，滑動以設為未開放"}"><input type="checkbox" ${isClosed(r)?"":"checked"} onchange="toggleOpen('${esc(r.id)}')"><span class="slider"></span><em>${isClosed(r)?"未開放":"開放"}</em></label>`:"")]
       ], rows, "沒有符合的課程或教材") + `</div>`;
     }
     if(t==="form" && admin) body = courseForm();
