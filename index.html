@@ -383,10 +383,13 @@ function schedState(c){
   return "open";
 }
 const SCHED = {upcoming:["未開放","yellow"], ended:["已結束","red"], open:["開放中","green"]};
-const isClosed = c => String(c.open||"").toUpperCase()==="N";   // 管理者手動設為「未開放」
-const schedTag = c => { const [l,k] = isClosed(c) ? ["未開放","yellow"] : SCHED[schedState(c)]; return `<span class="tag ${k}">${l}</span>`; };
+/* 管理者手動覆寫：open=Y 強制開放、N 強制未開放、空白＝依排程（即時訓練不受排程限制） */
+const openFlag = c => String(c.open||"").toUpperCase();
+const isOpenNow = c => openFlag(c)==="Y" ? true : openFlag(c)==="N" ? false : (c.jit==="Y" || schedState(c)==="open");
+const isClosed = c => !isOpenNow(c);
+const schedTag = c => { const [l,k] = isOpenNow(c) ? SCHED.open : (openFlag(c)==="N" ? ["未開放","yellow"] : SCHED[schedState(c)]); return `<span class="tag ${k}">${l}</span>`; };
 const schedText = c => (c.schedule_start||c.schedule_end) ? `${fmtDT(c.schedule_start)||"即日起"} ～ ${fmtDT(c.schedule_end)||"不限"}` : "不限時間";
-const canOpen = c => isAdmin() || (!isClosed(c) && (c.jit==="Y" || schedState(c)==="open"));
+const canOpen = c => isAdmin() || isOpenNow(c);
 
 /* ---------- 學習進度、選課與自動學分 ---------- */
 const progKey = cid => `hcid_prog_${user.email}_${cid}`;
@@ -886,7 +889,7 @@ window.addQuizRow = () => { document.getElementById("quiz_list").insertAdjacentH
 window.toggleOpen = act0(async id=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   const c = DB.Courses.find(x=>x.id===id); if(!c) return;
-  const next = isClosed(c) ? "Y" : "N";
+  const next = isOpenNow(c) ? "N" : "Y";   // 依目前實際狀態反向切換
   await updateRow("Courses","id",id,{open:next});
   toast(next==="Y" ? "已設為開放" : "已設為未開放");
 });
