@@ -126,7 +126,7 @@ const CONFIG = {
 
 const TABLES = {
   Members:   ["email","name","role","unit","emp_id","job","active"],
-  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule","code","unit","method","quiz"],
+  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule","code","unit","method","quiz","open"],
   Tasks:     ["id","title","assignee","due","status"],
   Records:   ["id","email","course_id","code","course_title","unit","topic","method","hours","date","status","category"],
   FitTests:  ["email","date","model","result"],
@@ -375,9 +375,10 @@ function schedState(c){
   return "open";
 }
 const SCHED = {upcoming:["未開放","yellow"], ended:["已結束","red"], open:["開放中","green"]};
-const schedTag = c => { const [l,k] = SCHED[schedState(c)]; return `<span class="tag ${k}">${l}</span>`; };
+const isClosed = c => String(c.open||"").toUpperCase()==="N";   // 管理者手動設為「未開放」
+const schedTag = c => { const [l,k] = isClosed(c) ? ["未開放","yellow"] : SCHED[schedState(c)]; return `<span class="tag ${k}">${l}</span>`; };
 const schedText = c => (c.schedule_start||c.schedule_end) ? `${fmtDT(c.schedule_start)||"即日起"} ～ ${fmtDT(c.schedule_end)||"不限"}` : "不限時間";
-const canOpen = c => isAdmin() || c.jit==="Y" || schedState(c)==="open";
+const canOpen = c => isAdmin() || (!isClosed(c) && (c.jit==="Y" || schedState(c)==="open"));
 
 /* ---------- 學習進度、選課與自動學分 ---------- */
 const progKey = cid => `hcid_prog_${user.email}_${cid}`;
@@ -595,7 +596,7 @@ const VIEWS = {
         ["類別 / 學分",r=>`${esc(reqLabel(r.required))} · ${esc(r.hours)} 小時<div class="hint">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
         [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id && stOf(x)==="合格").length+" 人"
             : (hasCredit(r.id)?`<span class="tag green">已採認</span>`:(progPct(r)?`<span class="tag yellow">${progPct(r)}%</span>`:`<span class="tag">未開始</span>`))],
-        ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="danger sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button>`:"")]
+        ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="danger sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button> <button class="${isClosed(r)?"":"ghost "}sm" onclick="toggleOpen('${esc(r.id)}')">${isClosed(r)?"設為開放":"設為未開放"}</button>`:"")]
       ], rows, "沒有符合的課程或教材") + `</div>`;
     }
     if(t==="form" && admin) body = courseForm();
@@ -874,6 +875,13 @@ window.editCourse = (id, toQuiz) => {
   if(toQuiz) setTimeout(()=>document.getElementById("quiz_block")?.scrollIntoView({behavior:"smooth",block:"start"}), 150);
 };
 window.addQuizRow = () => { document.getElementById("quiz_list").insertAdjacentHTML("beforeend", quizRow({q:"",a:0})); };
+window.toggleOpen = act0(async id=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const c = DB.Courses.find(x=>x.id===id); if(!c) return;
+  const next = isClosed(c) ? "Y" : "N";
+  await updateRow("Courses","id",id,{open:next});
+  toast(next==="Y" ? "已設為開放" : "已設為未開放");
+});
 window.deleteCourse = act0(async id=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   const c = DB.Courses.find(x=>x.id===id); if(!c) return;
