@@ -818,7 +818,7 @@ function memberView(){
 function courseForm(){
   const e = tabState.editId ? (DB.Courses.find(x=>x.id===tabState.editId) || {}) : {};
   const editing = !!e.id;
-  return `<div class="card"><div class="sp"><b>${editing?"編輯課程":"新增課程"}（管理者）</b>${editing?`<button class="ghost sm" onclick="newCourse()">改為新增</button>`:""}</div>
+  return `<div class="card"><div class="sp"><b>${editing?"編輯課程":"新增課程"}（管理者）</b>${editing?`<button class="ghost sm" onclick="tabState.editId=null;setTab('ct','list')">回到課程列表</button>`:""}</div>
   <fieldset class="fieldset"><legend>基本資料</legend><div class="row">
     ${field("c_title","課程名稱","text","",e.title)}${field("c_code","課程編號","text","",e.code)}${field("c_unit","開課單位","text","",e.unit)}
     <div><label>上課方式</label><select id="c_method">${opts(METHODS, e.method||"線上")}</select></div>
