@@ -72,7 +72,6 @@ video.player{width:100%;max-height:68vh;border-radius:10px;background:#000}
 .opt{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink);margin:9px 0;cursor:pointer}
 .opt input{width:auto;margin:0}
 .req{color:var(--red)}
-.qhead{background:var(--brand);color:#fff;font-weight:700;padding:12px 16px;border-radius:12px;margin-bottom:10px}
 .filters{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:10px;margin-bottom:12px}
 @media(max-width:900px){.filters{grid-template-columns:1fr 1fr}}
 details.grp{border-top:1px solid var(--line);background:#fafafa}
@@ -131,7 +130,7 @@ const TABLES = {
   External:  ["email","title","hours","date","note"],
   News:      ["id","type","title","level","date","body"],
   Consents:  ["email","consent","signed_at"],
-  Surveys:   ["email","survey","answer","time"],
+  Surveys:   ["email","course_id","course_title","survey","answer","time"],
   SurveyQuestions: ["id","order","text","type","options","required"],
   Attendance:["course_id","date","count","reporter"]
 };
@@ -467,15 +466,18 @@ const sortedQs = () => [...(DB.SurveyQuestions||[])].sort((a,b)=>(Number(a.order
 const isReqQ = q => String(q.required||"").toUpperCase() === "Y";
 const qOptions = q => String(q.options||"").split("|").map(s=>s.trim()).filter(Boolean);
 
-function surveyForm(){
+function courseSurvey(c){
+  const done = (DB.Surveys||[]).find(x => eq(x.email,user.email) && String(x.course_id||"")===String(c.id));
   const qs = sortedQs();
-  if(!qs.length) return `<div class="empty">目前沒有問卷題目${isAdmin()?"，請至「問卷題目管理」新增或載入預設題目":""}</div>`;
-  return `<div class="qhead">滿意度調查區段</div>` + qs.map(q=>`<div class="card" style="margin-bottom:10px">
+  const title = `<div class="sp"><b>課後滿意度問卷</b>${done?`<span class="tag green">已填寫 ${esc(fmtDT(done.time).slice(0,16))}</span>`:""}</div>`;
+  if(done) return `<div class="card" style="margin-top:12px">${title}<div class="notice">感謝您的回饋，此課程的問卷已送出。</div></div>`;
+  if(!qs.length) return isAdmin() ? `<div class="card" style="margin-top:12px">${title}<div class="empty">目前沒有問卷題目，請至「同意書與問卷 → 問卷題目管理」新增或載入預設題目</div></div>` : "";
+  return `<div class="card" style="margin-top:12px">${title}` + qs.map(q=>`<div class="card" style="margin-bottom:10px">
     <b>${esc(q.text)}</b>${isReqQ(q)?` <span class="req">*</span>`:""}
     ${q.type==="text"
       ? `<div style="height:8px"></div><input id="sa_${esc(q.id)}" placeholder="您的回答">`
       : qOptions(q).map(o=>`<label class="opt"><input type="radio" name="sa_${esc(q.id)}" value="${esc(o)}"> ${esc(o)}</label>`).join("")}
-  </div>`).join("") + `<button onclick="addSurvey()">提交</button>`;
+  </div>`).join("") + `<button onclick="addSurvey('${esc(c.id)}')">提交問卷</button></div>`;
 }
 
 function sqAdminView(){
@@ -587,6 +589,7 @@ const VIEWS = {
       <div id="ptxt" class="notice"></div>
       ${c.credit_mode==="manual"||kind==="none"?`<button id="markBtn" onclick="markDone('${esc(c.id)}')">標記完成並採認學分</button>`:""}
     </div>
+    ${courseSurvey(c)}
     <div class="notice">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>`;
   },
 
@@ -632,13 +635,12 @@ const VIEWS = {
     const signed = DB.Consents.filter(c=>eq(c.email,user.email));
     let body="";
     if(t==="consent") body = table([["同意書",r=>esc(r)],["狀態",r=>{const s=signed.find(x=>x.consent===r);return s?`<span class="tag green">已簽署 ${esc(s.signed_at)}</span>`:`<button class="sm" onclick="sign('${r}')">線上簽署</button>`}]],consents);
-    if(t==="survey") body = surveyForm();
     if(t==="sq" && isAdmin()) body = sqAdminView();
     if(t==="att") body = `<div class="row"><div><label>課程</label><select id="a_course">${DB.Courses.map(c=>`<option value="${esc(c.id)}">${esc(c.title)}</option>`).join("")}</select></div>
       ${field("a_date","上課日期","date")}${field("a_count","上課人數","number")}</div><button onclick="addAtt()">填報</button>
       <div style="height:12px"></div>${table([["日期",r=>esc(r.date)],["課程",r=>esc(r.course_id)],["人數",r=>esc(r.count)],["填報人",r=>esc(r.reporter)]],DB.Attendance,"尚無填報")}`;
     return head("同意書與問卷","依授權範圍管理與查閱資料。") + `<div class="sp"><b>同意書與簽署紀錄</b></div>` +
-      tabs("ft",[["consent","線上同意書"],["survey","問卷調查"],...(isAdmin()?[["sq","問卷題目管理"]]:[]),["att","上課人數填報"]],"consent") + `<div class="card">${body}</div>`;
+      tabs("ft",[["consent","線上同意書"],...(isAdmin()?[["sq","問卷題目管理"]]:[]),["att","上課人數填報"]],"consent") + `<div class="card">${body}</div>`;
   }
 };
 
@@ -941,7 +943,9 @@ window.addExt = act(async()=>{ if(!val("e_title")) throw new Error("請輸入訓
 window.addNews = act(async type=>{ if(!val("n_title")) throw new Error("請輸入標題");
   await addRow("News",{id:"N"+uid(),type,title:val("n_title"),level:type==="alert"?val("n_level"):"",date:today(),body:val("n_body")}); toast("已發布"); });
 window.sign = act(async c=>{ await addRow("Consents",{email:user.email,consent:c,signed_at:today()}); toast("已簽署"); });
-window.addSurvey = act(async()=>{
+window.addSurvey = act(async cid=>{
+  const c = DB.Courses.find(x=>x.id===cid); if(!c) throw new Error("找不到課程");
+  if(DB.Surveys.some(x=>eq(x.email,user.email) && String(x.course_id||"")===String(cid))) throw new Error("此課程問卷已填寫過");
   const qs = sortedQs(); if(!qs.length) throw new Error("目前沒有問卷題目");
   const ans = [];
   for(const q of qs){
@@ -951,7 +955,7 @@ window.addSurvey = act(async()=>{
     if(isReqQ(q) && !a) throw new Error("請回答：" + q.text);
     ans.push({q:q.text, a});
   }
-  await addRow("Surveys",{email:user.email,survey:"課後滿意度",answer:JSON.stringify(ans),time:new Date().toISOString()});
+  await addRow("Surveys",{email:user.email,course_id:c.id,course_title:c.title,survey:"課後滿意度",answer:JSON.stringify(ans),time:new Date().toISOString()});
   toast("感謝填寫");
 });
 window.saveSQ = act(async()=>{
