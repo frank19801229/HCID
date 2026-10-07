@@ -252,7 +252,7 @@ function initUser(){
 function setUser(e){
   const m = (DB.Members||[]).find(x => eq(x.email, e));
   user = {email:e, name: m?.name || e.split("@")[0], role: m?.role || "學員"};
-  $("#who").textContent = `${user.email} · ${user.role}`;
+  $("#who").textContent = `${user.email} · ${roleLabel(user.role)}`;
   $("#navProfile").textContent = isAdmin() ? "學員名單管理" : "個人學習履歷";
   $("#navOverview").style.display = isAdmin() ? "" : "none";   // 整備總覽僅管理者可見
 }
@@ -810,7 +810,7 @@ function memberView(){
     `<div class="row">${field("e_title","訓練名稱")}${field("e_hours","時數","number")}${field("e_date","日期","date")}${field("e_note","備註 / 證明連結")}</div><button onclick="addExt()">新增佐證</button>`;
 
   return head(admin ? esc(m.name)+" 的學習履歷" : "個人學習履歷", admin ? "檢視並維護此學員的年度時數與修課紀錄。" : "集中查看你的課程、時數與防護裝備紀錄。") + back + `
-  <div class="card sp"><div><b style="font-size:18px">${esc(m.name)}</b><div class="sub" style="margin:0">${esc(m.email)} · ${esc(m.role)}${m.unit?" · "+esc(m.unit):""}${m.emp_id?" · 職編 "+esc(m.emp_id):""}</div></div>
+  <div class="card sp"><div><b style="font-size:18px">${esc(m.name)}</b><div class="sub" style="margin:0">${esc(m.email)} · ${esc(roleLabel(m.role))}${m.unit?" · "+esc(m.unit):""}${m.emp_id?" · 職編 "+esc(m.emp_id):""}</div></div>
     <div style="display:flex;gap:8px;align-items:center"><select style="width:auto" onchange="tabState.py=Number(this.value);route()">${opts(yearOptions(email).map(y=>[y,y+" 年度"]),yr)}</select>
     <button class="ghost" onclick="downloadCSV()">下載履歷</button></div></div>
   <h2 class="sec">⏳ 整體進度</h2>
