@@ -591,7 +591,7 @@ const VIEWS = {
     let body = "";
     if(t==="list"){
       const rows = DB.Courses.filter(c => !q || JSON.stringify(c).toLowerCase().includes(q));
-      body = `<div class="card"><input id="cq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.cq||"")}" oninput="onSearch(this,'cq',event)" oncompositionstart="this.dataset.ime=1" oncompositionend="delete this.dataset.ime;onSearch(this,'cq')">
+      body = `<div class="card"><input id="cq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.cq||"")}" oninput="onSearch(this)">
       <div style="height:10px"></div>` + table([
         ["課程",r=>`<b>${esc(r.title)}</b><div class="hint">${esc(r.code?r.code+" · ":"")}${esc(r.unit?r.unit+" · ":"")}${esc(r.pathogen)} · ${esc(r.topic)}${r.jit==="Y"?" · 即時訓練":""}</div>`],
         ["教材",r=>`<span class="tag">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span><div class="hint">${esc(r.method||"")}</div>`],
@@ -658,7 +658,7 @@ const VIEWS = {
     const q = (tabState.jq||"").toLowerCase();
     const rows = DB.Courses.filter(c => c.jit==="Y" && (!q || JSON.stringify(c).toLowerCase().includes(q)));
     return head("即時訓練","快速找到情境需要的訓練與作業資料。") + `
-    <div class="card"><input id="jq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.jq||"")}" oninput="onSearch(this,'jq',event)" oncompositionstart="this.dataset.ime=1" oncompositionend="delete this.dataset.ime;onSearch(this,'jq')">
+    <div class="card"><input id="jq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.jq||"")}" oninput="onSearch(this)">
     <div class="notice">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>
     ${rows.length? rows.map(c=>`<div class="card" style="margin-top:10px"><div class="sp"><div><b>${esc(c.title)}</b> <span class="tag">${esc(c.topic)}</span> <span class="tag">${esc(c.pathogen)}</span> <span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span></div>
       <a class="btn sm" href="#course/${esc(c.id)}">開啟教材</a></div><p>${esc(c.content)}</p></div>`).join("") : `<div class="empty">沒有符合的課程或教材</div>`}</div>`;
@@ -747,7 +747,7 @@ function rosterList(){
     <div class="card kpi"><div class="l">平均時數</div><div class="n">${avg.toFixed(1)}</div></div></div>
   <div class="card">
     <div class="filters">
-      <input id="rq" placeholder="搜尋姓名、Email、職編、職類" value="${esc(tabState.rq||"")}" oninput="onSearch(this,'rq',event)" oncompositionstart="this.dataset.ime=1" oncompositionend="delete this.dataset.ime;onSearch(this,'rq')">
+      <input id="rq" placeholder="搜尋姓名、Email、職編、職類" value="${esc(tabState.rq||"")}" oninput="onSearch(this)">
       <select onchange="tabState.ru=this.value;route()"><option value="">全部單位</option>${opts(units,fu)}</select>
       <select onchange="tabState.rr=this.value;route()">${opts([["","全部角色"],["learner","非管理者"],["admin","管理者權限"],...roleList().map(r=>["r:"+r,"角色：" + roleLabel(r)])],fr)}</select>
       <select onchange="tabState.rs=this.value;route()">${opts([["","全部達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select>
@@ -1047,11 +1047,25 @@ window.addQuiz = act(async cid=>{
   toast(`測驗完成：答對 ${score} / ${qs.length} 題`);
 });
 window.retakeQuiz = cid => { tabState.qzRetake = cid; tabState.cst = "quiz"; route(); };
-// 搜尋框：輸入法組字（注音／拼音）期間不重繪，組字完成才更新，否則中文無法輸入
-window.onSearch = (el,key,ev) => {
-  tabState[key] = el.value;
-  if(el.dataset.ime || ev?.isComposing) return;
-  route(true);
+// 搜尋框：邊打邊搜尋。只更新搜尋框以外的內容、保留輸入框本身，
+// 因此輸入法組字（注音／拼音）期間也能即時搜尋，且不會被中斷
+function patchDom(oldEl,newEl,keepId){
+  const on=[...oldEl.childNodes], nn=[...newEl.childNodes];
+  nn.forEach((n,i)=>{
+    const o=on[i];
+    if(!o){ oldEl.appendChild(n.cloneNode(true)); return; }
+    if(o.nodeType===1 && n.nodeType===1 && o.tagName===n.tagName && (o.id===keepId || o.querySelector("#"+keepId))){
+      if(o.id!==keepId) patchDom(o,n,keepId);
+    } else if(!o.isEqualNode(n)) o.replaceWith(n.cloneNode(true));
+  });
+  for(let i=on.length-1;i>=nn.length;i--) on[i].remove();
+}
+window.onSearch = el => {
+  tabState[el.id] = el.value;
+  const k = (location.hash||"#overview").slice(1).split("/")[0], v = VIEWS[k];
+  if(!v || !document.getElementById(el.id)){ route(true); return; }
+  const tmp = document.createElement("div"); tmp.innerHTML = v();
+  patchDom($("#view"), tmp, el.id);
 };
 window.cTab = k => {
   tabState.cst = k;
