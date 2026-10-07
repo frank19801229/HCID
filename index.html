@@ -583,7 +583,6 @@ const VIEWS = {
     const admin = isAdmin();
     const tabBtns = `<div class="tabs">
       <button class="${t==="list"?"on":""}" onclick="setTab('ct','list')">課程列表</button>
-      <button class="${t==="sched"?"on":""}" onclick="setTab('ct','sched')">課程排程</button>
       ${admin?`<button class="${t==="form"?"on":""}" onclick="newCourse()">${tabState.editId?"編輯課程":"新增課程"}</button>`:""}</div>`;
     let body = "";
     if(t==="list"){
@@ -598,12 +597,6 @@ const VIEWS = {
             : (hasCredit(r.id)?`<span class="tag green">已採認</span>`:(progPct(r)?`<span class="tag yellow">${progPct(r)}%</span>`:`<span class="tag">未開始</span>`))],
         ["",r=>(canOpen(r)?`<a class="btn sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="sm" disabled>未開放</button>`) + (admin?` <button class="ghost sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="danger sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button>`:"")]
       ], rows, "沒有符合的課程或教材") + `</div>`;
-    }
-    if(t==="sched"){
-      const rows = [...DB.Courses].sort((a,b)=>String(a.schedule_start||"9999").localeCompare(String(b.schedule_start||"9999")));
-      body = `<div class="card">` + table([
-        ["排程時間",r=>esc(schedText(r))],["課程",r=>esc(r.title)],["類別",r=>esc(reqLabel(r.required))],["時數",r=>esc(r.hours)],["狀態",r=>schedTag(r)]
-      ], rows, "尚無課程排程") + `</div>`;
     }
     if(t==="form" && admin) body = courseForm();
     return head("課程與教材","依授權範圍管理與查閱資料。") + tabBtns + body;
