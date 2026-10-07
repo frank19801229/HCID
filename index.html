@@ -139,7 +139,7 @@ const TABLES = {
   Records:   ["id","email","course_id","code","course_title","unit","topic","method","hours","date","status","category"],
   FitTests:  ["email","date","model","result"],
   External:  ["email","title","hours","date","note"],
-  News:      ["id","type","title","level","date","body"],
+  News:      ["id","type","title","level","date","body","url"],
   Consents:  ["email","consent","signed_at"],
   Surveys:   ["email","course_id","course_title","survey","answer","time"],
   QuizResults: ["email","course_id","course_title","score","total","answers","time"],
@@ -483,6 +483,41 @@ function loadScript(src){
     const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
 }
 
+/* ---------- 疫情與公告：PDF ---------- */
+function newsSrc(n){
+  const raw = String(n.url||"").trim(); if(!raw) return "";
+  if(/^(blob:|data:application\/pdf)/i.test(raw)) return raw;
+  const u = safeUrl(raw); if(!u) return "";
+  const d = driveId(u); return d ? `https://drive.google.com/file/d/${d}/preview` : u;
+}
+window.selNews = id => { tabState.nsel = id; route(); };
+window.addNewsPdf = act0(async type=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  if(!val("n_title")) throw new Error("請輸入標題");
+  const f = $("#n_file").files[0]; let url = val("n_url");
+  if(f){
+    if(!/\.pdf$/i.test(f.name) && f.type !== "application/pdf") throw new Error("請選擇 PDF 檔案");
+    if(DEMO){
+      if(f.size > 3*1024*1024) throw new Error("示範模式檔案請小於 3MB，或改貼網址");
+      url = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=()=>rej(new Error("讀取檔案失敗")); r.readAsDataURL(f); });
+    } else url = await uploadFile(f);
+  }
+  if(!url) throw new Error("請選擇 PDF 檔案或貼上網址");
+  if(!/^data:application\/pdf/i.test(url) && !url.startsWith("blob:") && !safeUrl(url)) throw new Error("網址必須是 http(s) 開頭");
+  const id = "N"+uid();
+  try{ await addRow("News",{id,type,title:val("n_title"),level:type==="alert"?val("n_level"):"",date:today(),body:"",url}); }
+  catch(e){ if(DEMO) throw new Error("儲存失敗，檔案可能太大，請改貼網址"); throw e; }
+  tabState.nsel = id; toast("已上傳");
+});
+window.deleteNews = act0(async id=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const n = DB.News.find(x=>x.id===id); if(!n) return;
+  if(!confirm(`確定要刪除「${n.title}」嗎？此動作無法復原。`)) return;
+  await deleteRow("News","id",id);
+  if(tabState.nsel === id) tabState.nsel = null;
+  toast("已刪除");
+});
+
 /* ---------- 各頁 ---------- */
 /* ---------- 問卷（題目可由管理者增刪修） ---------- */
 const sortedQs = () => [...(DB.SurveyQuestions||[])].sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
@@ -683,13 +718,33 @@ const VIEWS = {
 
   news(){
     const t = curTab("nt","alert");
-    const rows = DB.News.filter(n=>n.type===t).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    const admin = isAdmin();
     const cls = {"紅":"red","黃":"yellow","綠":"green"};
-    return head("疫情與公告","依授權範圍管理與查閱資料。") + tabs("nt",[["alert","傳染病訊息與燈號"],["announce","課程公告"]],"alert") +
-    `<div class="card">${table([["日期",r=>esc(r.date)],["標題",r=>esc(r.title)],...(t==="alert"?[["燈號",r=>r.level?`<span class="tag ${cls[r.level]||""}">${esc(r.level)}</span>`:""]]:[]),["內容",r=>esc(r.body)]],rows,"目前沒有資料")}</div>` +
-    (isAdmin()?`<div class="card" style="margin-top:14px"><b>發布訊息（管理者）</b><div class="row">${field("n_title","標題")}
-      <div><label>燈號（僅疫情）</label><select id="n_level"><option value="">—</option><option>綠</option><option>黃</option><option>紅</option></select></div></div>
-      <label>內容</label><textarea id="n_body"></textarea><br><br><button onclick="addNews('${t}')">發布</button></div>`:"");
+    const rows = DB.News.filter(n=>n.type===t).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    let sel = rows.find(n=>n.id===tabState.nsel) || rows.find(n=>newsSrc(n)) || rows[0];
+    tabState.nsel = sel ? sel.id : null;
+    let viewer;
+    if(!sel) viewer = `<div class="empty">目前沒有 PDF，${admin?"請由下方上傳":"請稍後再查看"}</div>`;
+    else if(newsSrc(sel)){
+      viewer = `<div class="sp"><b>${esc(sel.title)}</b><span class="hint">${esc(sel.date)}${sel.level?` · 燈號：${esc(sel.level)}`:""}</span></div>
+        <iframe class="frame" src="${esc(newsSrc(sel))}" allow="fullscreen" allowfullscreen loading="lazy"></iframe>`;
+    } else viewer = `<div class="sp"><b>${esc(sel.title)}</b><span class="hint">${esc(sel.date)}</span></div><p>${esc(sel.body)||"此項目沒有 PDF 檔案"}</p>`;
+    const list = table([
+      ["日期",r=>esc(r.date)],
+      ["標題",r=>`<b>${esc(r.title)}</b>${r.id===tabState.nsel?` <span class="tag green">檢視中</span>`:""}`],
+      ...(t==="alert"?[["燈號",r=>r.level?`<span class="tag ${cls[r.level]||""}">${esc(r.level)}</span>`:""]]:[]),
+      ["",r=>`<button class="${r.id===tabState.nsel?"":"ghost "}sm" onclick="selNews('${esc(r.id)}')">檢視</button>`
+        + (admin?` <button class="danger sm" onclick="deleteNews('${esc(r.id)}')">刪除</button>`:"")]
+    ], rows, "目前沒有 PDF");
+    return head("疫情與公告","點選下方 PDF 即可在上方檢視內容。") + tabs("nt",[["alert","傳染病訊息與燈號"],["announce","課程公告"]],"alert") +
+    `<div class="card">${viewer}</div>
+    <div class="card" style="margin-top:14px"><div class="sp"><b>PDF 列表（共 ${rows.length} 份）</b></div>${list}</div>` +
+    (admin?`<div class="card" style="margin-top:14px"><b>上傳 PDF（管理者）</b><div class="row">
+      ${field("n_title","標題")}
+      ${t==="alert"?`<div><label>燈號</label><select id="n_level"><option value="">—</option><option>綠</option><option>黃</option><option>紅</option></select></div>`:""}
+      <div><label>PDF 檔案（上限 ${CONFIG.MAX_UPLOAD_MB}MB${DEMO?"；示範模式限 3MB":""}）</label><input id="n_file" type="file" accept=".pdf,application/pdf"></div>
+      ${field("n_url","或貼上 PDF 網址 / Google Drive 分享連結","text","https://…")}</div>
+      <div class="hint">有選擇檔案時優先使用檔案。</div><br><button onclick="addNewsPdf('${t}')">上傳</button></div>`:"");
   },
 
   forms(){
