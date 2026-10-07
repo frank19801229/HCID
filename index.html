@@ -383,9 +383,9 @@ function schedState(c){
   return "open";
 }
 const SCHED = {upcoming:["未開放","yellow"], ended:["已結束","red"], open:["開放中","green"]};
-/* 管理者手動覆寫：open=Y 強制開放、N 強制未開放、空白＝依排程（即時訓練不受排程限制） */
+/* 管理者手動覆寫：open=Y 強制開放、N 強制未開放、空白＝依排程（未開始／已結束皆不可開啟） */
 const openFlag = c => String(c.open||"").toUpperCase();
-const isOpenNow = c => openFlag(c)==="Y" ? true : openFlag(c)==="N" ? false : (c.jit==="Y" || schedState(c)==="open");
+const isOpenNow = c => openFlag(c)==="Y" ? true : openFlag(c)==="N" ? false : schedState(c)==="open";
 const isClosed = c => !isOpenNow(c);
 const schedTag = c => { const [l,k] = isOpenNow(c) ? SCHED.open : (openFlag(c)==="N" ? ["未開放","yellow"] : SCHED[schedState(c)]); return `<span class="tag ${k}">${l}</span>`; };
 const schedText = c => (c.schedule_start||c.schedule_end) ? `${fmtDT(c.schedule_start)||"即日起"} ～ ${fmtDT(c.schedule_end)||"不限"}` : "不限時間";
@@ -663,7 +663,7 @@ const VIEWS = {
     <div class="card"><input id="jq" value="${esc(tabState.jq||"")}" oninput="tabState.jq=this.value;route(true)">
     <div class="notice">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>
     ${rows.length? rows.map(c=>`<div class="card" style="margin-top:10px"><div class="sp"><div><b>${esc(c.title)}</b> ${c.topic?`<span class="tag">${esc(c.topic)}</span> `:""}${c.pathogen?`<span class="tag">${esc(c.pathogen)}</span> `:""}<span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span></div>
-      <a class="btn sm" href="#course/${esc(c.id)}">開啟教材</a></div><p>${esc(c.content)}</p></div>`).join("") : `<div class="empty">沒有符合的課程或教材</div>`}</div>`;
+      ${canOpen(c)?`<a class="btn sm" href="#course/${esc(c.id)}">開啟教材</a>`:`<button class="sm" disabled>未開放</button>`}</div><p>${esc(c.content)}</p></div>`).join("") : `<div class="empty">沒有符合的課程或教材</div>`}</div>`;
   },
 
   tasks(){
@@ -836,7 +836,7 @@ function courseForm(){
     <div><label>上課方式</label><select id="c_method">${opts(METHODS, e.method||"線上")}</select></div>
     ${field("c_hours","學分時數（小時）","number","1",e.hours ?? 1)}
     <div><label>類別</label><select id="c_req">${opts([["必修","必修"],["進階","進階"]], reqLabel(e.required))}</select></div>
-    <div><label>列入即時訓練</label><select id="c_jit">${opts([["Y","是（不受排程限制）"],["N","否"]], e.jit||"N")}</select></div></div>
+    <div><label>列入即時訓練</label><select id="c_jit">${opts([["Y","是"],["N","否"]], e.jit||"N")}</select></div></div>
     <label>說明 / 文字教材</label><textarea id="c_content">${esc(e.content)}</textarea></fieldset>
 
   <fieldset class="fieldset"><legend>教材上傳 / 連結</legend><div class="row">
@@ -848,7 +848,7 @@ function courseForm(){
 
   <fieldset class="fieldset"><legend>課程排程</legend><div class="row">
     ${field("c_start","開放時間","datetime-local","",e.schedule_start)}${field("c_end","截止時間","datetime-local","",e.schedule_end)}</div>
-    <div class="hint">留空代表不限時間。學員只能在開放期間開啟課程（即時訓練課程不受限）。</div>
+    <div class="hint">留空代表不限時間。學員只能在開放期間開啟課程；未開始或已結束的課程會顯示「未開放」。</div>
     ${editing?"":`<label style="margin-top:8px"><input type="checkbox" id="c_assign"> 同時指派為全體成員的任務（期限＝截止日期）</label>`}</fieldset>
 
   <fieldset class="fieldset"><legend>學分採認</legend><div class="row">
