@@ -175,7 +175,7 @@ const defaultSurveyQs = (base=0) => {
     {id:"Q"+uid()+"x",order:base+scaleQs.length+1,text:"其他建議",type:"text",options:"",required:"N"}];
 };
 function demoSeed(){
-  const d = n => { const x = new Date(Date.now()+n*864e5); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,16); };
+  const d = n => { const x = new Date(); x.setHours(0,0,0,0); x.setDate(x.getDate()+n); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,16); };   // 以當天 00:00 為基準，不同瀏覽器產生的示範排程一致
   const y = curYear();
   const rec = (i,email,code,title,unit,topic,method,hours,date,status) => ({id:"R"+i,email,course_id:"",code,course_title:title,unit,topic,method,hours,date,status,category:"必修"});
   return {
@@ -1122,6 +1122,20 @@ function route(keepFocus){
   if(k === "courses") syncMedia();
 }
 window.addEventListener("hashchange",()=>route());
+/* 示範模式：資料存在 localStorage，同一瀏覽器的其他分頁（例如一個管理者、一個學員）修改後，這裡自動同步 */
+if(DEMO){
+  const syncDemo = () => {
+    let next; try{ next = JSON.parse(localStorage.getItem("hcid_demo_db")); }catch(e){ return; }
+    if(!next || !user) return;
+    if(JSON.stringify(next) === JSON.stringify(DB)) return;
+    DB = next; Object.keys(TABLES).forEach(k => DB[k] = DB[k] || []);
+    const a = document.activeElement, typing = a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "checkbox";
+    const onCourse = (location.hash||"").startsWith("#course/");
+    if(!typing && !onCourse) route(true);
+  };
+  window.addEventListener("storage", e => { if(e.key === "hcid_demo_db") syncDemo(); });
+  document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") syncDemo(); });
+}
 window.addEventListener("beforeunload",()=>{ document.querySelectorAll("video").forEach(v=>v.pause()); });
 (async function(){
   try{ await loadAll(); }catch(e){ $("#view").innerHTML = `<div class="banner">無法連線後端：${esc(e.message)}。請檢查 CONFIG.GAS_URL 與 GAS 部署權限。</div>`; return; }
@@ -1130,4 +1144,3 @@ window.addEventListener("beforeunload",()=>{ document.querySelectorAll("video").
 </script>
 </body>
 </html>
- 
