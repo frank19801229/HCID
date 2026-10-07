@@ -573,7 +573,7 @@ const VIEWS = {
       <div class="card"><div class="sp"><b>近期任務</b><button class="ghost sm" onclick="location.hash='tasks'">全部任務</button></div>
         ${table([["任務",r=>esc(r.title)],["期限",r=>esc(r.due)]],tasks,"目前沒有任務")}</div>
       <div class="card"><div class="sp"><b>即時訓練捷徑</b><button class="ghost sm" onclick="location.hash='jit'">全部即時訓練</button></div>
-        ${table([["課程",r=>`<a href="#course/${esc(r.id)}">${esc(r.title)}</a>`],["主題",r=>esc(r.topic)]],jit,"目前沒有資料")}</div>
+        ${table([["課程",r=>`<a href="#course/${esc(r.id)}">${esc(r.title)}</a>`]],jit,"目前沒有資料")}</div>
     </div>`;
   },
 
@@ -588,9 +588,9 @@ const VIEWS = {
     let body = "";
     if(t==="list"){
       const rows = DB.Courses.filter(c => !q || JSON.stringify(c).toLowerCase().includes(q));
-      body = `<div class="card"><input id="cq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.cq||"")}" oninput="tabState.cq=this.value;route(true)">
+      body = `<div class="card"><input id="cq" value="${esc(tabState.cq||"")}" oninput="tabState.cq=this.value;route(true)">
       <div style="height:10px"></div>` + table([
-        ["課程",r=>`<b>${esc(r.title)}</b><div class="hint">${esc(r.code?r.code+" · ":"")}${esc(r.unit?r.unit+" · ":"")}${esc(r.pathogen)} · ${esc(r.topic)}${r.jit==="Y"?" · 即時訓練":""}</div>`],
+        ["課程",r=>`<b>${esc(r.title)}</b><div class="hint">${esc([r.code,r.unit,r.pathogen,r.topic,r.jit==="Y"?"即時訓練":""].filter(Boolean).join(" · "))}</div>`],
         ["教材",r=>`<span class="tag">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span><div class="hint">${esc(r.method||"")}</div>`],
         ["排程",r=>`${schedTag(r)}<div class="hint">${esc(schedText(r))}</div>`],
         ["類別 / 學分",r=>`${esc(reqLabel(r.required))} · ${esc(r.hours)} 小時<div class="hint">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
@@ -627,7 +627,7 @@ const VIEWS = {
     const quizPanel = isAdmin() ? courseQuizAdmin(c) : courseQuizLearner(c);
     const quizDone = !isAdmin() && !!lastQuiz(c);
     const ctab = (tabState.cst === "survey" && survey) ? "survey" : (tabState.cst === "quiz" && quizPanel) ? "quiz" : "progress";
-    return head(esc(c.title), `${esc(c.pathogen)} · ${esc(c.topic)} · ${esc(reqLabel(c.required))} · ${esc(c.hours)} 小時`) + back + `
+    return head(esc(c.title), `${esc([c.pathogen,c.topic,reqLabel(c.required),c.hours+" 小時"].filter(Boolean).join(" · "))}`) + back + `
     <div class="card">
       <div class="sp"><div>${schedTag(c)} <span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span> <span class="hint">${esc(schedText(c))}</span></div></div>
       ${c.content?`<p>${esc(c.content)}</p>`:""}
@@ -655,9 +655,9 @@ const VIEWS = {
     const q = (tabState.jq||"").toLowerCase();
     const rows = DB.Courses.filter(c => c.jit==="Y" && (!q || JSON.stringify(c).toLowerCase().includes(q)));
     return head("即時訓練","快速找到情境需要的訓練與作業資料。") + `
-    <div class="card"><input id="jq" placeholder="搜尋課程、病原、主題或教材內容" value="${esc(tabState.jq||"")}" oninput="tabState.jq=this.value;route(true)">
+    <div class="card"><input id="jq" value="${esc(tabState.jq||"")}" oninput="tabState.jq=this.value;route(true)">
     <div class="notice">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>
-    ${rows.length? rows.map(c=>`<div class="card" style="margin-top:10px"><div class="sp"><div><b>${esc(c.title)}</b> <span class="tag">${esc(c.topic)}</span> <span class="tag">${esc(c.pathogen)}</span> <span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span></div>
+    ${rows.length? rows.map(c=>`<div class="card" style="margin-top:10px"><div class="sp"><div><b>${esc(c.title)}</b> ${c.topic?`<span class="tag">${esc(c.topic)}</span> `:""}${c.pathogen?`<span class="tag">${esc(c.pathogen)}</span> `:""}<span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span></div>
       <a class="btn sm" href="#course/${esc(c.id)}">開啟教材</a></div><p>${esc(c.content)}</p></div>`).join("") : `<div class="empty">沒有符合的課程或教材</div>`}</div>`;
   },
 
@@ -828,7 +828,6 @@ function courseForm(){
   return `<div class="card"><div class="sp"><b>${editing?"編輯課程":"新增課程"}（管理者）</b>${editing?`<button class="ghost sm" onclick="newCourse()">改為新增</button>`:""}</div>
   <fieldset class="fieldset"><legend>基本資料</legend><div class="row">
     ${field("c_title","課程名稱","text","",e.title)}${field("c_code","課程編號","text","",e.code)}${field("c_unit","開課單位","text","",e.unit)}
-    ${field("c_path","病原","text","",e.pathogen)}${field("c_topic","主題","text","",e.topic)}
     <div><label>上課方式</label><select id="c_method">${opts(METHODS, e.method||"線上")}</select></div>
     ${field("c_hours","學分時數（小時）","number","1",e.hours ?? 1)}
     <div><label>類別</label><select id="c_req">${opts([["必修","必修"],["進階","進階"]], reqLabel(e.required))}</select></div>
@@ -906,7 +905,7 @@ window.saveCourse = act0(async()=>{
   } else url = "";
   const s = val("c_start"), e = val("c_end");
   if(s && e && new Date(e) <= new Date(s)) throw new Error("截止時間必須晚於開放時間");
-  const data = {title:val("c_title"),pathogen:val("c_path"),topic:val("c_topic"),hours:val("c_hours")||0,jit:val("c_jit"),content:val("c_content"),
+  const data = {title:val("c_title"),hours:val("c_hours")||0,jit:val("c_jit"),content:val("c_content"),
     required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:val("c_cmode"),credit_rule:val("c_rule"),
     code:val("c_code"),unit:val("c_unit"),method:val("c_method")};
   const quiz = [...document.querySelectorAll("#quiz_list .qrow")].map(r=>({q:r.querySelector(".qz_text").value.trim(), a:Number(r.querySelector(".qz_ans").value)})).filter(x=>x.q);
@@ -914,7 +913,7 @@ window.saveCourse = act0(async()=>{
   if(tabState.editId){
     await updateRow("Courses","id",tabState.editId,data); toast("已儲存變更");
   } else {
-    await addRow("Courses",{id:"C"+uid(),...data});
+    await addRow("Courses",{id:"C"+uid(),pathogen:"",topic:"",...data});
     if($("#c_assign")?.checked){
       for(const m of DB.Members.filter(isActive)){
         await addRow("Tasks",{id:"T"+uid(),title:"完成課程："+data.title,assignee:String(m.email).toLowerCase(),due:(e||"").slice(0,10),status:"待完成"});
