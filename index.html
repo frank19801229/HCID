@@ -69,6 +69,10 @@ video.player{width:100%;max-height:68vh;border-radius:10px;background:#000}
 .fieldset{border:1px dashed var(--line);border-radius:10px;padding:12px;margin:12px 0}
 .fieldset legend{font-size:12px;color:var(--brand);padding:0 6px;font-weight:700}
 .hint{font-size:12px;color:var(--mute);margin-top:3px}
+.opt{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink);margin:9px 0;cursor:pointer}
+.opt input{width:auto;margin:0}
+.req{color:var(--red)}
+.qhead{background:var(--brand);color:#fff;font-weight:700;padding:12px 16px;border-radius:12px;margin-bottom:10px}
 .filters{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:10px;margin-bottom:12px}
 @media(max-width:900px){.filters{grid-template-columns:1fr 1fr}}
 details.grp{border-top:1px solid var(--line);background:#fafafa}
@@ -128,6 +132,7 @@ const TABLES = {
   News:      ["id","type","title","level","date","body"],
   Consents:  ["email","consent","signed_at"],
   Surveys:   ["email","survey","answer","time"],
+  SurveyQuestions: ["id","order","text","type","options","required"],
   Attendance:["course_id","date","count","reporter"]
 };
 const MEDIA_TYPES = [["none","純文字教材（無檔案）"],["mp4","MP4 影片"],["hls","HLS 串流（.m3u8）"],["pdf","PDF"],["ppt","PPT / PPTX"],["iframe","iframe / 網頁嵌入（含 YouTube）"]];
@@ -146,6 +151,12 @@ let DB = {}, user = null, tabState = {}, T = {};   // T：目前課程頁的計�
 
 /* ---------- 後端存取 ---------- */
 const DEMO = !CONFIG.GAS_URL;
+const SCALE5 = ["非常滿意","滿意","尚可","差","很差"];
+const defaultSurveyQs = (base=0) => {
+  const scaleQs = ["課程內容實用性","與實際工作關聯性","講者表達能力","講者專業知識","活動安排時間","講題之選定"];
+  return [...scaleQs.map((t,i)=>({id:"Q"+uid()+i,order:base+i+1,text:t,type:"choice",options:SCALE5.join("|"),required:"Y"})),
+    {id:"Q"+uid()+"x",order:base+scaleQs.length+1,text:"其他建議",type:"text",options:"",required:"N"}];
+};
 function demoSeed(){
   const d = n => { const x = new Date(Date.now()+n*864e5); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,16); };
   const y = curYear();
@@ -172,13 +183,14 @@ function demoSeed(){
     FitTests:[],External:[],
     News:[{id:"N1",type:"alert",title:"示範：流感活動度提升",level:"黃",date:today(),body:"虛構資料，尚未串接官方疫情來源。"},
           {id:"N2",type:"announce",title:"示範：本月訓練場次公告",level:"",date:today(),body:"虛構公告。"}],
-    Consents:[],Surveys:[],Attendance:[]
+    Consents:[],Surveys:[],SurveyQuestions:defaultSurveyQs(),Attendance:[]
   };
 }
 window.resetDemo = ()=>{ if(confirm("清除示範資料並重設為預設內容？")){ localStorage.removeItem("hcid_demo_db"); location.reload(); } };
 async function loadAll(){
   if (DEMO){
     try{ DB = JSON.parse(localStorage.getItem("hcid_demo_db")) || demoSeed(); }catch(e){ DB = demoSeed(); }
+    if(!DB.SurveyQuestions){ DB.SurveyQuestions = defaultSurveyQs(); persistDemo(); }
     Object.keys(TABLES).forEach(k => DB[k] = DB[k] || []);
     return;
   }
@@ -450,6 +462,49 @@ function loadScript(src){
 }
 
 /* ---------- 各頁 ---------- */
+/* ---------- 問卷（題目可由管理者增刪修） ---------- */
+const sortedQs = () => [...(DB.SurveyQuestions||[])].sort((a,b)=>(Number(a.order)||0)-(Number(b.order)||0));
+const isReqQ = q => String(q.required||"").toUpperCase() === "Y";
+const qOptions = q => String(q.options||"").split("|").map(s=>s.trim()).filter(Boolean);
+
+function surveyForm(){
+  const qs = sortedQs();
+  if(!qs.length) return `<div class="empty">目前沒有問卷題目${isAdmin()?"，請至「問卷題目管理」新增或載入預設題目":""}</div>`;
+  return `<div class="qhead">滿意度調查區段</div>` + qs.map(q=>`<div class="card" style="margin-bottom:10px">
+    <b>${esc(q.text)}</b>${isReqQ(q)?` <span class="req">*</span>`:""}
+    ${q.type==="text"
+      ? `<div style="height:8px"></div><input id="sa_${esc(q.id)}" placeholder="您的回答">`
+      : qOptions(q).map(o=>`<label class="opt"><input type="radio" name="sa_${esc(q.id)}" value="${esc(o)}"> ${esc(o)}</label>`).join("")}
+  </div>`).join("") + `<button onclick="addSurvey()">提交</button>`;
+}
+
+function sqAdminView(){
+  const qs = sortedQs();
+  const e = tabState.sqEdit ? (DB.SurveyQuestions||[]).find(x=>x.id===tabState.sqEdit) : null;
+  const isText = e?.type === "text";
+  const optText = e ? qOptions(e).join("\n") : SCALE5.join("\n");
+  const list = table([
+    ["#", r=>qs.indexOf(r)+1],
+    ["題目", r=>esc(r.text)],
+    ["題型", r=>r.type==="text" ? `<span class="tag gray">簡答</span>` : `<span class="tag">單選：${esc(qOptions(r).join("／"))}</span>`],
+    ["必填", r=>isReqQ(r) ? `<span class="tag green">必填</span>` : `<span class="tag gray">選填</span>`],
+    ["", r=>{ const i = qs.indexOf(r);
+      return `<button class="ghost sm" ${i===0?"disabled":""} onclick="moveSQ('${esc(r.id)}',-1)">↑</button> <button class="ghost sm" ${i===qs.length-1?"disabled":""} onclick="moveSQ('${esc(r.id)}',1)">↓</button> <button class="ghost sm" onclick="editSQ('${esc(r.id)}')">編輯</button> <button class="danger sm" onclick="deleteSQ('${esc(r.id)}')">刪除</button>`; }]
+  ], qs, "尚無題目");
+  return `<div class="sp"><b>問卷題目管理（共 ${qs.length} 題）</b>
+      <button class="ghost sm" onclick="loadDefaultSQ()">載入預設題目（滿意度問卷）</button></div>
+    ${list}
+    <div class="fieldset" style="margin-top:16px"><legend>${e?"編輯題目":"新增題目"}</legend>
+      <div class="row">${field("sq_text","題目","text","例如：課程內容實用性",e?.text||"")}
+        <div><label>題型</label><select id="sq_type" onchange="document.getElementById('sq_opts_wrap').style.display=this.value==='text'?'none':''">${opts([["choice","單選題"],["text","簡答題"]], e?.type||"choice")}</select></div></div>
+      <div id="sq_opts_wrap" style="display:${isText?"none":""}"><label>選項（每行一個，至少 2 個）</label><textarea id="sq_opts">${esc(optText)}</textarea></div>
+      <label class="opt"><input type="checkbox" id="sq_req" ${(!e||isReqQ(e))?"checked":""}> 必填</label>
+      <button onclick="saveSQ()">${e?"儲存修改":"新增題目"}</button>
+      ${e?` <button class="ghost" onclick="cancelSQ()">取消編輯</button>`:""}
+    </div>
+    <div class="hint">題目變更只影響之後填寫的問卷；已送出的回覆會保留當時的題目文字。</div>`;
+}
+
 const VIEWS = {
   overview(){
     const s = stats();
@@ -577,13 +632,13 @@ const VIEWS = {
     const signed = DB.Consents.filter(c=>eq(c.email,user.email));
     let body="";
     if(t==="consent") body = table([["同意書",r=>esc(r)],["狀態",r=>{const s=signed.find(x=>x.consent===r);return s?`<span class="tag green">已簽署 ${esc(s.signed_at)}</span>`:`<button class="sm" onclick="sign('${r}')">線上簽署</button>`}]],consents);
-    if(t==="survey") body = `<div class="row"><div><label>問卷</label><select id="s_name"><option>課後滿意度</option><option>需求調查</option></select></div>
-      <div><label>整體滿意度</label><select id="s_ans"><option>非常滿意</option><option>滿意</option><option>普通</option><option>不滿意</option></select></div></div><button onclick="addSurvey()">送出問卷</button>`;
+    if(t==="survey") body = surveyForm();
+    if(t==="sq" && isAdmin()) body = sqAdminView();
     if(t==="att") body = `<div class="row"><div><label>課程</label><select id="a_course">${DB.Courses.map(c=>`<option value="${esc(c.id)}">${esc(c.title)}</option>`).join("")}</select></div>
       ${field("a_date","上課日期","date")}${field("a_count","上課人數","number")}</div><button onclick="addAtt()">填報</button>
       <div style="height:12px"></div>${table([["日期",r=>esc(r.date)],["課程",r=>esc(r.course_id)],["人數",r=>esc(r.count)],["填報人",r=>esc(r.reporter)]],DB.Attendance,"尚無填報")}`;
     return head("同意書與問卷","依授權範圍管理與查閱資料。") + `<div class="sp"><b>同意書與簽署紀錄</b></div>` +
-      tabs("ft",[["consent","線上同意書"],["survey","問卷調查"],["att","上課人數填報"]],"consent") + `<div class="card">${body}</div>`;
+      tabs("ft",[["consent","線上同意書"],["survey","問卷調查"],...(isAdmin()?[["sq","問卷題目管理"]]:[]),["att","上課人數填報"]],"consent") + `<div class="card">${body}</div>`;
   }
 };
 
@@ -886,7 +941,57 @@ window.addExt = act(async()=>{ if(!val("e_title")) throw new Error("請輸入訓
 window.addNews = act(async type=>{ if(!val("n_title")) throw new Error("請輸入標題");
   await addRow("News",{id:"N"+uid(),type,title:val("n_title"),level:type==="alert"?val("n_level"):"",date:today(),body:val("n_body")}); toast("已發布"); });
 window.sign = act(async c=>{ await addRow("Consents",{email:user.email,consent:c,signed_at:today()}); toast("已簽署"); });
-window.addSurvey = act(async()=>{ await addRow("Surveys",{email:user.email,survey:val("s_name"),answer:val("s_ans"),time:new Date().toISOString()}); toast("感謝填寫"); });
+window.addSurvey = act(async()=>{
+  const qs = sortedQs(); if(!qs.length) throw new Error("目前沒有問卷題目");
+  const ans = [];
+  for(const q of qs){
+    let a = "";
+    if(q.type==="text") a = (document.getElementById("sa_"+q.id)?.value || "").trim();
+    else a = [...document.getElementsByName("sa_"+q.id)].find(x=>x.checked)?.value || "";
+    if(isReqQ(q) && !a) throw new Error("請回答：" + q.text);
+    ans.push({q:q.text, a});
+  }
+  await addRow("Surveys",{email:user.email,survey:"課後滿意度",answer:JSON.stringify(ans),time:new Date().toISOString()});
+  toast("感謝填寫");
+});
+window.saveSQ = act(async()=>{
+  const text = val("sq_text"), type = val("sq_type");
+  if(!text) throw new Error("請輸入題目");
+  let options = "";
+  if(type==="choice"){
+    const arr = $("#sq_opts").value.split("\n").map(s=>s.replace(/\|/g,"").trim()).filter(Boolean);
+    if(arr.length < 2) throw new Error("單選題至少需要 2 個選項");
+    options = arr.join("|");
+  }
+  const required = $("#sq_req").checked ? "Y" : "N";
+  if(tabState.sqEdit){ await updateRow("SurveyQuestions","id",tabState.sqEdit,{text,type,options,required}); toast("已更新題目"); }
+  else {
+    const max = Math.max(0, ...DB.SurveyQuestions.map(x=>Number(x.order)||0));
+    await addRow("SurveyQuestions",{id:"Q"+uid(),order:max+1,text,type,options,required}); toast("已新增題目");
+  }
+  tabState.sqEdit = null;
+});
+window.editSQ = id => { tabState.sqEdit = id; route(); };
+window.cancelSQ = () => { tabState.sqEdit = null; route(); };
+window.deleteSQ = act0(async id=>{
+  const q = DB.SurveyQuestions.find(x=>x.id===id); if(!q) return;
+  if(!confirm(`確定要刪除題目「${q.text}」嗎？\n\n已送出的回覆會保留，此動作無法復原。`)) return;
+  await deleteRow("SurveyQuestions","id",id);
+  if(tabState.sqEdit === id) tabState.sqEdit = null;
+  toast("已刪除題目");
+});
+window.moveSQ = act0(async(id,dir)=>{
+  const qs = sortedQs(), i = qs.findIndex(x=>x.id===id), j = i + dir;
+  if(i < 0 || j < 0 || j >= qs.length) return;
+  [qs[i], qs[j]] = [qs[j], qs[i]];
+  for(let k=0;k<qs.length;k++){ if(Number(qs[k].order) !== k+1) await updateRow("SurveyQuestions","id",qs[k].id,{order:k+1}); }
+});
+window.loadDefaultSQ = act0(async()=>{
+  const base = Math.max(0, ...DB.SurveyQuestions.map(x=>Number(x.order)||0));
+  if(DB.SurveyQuestions.length && !confirm("目前已有題目，載入預設題目會在後面新增 7 題（不會刪除既有題目）。要繼續嗎？")) return;
+  for(const q of defaultSurveyQs(base)) await addRow("SurveyQuestions", q);
+  toast("已載入預設題目");
+});
 window.addAtt = act(async()=>{ if(!val("a_date")||!val("a_count")) throw new Error("請填寫日期與人數");
   await addRow("Attendance",{course_id:val("a_course"),date:val("a_date"),count:val("a_count"),reporter:user.email}); toast("已填報"); });
 window.downloadCSV = ()=>{
