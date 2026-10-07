@@ -72,6 +72,12 @@ video.player{width:100%;max-height:68vh;border-radius:10px;background:#000}
 .opt{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--ink);margin:9px 0;cursor:pointer}
 .opt input{width:auto;margin:0}
 .req{color:var(--red)}
+#quiz_list{counter-reset:qz}
+.qrow{display:grid;grid-template-columns:auto 1fr 150px auto;gap:8px;align-items:start;margin:8px 0}
+.qn{font-weight:700;padding-top:8px}
+.qn::before{counter-increment:qz;content:counter(qz) "."}
+.qrow textarea{min-height:44px}
+@media(max-width:760px){.qrow{grid-template-columns:auto 1fr}.qrow select,.qrow button{grid-column:2}}
 .filters{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:10px;margin-bottom:12px}
 @media(max-width:900px){.filters{grid-template-columns:1fr 1fr}}
 details.grp{border-top:1px solid var(--line);background:#fafafa}
@@ -123,7 +129,7 @@ const CONFIG = {
 
 const TABLES = {
   Members:   ["email","name","role","unit","emp_id","job","active"],
-  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule","code","unit","method"],
+  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule","code","unit","method","quiz"],
   Tasks:     ["id","title","assignee","due","status"],
   Records:   ["id","email","course_id","code","course_title","unit","topic","method","hours","date","status","category"],
   FitTests:  ["email","date","model","result"],
@@ -150,6 +156,12 @@ let DB = {}, user = null, tabState = {}, T = {};   // T：目前課程頁的計�
 
 /* ---------- 後端存取 ---------- */
 const DEMO = !CONFIG.GAS_URL;
+const DEFAULT_QUIZ = [
+  {q:"緊急置入的導管無法以無菌技術執行時，應在48小時內拔除，並更換新導管重新注射",a:0},
+  {q:"所有注射溶液使用超過24小時應丟棄",a:0},
+  {q:"血液及其他血液製品應在4小時內注射完畢",a:0}];   // a：0＝A. 正確、1＝B. 錯誤
+const QUIZ_OPTS = ["正確","錯誤"];
+const parseQuiz = c => { try{ const a = JSON.parse(c?.quiz || "[]"); return Array.isArray(a) ? a.filter(x=>x && x.q).map(x=>({q:String(x.q),a:Number(x.a)===1?1:0})) : []; }catch(e){ return []; } };
 const SCALE5 = ["非常滿意","滿意","尚可","差","很差"];
 const defaultSurveyQs = (base=0) => {
   const scaleQs = ["課程內容實用性","與實際工作關聯性","講者表達能力","講者專業知識","活動安排時間","講題之選定"];
@@ -170,7 +182,7 @@ function demoSeed(){
       {id:"C1",title:"個人防護裝備穿脫（示範影片）",pathogen:"通用",topic:"感染管制",hours:1,jit:"Y",content:"示範教材，僅供操作展示，不作為臨床指示。",required:"必修",media_type:"mp4",media_url:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80,code:"DEMO-001",unit:"感染管制中心",method:"線上"},
       {id:"C2",title:"N95 密合度測試說明（示範 HLS）",pathogen:"呼吸道",topic:"感染管制",hours:2,jit:"Y",content:"示範教材，僅供操作展示。",required:"進階",media_type:"hls",media_url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80,code:"DEMO-002",unit:"感染管制中心",method:"線上"},
       {id:"C3",title:"下月新進人員感控訓練（示範排程）",pathogen:"通用",topic:"感控基礎",hours:1,jit:"N",content:"尚未開放的排程課程示範。",required:"必修",media_type:"none",media_url:"",schedule_start:d(14),schedule_end:d(21),credit_mode:"manual",credit_rule:"",code:"DEMO-003",unit:"感染管制中心",method:"實體"}
-    ],
+    ].map(c=>({...c,quiz:JSON.stringify(DEFAULT_QUIZ)})),
     Tasks:[{id:"T1",title:"完成課程：個人防護裝備穿脫（示範影片）",assignee:"demo@example.com",due:today(),status:"待完成"}],
     Records:[
       rec(1,"demo@example.com","DEMO-R01","示範課程：結核病防治概論","感染管制中心","感染管制","線上",1,y+"-03-10","合格"),
@@ -480,6 +492,19 @@ function courseSurvey(c){
   </div>`).join("") + `<button onclick="addSurvey('${esc(c.id)}')">提交問卷</button></div>`;
 }
 
+function quizRow(q){
+  return `<div class="qrow"><span class="qn"></span>
+    <textarea class="qz_text" rows="2" placeholder="題目">${esc(q.q)}</textarea>
+    <select class="qz_ans">${QUIZ_OPTS.map((o,k)=>`<option value="${k}" ${q.a===k?"selected":""}>正解：${"AB"[k]}. ${o}</option>`).join("")}</select>
+    <button type="button" class="danger sm" onclick="this.closest('.qrow').remove()">刪除</button></div>`;
+}
+function courseQuizAdmin(c){
+  const qs = parseQuiz(c);
+  const head = `<div class="sp"><b>課後測驗（共 ${qs.length} 題）</b><button class="ghost sm" onclick="editCourse('${esc(c.id)}',true)">編輯測驗</button></div>`;
+  if(!qs.length) return `<div class="card">${head}<div class="empty">此課程尚未設定測驗題目</div></div>`;
+  return `<div class="card">${head}` + qs.map((q,i)=>`<div class="card" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b>` +
+    QUIZ_OPTS.map((o,k)=>`<div class="opt" style="cursor:default;${q.a===k?"color:var(--ok);font-weight:700":""}">${q.a===k?"✓":"○"} ${"AB"[k]}. ${o}${q.a===k?"（正解）":""}</div>`).join("") + `</div>`).join("") + `</div>`;
+}
 function sqAdminView(){
   const qs = sortedQs();
   const e = tabState.sqEdit ? (DB.SurveyQuestions||[]).find(x=>x.id===tabState.sqEdit) : null;
@@ -579,7 +604,8 @@ const VIEWS = {
     }
     const survey = courseSurvey(c);
     const surveyDone = (DB.Surveys||[]).some(x => eq(x.email,user.email) && String(x.course_id||"")===String(c.id));
-    const ctab = (tabState.cst === "survey" && survey) ? "survey" : "progress";
+    const quizPanel = isAdmin() ? courseQuizAdmin(c) : "";
+    const ctab = (tabState.cst === "survey" && survey) ? "survey" : (tabState.cst === "quiz" && quizPanel) ? "quiz" : "progress";
     return head(esc(c.title), `${esc(c.pathogen)} · ${esc(c.topic)} · ${esc(reqLabel(c.required))} · ${esc(c.hours)} 小時`) + back + `
     <div class="card">
       <div class="sp"><div>${schedTag(c)} <span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span> <span class="hint">${esc(schedText(c))}</span></div></div>
@@ -588,6 +614,7 @@ const VIEWS = {
     </div>
     <div class="tabs" id="ctabs" style="margin-top:12px">
       <button data-k="progress" class="${ctab==="progress"?"on":""}" onclick="cTab('progress')">學習進度與學分</button>
+      ${quizPanel?`<button data-k="quiz" class="${ctab==="quiz"?"on":""}" onclick="cTab('quiz')">課後測驗</button>`:""}
       ${survey?`<button data-k="survey" class="${ctab==="survey"?"on":""}" onclick="cTab('survey')">課後滿意度問卷${surveyDone?" ✓":""}</button>`:""}
     </div>
     <div data-cp="progress" style="${ctab==="progress"?"":"display:none"}">
@@ -598,6 +625,7 @@ const VIEWS = {
       ${c.credit_mode==="manual"||kind==="none"?`<button id="markBtn" onclick="markDone('${esc(c.id)}')">標記完成並採認學分</button>`:""}
     </div>
     </div>
+    ${quizPanel?`<div data-cp="quiz" style="${ctab==="quiz"?"":"display:none"}">${quizPanel}</div>`:""}
     ${survey?`<div data-cp="survey" style="${ctab==="survey"?"":"display:none"}">${survey}</div>`:""}
     <div class="notice">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>`;
   },
@@ -805,6 +833,11 @@ function courseForm(){
     ${field("c_rule","達標條件","number","影片：80（%）／其他：10（分鐘）",e.credit_rule)}</div>
     <div class="hint">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。學員第一次開啟課程時會自動記為「已選課」，達標後轉為「合格」。</div></fieldset>
 
+  <fieldset class="fieldset" id="quiz_block"><legend>課後測驗</legend>
+    <div id="quiz_list">${(editing ? parseQuiz(e) : DEFAULT_QUIZ).map(quizRow).join("")}</div>
+    <button type="button" class="ghost sm" onclick="addQuizRow()">＋ 新增題目</button>
+    <div class="hint">是非題（A. 正確／B. 錯誤），每題需指定正解。全部刪除代表此課程沒有測驗。</div></fieldset>
+
   <button onclick="saveCourse()">${editing?"儲存變更":"新增課程"}</button>
   ${editing?` <button class="danger" onclick="deleteCourse('${esc(e.id)}')">刪除此課程</button>`:""}</div>`;
 }
@@ -824,7 +857,12 @@ window.syncMedia = ()=>{
   $("#c_urlhint").textContent = MEDIA_HINT[t.value];
 };
 window.newCourse = ()=>{ tabState.editId = null; tabState.ct = "form"; route(); };
-window.editCourse = id => { tabState.editId = id; tabState.ct = "form"; route(); };
+window.editCourse = (id, toQuiz) => {
+  tabState.editId = id; tabState.ct = "form";
+  if(location.hash === "#courses") route(); else location.hash = "courses";
+  if(toQuiz) setTimeout(()=>document.getElementById("quiz_block")?.scrollIntoView({behavior:"smooth",block:"start"}), 150);
+};
+window.addQuizRow = () => { document.getElementById("quiz_list").insertAdjacentHTML("beforeend", quizRow({q:"",a:0})); };
 window.deleteCourse = act0(async id=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   const c = DB.Courses.find(x=>x.id===id); if(!c) return;
@@ -852,6 +890,8 @@ window.saveCourse = act0(async()=>{
   const data = {title:val("c_title"),pathogen:val("c_path"),topic:val("c_topic"),hours:val("c_hours")||0,jit:val("c_jit"),content:val("c_content"),
     required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:val("c_cmode"),credit_rule:val("c_rule"),
     code:val("c_code"),unit:val("c_unit"),method:val("c_method")};
+  const quiz = [...document.querySelectorAll("#quiz_list .qrow")].map(r=>({q:r.querySelector(".qz_text").value.trim(), a:Number(r.querySelector(".qz_ans").value)})).filter(x=>x.q);
+  data.quiz = quiz.length ? JSON.stringify(quiz) : "";
   if(tabState.editId){
     await updateRow("Courses","id",tabState.editId,data); toast("已儲存變更");
   } else {
