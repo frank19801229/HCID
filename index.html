@@ -94,7 +94,7 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 <aside>
   <div class="logo"><b>HCID</b><div>智慧應變與即時訓練<small>感染管制中心</small></div></div>
   <div class="sep">學員工作空間</div>
-  <a href="#overview">整備總覽</a>
+  <a href="#overview" id="navOverview">整備總覽</a>
   <a href="#courses">課程與教材</a>
   <a href="#jit">即時訓練</a>
   <a href="#tasks">任務與通知</a>
@@ -254,6 +254,7 @@ function setUser(e){
   user = {email:e, name: m?.name || e.split("@")[0], role: m?.role || "學員"};
   $("#who").textContent = `${user.email} · ${user.role}`;
   $("#navProfile").textContent = isAdmin() ? "學員名單管理" : "個人學習履歷";
+  $("#navOverview").style.display = isAdmin() ? "" : "none";   // 整備總覽僅管理者可見
 }
 function changeUser(){ localStorage.removeItem("hcid_user"); tabState.pm = null; initUser(); route(); }
 const isAdmin = () => CONFIG.ADMIN_ROLES.includes(user.role);
@@ -1102,7 +1103,8 @@ window.downloadCSV = ()=>{
 function route(keepFocus){
   clearInterval(T.timer); clearTimeout(tick.t);
   if(T.hls){ try{T.hls.destroy();}catch(e){} T.hls = null; }
-  const [k,arg] = (location.hash||"#overview").slice(1).split("/");
+  let [k,arg] = (location.hash||"#overview").slice(1).split("/");
+  if(!isAdmin() && (k === "overview" || !VIEWS[k])){ k = "courses"; arg = undefined; history.replaceState(null,"","#courses"); }   // 學員沒有整備總覽，改進課程與教材
   if(k === "course"){ const id = decodeURIComponent(arg||""); if(tabState.cid !== id) tabState.cst = null; tabState.cid = id; }
   const v = VIEWS[k] || VIEWS.overview;
   const focusId = document.activeElement?.id, pos = document.activeElement?.selectionStart;
