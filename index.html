@@ -792,7 +792,7 @@ function memberView(){
   const eff = effRecords(email, yr).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
   const done = hoursOf(email, yr), enr = sumH(eff.filter(r=>stOf(r)==="已選課"));
   const dp = Math.min(100, done/tgt*100), ep = Math.min(100-dp, enr/tgt*100), rp = Math.max(0, 100-dp-ep);
-  const fit = DB.FitTests.filter(r=>eq(r.email,email)), ext = extOf(email, yr);
+  const ext = extOf(email, yr);
   const back = admin ? `<p><a href="#profile" onclick="backRoster();return false">← 返回學員名單</a></p>` : "";
   let body = "";
 
@@ -806,8 +806,6 @@ function memberView(){
         ["時數",r=>esc(r.hours)],["日期",r=>esc(r.date)],["狀態",r=>stTag(stOf(r))]
       ], list)}</div></details>`).join("") : `<div class="empty">${yr} 年度尚無修課紀錄</div>`;
   }
-  if(t==="fit") body = table([["日期",r=>esc(r.date)],["型號",r=>esc(r.model)],["結果",r=>`<span class="tag ${r.result==="通過"?"green":"red"}">${esc(r.result)}</span>`]],fit,"尚無密合度紀錄") +
-    `<div class="row">${field("f_date","測試日期","date")}${field("f_model","N95 型號")}<div><label>結果</label><select id="f_res"><option>通過</option><option>未通過</option></select></div></div><button onclick="addFit()">新增紀錄</button>`;
   if(t==="ext") body = table([["名稱",r=>esc(r.title)],["時數",r=>esc(r.hours)],["日期",r=>esc(r.date)],["備註",r=>esc(r.note)]],ext,`${yr} 年度尚無外部佐證`) +
     `<div class="row">${field("e_title","訓練名稱")}${field("e_hours","時數","number")}${field("e_date","日期","date")}${field("e_note","備註 / 證明連結")}</div><button onclick="addExt()">新增佐證</button>`;
 
@@ -821,7 +819,7 @@ function memberView(){
     <div class="legend"><span><i class="sq g"></i>已完成之時數：${Math.round(dp)}%（${done} / ${tgt} 小時）</span><span><i class="sq o"></i>已選課，未完成之時數：${Math.round(ep)}%（${enr} 小時）</span><span><i class="sq n"></i>未完成之時數：${Math.round(rp)}%</span></div>
     <div class="hint">已完成時數包含合格課程與外部訓練佐證；目標為年度 ${tgt} 小時。</div></div>
   <h2 class="sec">🕒 課程參與紀錄</h2>` +
-  (admin ? "" : tabs("pt",[["rec","課程參與紀錄"],["fit","N95 密合度"],["ext","外部訓練佐證"]],"rec")) + `<div class="card" style="padding:${t==="rec"?"0 8px 8px":"16px"}">${body}</div>`;
+  (admin ? "" : tabs("pt",[["rec","課程參與紀錄"],["ext","外部訓練佐證"]],"rec")) + `<div class="card" style="padding:${t==="rec"?"0 8px 8px":"16px"}">${body}</div>`;
 }
 /* ---------- 課程表單（管理者） ---------- */
 function courseForm(){
@@ -1006,8 +1004,6 @@ window.markDone = async id => { const c = DB.Courses.find(x=>x.id===id); if(c){ 
 window.addTask = act(async()=>{ if(!val("t_title")||!val("t_who")) throw new Error("請填寫任務與對象");
   await addRow("Tasks",{id:"T"+uid(),title:val("t_title"),assignee:val("t_who").toLowerCase(),due:val("t_due"),status:"待完成"}); toast("已指派"); });
 window.doneTask = act(async id=>{ await updateRow("Tasks","id",id,{status:"已完成"}); toast("已完成"); });
-window.addFit = act(async()=>{ if(!val("f_date")) throw new Error("請選擇日期");
-  await addRow("FitTests",{email:viewEmail(),date:val("f_date"),model:val("f_model"),result:val("f_res")}); toast("已新增"); });
 window.addExt = act(async()=>{ if(!val("e_title")) throw new Error("請輸入訓練名稱");
   await addRow("External",{email:viewEmail(),title:val("e_title"),hours:val("e_hours")||0,date:val("e_date")||today(),note:val("e_note")}); toast("已新增"); });
 window.addNews = act(async type=>{ if(!val("n_title")) throw new Error("請輸入標題");
@@ -1095,7 +1091,6 @@ window.downloadCSV = ()=>{
   const lines = [csvLine(["姓名",m.name,"Email",email,"年度",yr]), csvLine(["類型","課程編號","名稱","開課單位","上課方式","時數","日期","狀態"])];
   effRecords(email,yr).forEach(r=>lines.push(csvLine(["修課",r.code||r.course_id,r.course_title,r.unit,r.method,r.hours,r.date,stOf(r)])));
   extOf(email,yr).forEach(r=>lines.push(csvLine(["外部","",r.title,"","",r.hours,r.date,"合格"])));
-  DB.FitTests.filter(r=>eq(r.email,email)).forEach(r=>lines.push(csvLine(["N95密合度","",r.model,"","","",r.date,r.result])));
   downloadText(`學習履歷_${m.name}_${yr}.csv`, lines.join("\n"));
 };
 
