@@ -75,7 +75,7 @@ video.player{width:100%;max-height:68vh;border-radius:10px;background:#000}
 .qn::before{counter-increment:qz;content:counter(qz) "."}
 .qrow textarea{min-height:44px}
 @media(max-width:760px){.qrow{grid-template-columns:auto 1fr}.qrow select,.qrow button{grid-column:2}}
-.filters{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:10px;margin-bottom:12px}
+.filters{display:grid;grid-template-columns:2fr repeat(5,1fr);gap:10px;margin-bottom:12px}
 @media(max-width:900px){.filters{grid-template-columns:1fr 1fr}}
 details.grp{border-top:1px solid var(--line);background:#fafafa}
 details.grp summary{cursor:pointer;padding:12px 8px;display:flex;align-items:center;gap:10px;list-style:none}
@@ -810,6 +810,7 @@ const PDFJS_VER = "3.11.174";
 const FIT_COLS = ["部科","工作單位(部門)","職類別","姓名","員工編號（PDF）","密合度測定結果"];
 const FIT_HEADS = ["項次","員工編號","姓名","部門","作業型態","作業別","配戴大約時間","測定結果","備註","測試方法","面體型號/尺寸","密合度","呼吸防護具廠牌/"];
 const FIT_DEFAULT = {b1:68, b2:125, b3:187, b4:249, rx0:648, rx1:735};   // 預設欄位分界（x，單位 pt；A4 橫式彙整表）
+const fitStatus = email => { const rs = (DB.FitTests||[]).filter(x=>eq(x.email,email)); return rs.length && rs[rs.length-1].result === "通過" ? "通過" : "未通過"; };   // 預設未通過
 const fitNorm = s => String(s||"").normalize("NFKC").replace(/\s+/g,"").toUpperCase();
 const fitResTag = recs => recs.map(r => r.result==="通過" ? `<span class="tag green">通過</span>` : r.result==="不通過" ? `<span class="tag red">不通過</span>` : `<span class="tag gray">—</span>`).join(" ");
 async function loadPdfJs(){
@@ -883,7 +884,15 @@ window.parseFitPdf = act0(async()=>{
   if(!recs.length) throw new Error("PDF 中找不到人員資料，請確認是「密合度測試結果彙整」表（含 項次、員工編號、姓名、部門 欄位），且不是掃描影像檔");
   tabState.fitPdf = {name:f.name, pages:pdf.numPages, recs};
   const mt = fitMatch();
-  toast(`解析完成：PDF ${recs.length} 人，與學員名單交集 ${mt.rows.length} 位`);
+  let saved = 0;
+  for(const x of mt.rows){
+    const result = x.recs.some(r=>r.result==="不通過") ? "不通過" : x.recs.some(r=>r.result==="通過") ? "通過" : "";
+    if(!result) continue;
+    if(DB.FitTests.some(t=>eq(t.email,x.m.email))) await updateRow("FitTests","email",x.m.email,{date:today(),result});
+    else await addRow("FitTests",{email:x.m.email,date:today(),model:"",result});
+    if(++saved % 20 === 0) toast(`寫入密合度結果… ${saved} / ${mt.rows.length}`);
+  }
+  toast(`解析完成：PDF ${recs.length} 人，與學員名單交集 ${mt.rows.length} 位，已更新 ${saved} 位的密合度測試結果`);
 });
 window.clearFit = ()=>{ tabState.fitPdf = null; route(); };
 window.exportFit = ()=>{
@@ -929,7 +938,7 @@ const memberKey = (pid,name) => { let a=5381, b=52711; const s = String(pid||"")
 const normHead = h => String(h||"").trim().toLowerCase().replace(/（/g,"(").replace(/）/g,")").replace(/\s+/g,"");
 function rosterList(){
   const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
-  const q = (tabState.rq||"").toLowerCase(), fd = tabState.rd||"", fu = tabState.ru||"", fr = tabState.rr||"", fs = tabState.rs||"";
+  const q = (tabState.rq||"").toLowerCase(), fd = tabState.rd||"", fu = tabState.ru||"", fr = tabState.rr||"", fs = tabState.rs||"", ff = tabState.rf||"";
   const all = DB.Members.map(m => ({...m, h: hoursOf(m.email, yr)}));
   const depts = [...new Set(DB.Members.map(m=>m.dept).filter(Boolean))].sort();
   const units = [...new Set(DB.Members.filter(m=>!fd || m.dept===fd).map(m=>m.unit).filter(Boolean))].sort();
@@ -937,7 +946,8 @@ function rosterList(){
     (!q || [m.dept,m.unit,m.job,m.name,m.pid,m.phone,showEmail(m.email),roleLabel(m.role)].join(" ").toLowerCase().includes(q)) &&
     (!fd || m.dept===fd) && (!fu || m.unit===fu) &&
     (!fr || roleLabel(m.role)===fr) &&
-    (!fs || (fs==="ok" ? m.h>=tgt : m.h<tgt)));
+    (!fs || (fs==="ok" ? m.h>=tgt : m.h<tgt)) &&
+    (!ff || fitStatus(m.email)===ff));
   const act = all.filter(isActive), okN = act.filter(m=>m.h>=tgt).length, avg = act.length ? (act.reduce((s,m)=>s+m.h,0)/act.length) : 0;
   return `
   <div class="grid kpis">
@@ -951,7 +961,8 @@ function rosterList(){
       <select onchange="tabState.rd=this.value;tabState.ru='';route()"><option value="">全部部科</option>${opts(depts,fd)}</select>
       <select onchange="tabState.ru=this.value;route()"><option value="">全部工作單位</option>${opts(units,fu)}</select>
       <select onchange="tabState.rr=this.value;route()">${opts([["","全部角色"],...ROLES.map(r=>[r,r])],fr)}</select>
-      <select onchange="tabState.rs=this.value;route()">${opts([["","全部達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select></div>
+      <select onchange="tabState.rs=this.value;route()">${opts([["","全部達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select>
+      <select onchange="tabState.rf=this.value;route()">${opts([["","全部密合度測試"],["通過","密合度測試：通過"],["未通過","密合度測試：未通過"]],ff)}</select></div>
     <div class="sp"><span class="hint">共 ${rows.length} 位</span><button class="ghost sm" onclick="exportRoster()">匯出名單 CSV</button></div>` +
     table([
       ["部科",r=>esc(r.dept)],
@@ -963,7 +974,8 @@ function rosterList(){
       ["Email",r=>showEmail(r.email) ? esc(showEmail(r.email)) : `<span class="hint">未填</span>`],
       ["角色",r=>`<span class="tag ${roleTagCls(r.role)}">${esc(roleLabel(r.role))}</span>`],
       [`${yr} 年度時數`,r=>`<div style="min-width:130px"><b>${r.h}</b> / ${tgt} 小時<div class="bar"><i style="width:${Math.min(100,r.h/tgt*100)}%"></i></div></div>`],
-      ["",r=>`<button class="sm" onclick="viewMember('${esc(r.email)}')">檢視履歷</button> <button class="ghost sm" onclick="editMember('${esc(r.email)}')">編輯</button>`]
+      ["",r=>`<button class="sm" onclick="viewMember('${esc(r.email)}')">檢視履歷</button> <button class="ghost sm" onclick="editMember('${esc(r.email)}')">編輯</button>`],
+      ["密合度測試",r=>fitStatus(r.email)==="通過" ? `<span class="tag green">通過</span>` : `<span class="tag red">未通過</span>`]
     ], rows, "沒有符合的學員") + `</div>`;
 }
 function memberForm(){
