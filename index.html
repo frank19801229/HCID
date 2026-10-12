@@ -815,8 +815,7 @@ function rosterList(){
       <select onchange="tabState.rd=this.value;tabState.ru='';route()"><option value="">全部部科</option>${opts(depts,fd)}</select>
       <select onchange="tabState.ru=this.value;route()"><option value="">全部工作單位</option>${opts(units,fu)}</select>
       <select onchange="tabState.rr=this.value;route()">${opts([["","全部角色"],...ROLES.map(r=>[r,r])],fr)}</select>
-      <select onchange="tabState.rs=this.value;route()">${opts([["","全部達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select>
-      <select onchange="tabState.py=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),yr)}</select></div>
+      <select onchange="tabState.rs=this.value;route()">${opts([["","全部達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select></div>
     <div class="sp"><span class="hint">共 ${rows.length} 位</span><button class="ghost sm" onclick="exportRoster()">匯出名單 CSV</button></div>` +
     table([
       ["部科",r=>esc(r.dept)],
