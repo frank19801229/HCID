@@ -957,7 +957,7 @@ function rosterList(){
   <div class="card">
     <div class="filters">
       <input id="rq" placeholder="搜尋部科、單位、職類別、姓名、身分證字號、電話、Email" value="${esc(tabState.rq||"")}">
-      <select onchange="tabState.rd=this.value;tabState.ru='';route()"><option value="">全部部科</option>${opts(depts,fd)}</select>
+      <select onchange="tabState.rd=this.value;tabState.ru='';route()"><option value="">部科</option>${opts(depts,fd)}</select>
       <select onchange="tabState.ru=this.value;route()"><option value="">工作單位</option>${opts(units,fu)}</select>
       <select onchange="tabState.rr=this.value;route()">${opts([["","角色"],...ROLES.map(r=>[r,r])],fr)}</select>
       <select onchange="tabState.rs=this.value;route()">${opts([["","達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select>
