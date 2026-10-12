@@ -133,7 +133,7 @@ const CONFIG = {
 /* ============================================================ */
 
 const TABLES = {
-  Members:   ["email","name","role","unit","emp_id","job","active"],
+  Members:   ["email","name","role","unit","emp_id","job","active","dept","pid","phone"],   // dept＝部科、unit＝工作單位(部門)、job＝職類別、pid＝身分證字號、phone＝連絡電話；emp_id 已停用（保留欄位）
   Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule","code","unit","method","quiz","open"],
   Tasks:     ["id","title","assignee","due","status"],
   Records:   ["id","email","course_id","code","course_title","unit","topic","method","hours","date","status","category"],
@@ -180,10 +180,10 @@ function demoSeed(){
   const rec = (i,email,code,title,unit,topic,method,hours,date,status) => ({id:"R"+i,email,course_id:"",code,course_title:title,unit,topic,method,hours,date,status,category:"必修"});
   return {
     Members:[
-      {email:"demo@example.com",name:"示範學員",role:"學員",unit:"呼吸治療科",emp_id:"A001",job:"呼吸治療師",active:"Y"},
-      {email:"nurse2@example.com",name:"示範護理師",role:"學員",unit:"內科病房",emp_id:"A002",job:"護理師",active:"Y"},
-      {email:"nurse3@example.com",name:"示範新進人員",role:"學員",unit:"內科病房",emp_id:"A003",job:"護理師",active:"Y"},
-      {email:"admin@example.com",name:"示範管理者",role:"管理者",unit:"感染管制中心",emp_id:"A000",job:"感控師",active:"Y"}],
+      {email:"demo@example.com",name:"示範學員",role:"學員",unit:"呼吸治療科",emp_id:"A001",dept:"醫技部",pid:"A12345678X",phone:"1001",job:"呼吸治療師",active:"Y"},
+      {email:"nurse2@example.com",name:"示範護理師",role:"學員",unit:"內科病房",emp_id:"A002",dept:"護理部",pid:"B22345678X",phone:"1002",job:"護理師",active:"Y"},
+      {email:"nurse3@example.com",name:"示範新進人員",role:"觀察員",unit:"內科病房",emp_id:"A003",dept:"護理部",pid:"C32345678X",phone:"1003",job:"護理師",active:"Y"},
+      {email:"admin@example.com",name:"示範管理者",role:"管理者",unit:"感染管制中心",emp_id:"A000",dept:"感染管制中心",pid:"D02345678X",phone:"1000",job:"感控師",active:"Y"}],
     Courses:[
       {id:"C1",title:"個人防護裝備穿脫（示範影片）",pathogen:"通用",topic:"感染管制",hours:1,jit:"Y",content:"示範教材，僅供操作展示，不作為臨床指示。",required:"必修",media_type:"mp4",media_url:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80,code:"DEMO-001",unit:"感染管制中心",method:"線上"},
       {id:"C2",title:"N95 密合度測試說明（示範 HLS）",pathogen:"呼吸道",topic:"感染管制",hours:2,jit:"Y",content:"示範教材，僅供操作展示。",required:"進階",media_type:"hls",media_url:"https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",schedule_start:d(-1),schedule_end:d(30),credit_mode:"auto",credit_rule:80,code:"DEMO-002",unit:"感染管制中心",method:"線上"},
@@ -633,7 +633,7 @@ const VIEWS = {
     let body = "";
     if(t==="list"){
       const rows = DB.Courses.filter(c => !q || JSON.stringify(c).toLowerCase().includes(q));
-      body = `<div class="card"><input id="cq" value="${esc(tabState.cq||"")}" oninput="tabState.cq=this.value;route(true)">
+      body = `<div class="card"><input id="cq" value="${esc(tabState.cq||"")}">
       <div style="height:10px"></div>` + table([
         ["課程",r=>`<b>${esc(r.title)}</b><div class="hint">${esc([r.code,r.unit,r.pathogen,r.topic,r.jit==="Y"?"即時訓練":""].filter(Boolean).join(" · "))}</div>`],
         ["教材",r=>`<span class="tag">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span><div class="hint">${esc(r.method||"")}</div>`],
@@ -694,7 +694,7 @@ const VIEWS = {
     const q = (tabState.jq||"").toLowerCase();
     const rows = DB.Courses.filter(c => c.jit==="Y" && (!q || JSON.stringify(c).toLowerCase().includes(q)));
     return head("即時訓練","快速找到情境需要的訓練與作業資料。") + `
-    <div class="card"><input id="jq" value="${esc(tabState.jq||"")}" oninput="tabState.jq=this.value;route(true)">
+    <div class="card"><input id="jq" value="${esc(tabState.jq||"")}">
     <div class="notice">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>
     ${rows.length? rows.map(c=>`<div class="card" style="margin-top:10px"><div class="sp"><div><b>${esc(c.title)}</b> ${c.topic?`<span class="tag">${esc(c.topic)}</span> `:""}${c.pathogen?`<span class="tag">${esc(c.pathogen)}</span> `:""}<span class="tag">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span></div>
       ${canOpen(c)?`<a class="btn sm" href="#course/${esc(c.id)}">開啟教材</a>`:`<button class="sm" disabled>未開放</button>`}</div><p>${esc(c.content)}</p></div>`).join("") : `<div class="empty">沒有符合的課程或教材</div>`}</div>`;
@@ -770,25 +770,37 @@ function rosterView(){
   if(t==="import") body = importForm();
   return head("學員名單管理","管理學員資料、年度時數與修課紀錄。") + tabBtns + body;
 }
-/* 角色選項 = 預設（學員、管理者）+ 資料庫／匯入 CSV 出現過的所有 role 值（例：觀察員、一般學員） */
-const roleLabel = r => { r = String(r||"").trim(); return (!r || r==="學員") ? "一般學員" : CONFIG.ADMIN_ROLES.includes(r) ? "觀察員" : r; };
-const roleIsYellow = r => CONFIG.ADMIN_ROLES.includes(r) || roleLabel(r)==="觀察員";
-function roleList(){
-  const seen = new Set(), out = [];
-  ["學員","管理者",...DB.Members.map(m=>String(m.role||"").trim()).filter(Boolean)].forEach(r=>{
-    const k = roleLabel(r); if(!seen.has(k)){ seen.add(k); out.push(r); }   // 以顯示名稱去重
-  });
-  return out;
-}
+/* ---------- 角色：一般學員／觀察員／管理者 ---------- */
+const ROLES = ["一般學員","觀察員","管理者"];
+const roleLabel = r => { r = String(r||"").trim();
+  if(!r || r==="學員" || r==="一般學員") return "一般學員";
+  if(CONFIG.ADMIN_ROLES.includes(r)) return "管理者";
+  if(r==="觀察員" || r==="觀察者") return "觀察員";
+  return r; };
+const roleTagCls = r => ({"管理者":"yellow","觀察員":"green"}[roleLabel(r)] || "");
+/* 匯入用：「擔任觀察員(Y/N)」的 Y＝觀察員、N＝一般學員；也接受 一般學員／觀察員／管理者 等寫法 */
+const normRole = v => { const s = String(v||"").trim(); if(!s) return "";
+  if(/^(y|yes|是|1|true)$/i.test(s)) return "觀察員";
+  if(/^(n|no|否|0|false)$/i.test(s)) return "一般學員";
+  return roleLabel(s); };
+/* 沒有 Email 的學員：以「身分證字號＋姓名」雜湊出內部代號（不含明碼身分證），補上 Email 後會改用 Email */
+const NOEMAIL = "@noemail.local";
+const isNoEmail = e => String(e||"").toLowerCase().endsWith(NOEMAIL);
+const showEmail = e => isNoEmail(e) ? "" : String(e||"");
+const memberKey = (pid,name) => { let a=5381, b=52711; const s = String(pid||"").trim().toUpperCase()+"|"+String(name||"").trim();
+  for(const ch of s){ const c = ch.codePointAt(0); a = ((a*33)^c)>>>0; b = ((b*31)+c)>>>0; }
+  return "m-" + a.toString(36) + b.toString(36) + NOEMAIL; };
+const normHead = h => String(h||"").trim().toLowerCase().replace(/（/g,"(").replace(/）/g,")").replace(/\s+/g,"");
 function rosterList(){
   const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
-  const q = (tabState.rq||"").toLowerCase(), fu = tabState.ru||"", fr = tabState.rr||"", fs = tabState.rs||"";
+  const q = (tabState.rq||"").toLowerCase(), fd = tabState.rd||"", fu = tabState.ru||"", fr = tabState.rr||"", fs = tabState.rs||"";
   const all = DB.Members.map(m => ({...m, h: hoursOf(m.email, yr)}));
-  const units = [...new Set(DB.Members.map(m=>m.unit).filter(Boolean))].sort();
+  const depts = [...new Set(DB.Members.map(m=>m.dept).filter(Boolean))].sort();
+  const units = [...new Set(DB.Members.filter(m=>!fd || m.dept===fd).map(m=>m.unit).filter(Boolean))].sort();
   const rows = all.filter(m =>
-    (!q || [m.name,m.email,m.emp_id,m.job].join(" ").toLowerCase().includes(q)) &&
-    (!fu || m.unit===fu) &&
-    (!fr || (fr==="admin" ? CONFIG.ADMIN_ROLES.includes(m.role) : fr==="learner" ? !CONFIG.ADMIN_ROLES.includes(m.role) : roleLabel(m.role)===roleLabel(fr.slice(2)))) &&
+    (!q || [m.dept,m.unit,m.job,m.name,m.pid,m.phone,showEmail(m.email),roleLabel(m.role)].join(" ").toLowerCase().includes(q)) &&
+    (!fd || m.dept===fd) && (!fu || m.unit===fu) &&
+    (!fr || roleLabel(m.role)===fr) &&
     (!fs || (fs==="ok" ? m.h>=tgt : m.h<tgt)));
   const act = all.filter(isActive), okN = act.filter(m=>m.h>=tgt).length, avg = act.length ? (act.reduce((s,m)=>s+m.h,0)/act.length) : 0;
   return `
@@ -799,44 +811,60 @@ function rosterList(){
     <div class="card kpi"><div class="l">平均時數</div><div class="n">${avg.toFixed(1)}</div></div></div>
   <div class="card">
     <div class="filters">
-      <input id="rq" placeholder="搜尋姓名、Email、職編、職類" value="${esc(tabState.rq||"")}" oninput="tabState.rq=this.value;route(true)">
-      <select onchange="tabState.ru=this.value;route()"><option value="">全部單位</option>${opts(units,fu)}</select>
-      <select onchange="tabState.rr=this.value;route()">${opts([["","全部角色"],["learner","非管理者"],["admin","管理者權限"],...roleList().map(r=>["r:"+r,"角色：" + roleLabel(r)])],fr)}</select>
+      <input id="rq" placeholder="搜尋部科、單位、職類別、姓名、身分證字號、電話、Email" value="${esc(tabState.rq||"")}">
+      <select onchange="tabState.rd=this.value;tabState.ru='';route()"><option value="">全部部科</option>${opts(depts,fd)}</select>
+      <select onchange="tabState.ru=this.value;route()"><option value="">全部工作單位</option>${opts(units,fu)}</select>
+      <select onchange="tabState.rr=this.value;route()">${opts([["","全部角色"],...ROLES.map(r=>[r,r])],fr)}</select>
       <select onchange="tabState.rs=this.value;route()">${opts([["","全部達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select>
       <select onchange="tabState.py=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),yr)}</select></div>
     <div class="sp"><span class="hint">共 ${rows.length} 位</span><button class="ghost sm" onclick="exportRoster()">匯出名單 CSV</button></div>` +
     table([
-      ["姓名",r=>`<b>${esc(r.name)}</b><div class="hint">${esc(r.email)}</div>`],
-      ["職編 / 職類",r=>`${esc(r.emp_id)}<div class="hint">${esc(r.job)}</div>`],
-      ["單位",r=>esc(r.unit)],
-      ["角色",r=>`<span class="tag ${roleIsYellow(r.role)?"yellow":""}">${esc(roleLabel(r.role))}</span>`],
+      ["部科",r=>esc(r.dept)],
+      ["工作單位(部門)",r=>esc(r.unit)],
+      ["職類別",r=>esc(r.job)],
+      ["姓名",r=>`<b>${esc(r.name)}</b>`],
+      ["身分證字號",r=>esc(r.pid)],
+      ["連絡電話",r=>esc(r.phone)],
+      ["Email",r=>showEmail(r.email) ? esc(showEmail(r.email)) : `<span class="hint">未填</span>`],
+      ["角色",r=>`<span class="tag ${roleTagCls(r.role)}">${esc(roleLabel(r.role))}</span>`],
       [`${yr} 年度時數`,r=>`<div style="min-width:130px"><b>${r.h}</b> / ${tgt} 小時<div class="bar"><i style="width:${Math.min(100,r.h/tgt*100)}%"></i></div></div>`],
       ["",r=>`<button class="sm" onclick="viewMember('${esc(r.email)}')">檢視履歷</button> <button class="ghost sm" onclick="editMember('${esc(r.email)}')">編輯</button>`]
     ], rows, "沒有符合的學員") + `</div>`;
 }
 function memberForm(){
   const e = tabState.em ? (DB.Members.find(m=>eq(m.email,tabState.em)) || {}) : {};
-  const editing = !!e.email;
+  const editing = !!e.email, noMail = editing && isNoEmail(e.email);
   return `<div class="card"><div class="sp"><b>${editing?"編輯學員":"新增學員"}</b>${editing?`<button class="ghost sm" onclick="newMember()">改為新增</button>`:""}</div>
   <div class="row">
-    ${field("m_email","Email（登入帳號）","email","name@hospital.org",e.email,editing?"disabled":"")}
+    ${field("m_dept","部科","text","例：護理部",e.dept)}
+    ${field("m_unit","工作單位(部門)","text","例：急診",e.unit)}
+    ${field("m_job","職類別","text","例：護理師",e.job)}
     ${field("m_name","姓名","text","",e.name)}
-    ${field("m_emp","職編","text","",e.emp_id)}
-    ${field("m_job","職類","text","例：護理師",e.job)}
-    ${field("m_unit","單位","text","",e.unit)}
-    <div><label>角色</label><select id="m_role">${opts(roleList().map(r=>[r,roleLabel(r)]), roleList().find(r=>roleLabel(r)===roleLabel(e.role)) || "學員")}</select></div>
+    ${field("m_pid","身分證字號","text","",e.pid)}
+    ${field("m_phone","連絡電話","text","",e.phone)}
+    ${field("m_email","Email（登入帳號）","email","name@hospital.org",showEmail(e.email),editing && !noMail ? "disabled" : "")}
+    <div><label>角色</label><select id="m_role">${opts(ROLES, roleLabel(e.role))}</select></div>
     <div><label>帳號狀態</label><select id="m_active">${opts([["Y","啟用"],["N","停用（不列入達標統計）"]], e.active==="N"?"N":"Y")}</select></div></div>
+  <div class="hint" style="margin:6px 0 10px">${noMail ? "此學員尚未填寫 Email，因此還無法登入；填入後將以 Email 作為登入帳號（已有修課紀錄、測驗或問卷資料的學員，系統會拒絕變更，以免資料對不上）。"
+    : editing ? "Email 是登入帳號與資料關聯的依據，已填寫後無法修改。"
+    : "Email 可先留空：留空時系統以「身分證字號＋姓名」建立內部代號，之後再編輯補上 Email。"}</div>
   <button onclick="saveMember()">${editing?"儲存變更":"新增學員"}</button>
   ${editing?` <button class="danger" onclick="deleteMember('${esc(e.email)}')">刪除學員</button>`:""}</div>`;
 }
+
 function importForm(){
   return `<div class="card"><b>批次匯入學員</b>
-  <p class="hint">第一列為欄位名稱，支援：email（或 Email、信箱）、name（姓名）、unit（單位）、role（角色，原樣寫入名單「角色」欄，例：一般學員、觀察員；留空為「學員」）、emp_id（職編）、job（職類）、active（狀態，N 或「停用」代表停用）、class_id（課程編號）、class_name（課程名稱）、class_host（開課單位）、class_way（上課方式）、class_t（時數）、class_d（日期）、class_tag（狀態：合格／已選課／未完成）。已存在的 Email 不會重複新增學員（但有填 role 會更新其角色）；日期支援 2026/7/6 或 2026-07-06；CSV 可為 UTF-8 或 Excel 的 Big5 編碼；有填課程欄位時，會為該學員新增修課紀錄。</p>
+  <p class="hint">第一列為欄位名稱（Excel 檔最上方若有標題或空白列也沒關係，系統會自動找標題列）。支援欄位：<b>部科、工作單位(部門)、職類別、姓名（必填）、身分證字號、聯絡電話、角色、Email</b>。<br>
+  「角色」可填：一般學員、觀察員、管理者。若檔案使用「擔任觀察員(Y/N)」欄，會自動對應到角色欄：<b>Y＝觀察員、N＝一般學員</b>。<br>
+  Email 可留空：留空時以「身分證字號＋姓名」建立內部代號（補上 Email 前，該學員無法登入）。已存在的學員（Email 相同，或身分證字號＋姓名相同）不會重複新增，只會補上空白欄位並更新角色。支援 CSV（UTF-8 或 Big5）與 Excel（.xlsx／.xls，讀取第一個工作表）。</p>
   <button class="ghost sm" onclick="downloadTemplate()">下載範本</button>
   <div style="height:10px"></div>
-  <label>貼上 CSV 內容</label><textarea id="m_csv" placeholder="email,name,unit,role,emp_id,job,active,class_id,class_name,class_host,class_way,class_t,class_d,class_tag&#10;a@hospital.org,王小明,內科病房,學員,B001,護理師,Y,DEMO-001,個人防護裝備穿脫,感染管制中心,線上,1,2026-01-15,合格"></textarea>
-  <div class="row"><div><label>或選擇 CSV 檔（優先使用）</label><input id="m_file" type="file" accept=".csv,text/csv"></div></div>
-  <button onclick="importMembers()">開始匯入</button></div>`;
+  <label>貼上 CSV 內容</label><textarea id="m_csv" placeholder="部科,工作單位(部門),職類別,姓名,身分證字號,聯絡電話,角色,Email&#10;護理部,急診,護理長,王小明,A123456789,8#0912,觀察員,"></textarea>
+  <div class="row"><div><label>或選擇 CSV／Excel 檔（優先使用）</label><input id="m_file" type="file" accept=".csv,.xlsx,.xls,text/csv"></div></div>
+  <button onclick="importMembers()">開始匯入</button></div>
+  <div class="card"><b>從 PDF 匯入</b>
+  <p class="hint">上傳含表格的 PDF（例如各單位送來的人員名冊、簽到表）。系統會自動還原表格（含合併儲存格、跨頁表格），您可以直接修改內容、指定欄位對應後再匯入。PDF 只在瀏覽器內解析，不會上傳；匯入規則與上方相同（姓名為必要欄位）。僅支援有框線、可選取文字的 PDF。</p>
+  <button onclick="openPdfImport()">選擇 PDF 檔案…</button></div>`;
 }
 
 /* ---------- 個人履歷（學員本人 / 管理者檢視學員） ---------- */
@@ -865,7 +893,7 @@ function memberView(){
     `<div class="row">${field("e_title","訓練名稱")}${field("e_hours","時數","number")}${field("e_date","日期","date")}${field("e_note","備註 / 證明連結")}</div><button onclick="addExt()">新增佐證</button>`;
 
   return head(admin ? esc(m.name)+" 的學習履歷" : "個人學習履歷", admin ? "檢視並維護此學員的年度時數與修課紀錄。" : "集中查看你的課程、時數與防護裝備紀錄。") + back + `
-  <div class="card sp"><div><b style="font-size:18px">${esc(m.name)}</b><div class="sub" style="margin:0">${esc(m.email)} · ${esc(roleLabel(m.role))}${m.unit?" · "+esc(m.unit):""}${m.emp_id?" · 職編 "+esc(m.emp_id):""}</div></div>
+  <div class="card sp"><div><b style="font-size:18px">${esc(m.name)}</b><div class="sub" style="margin:0">${[showEmail(m.email)||"未填 Email", roleLabel(m.role), m.dept, m.unit, m.job].filter(Boolean).map(esc).join(" · ")}</div></div>
     <div style="display:flex;gap:8px;align-items:center"><select style="width:auto" onchange="tabState.py=Number(this.value);route()">${opts(yearOptions(email).map(y=>[y,y+" 年度"]),yr)}</select>
     <button class="ghost" onclick="downloadCSV()">下載履歷</button></div></div>
   <h2 class="sec">⏳ 整體進度</h2>
@@ -987,26 +1015,54 @@ window.saveCourse = act0(async()=>{
 });
 
 /* ---------- 學員管理動作 ---------- */
-const ALIAS = {email:"email","e-mail":"email",信箱:"email",電子郵件:"email",name:"name",姓名:"name",unit:"unit",單位:"unit",role:"role",角色:"role",emp_id:"emp_id",職編:"emp_id",job:"job",職類:"job",active:"active",狀態:"active",class_id:"class_id",課程編號:"class_id",class_name:"class_name",課程名稱:"class_name",class_host:"class_host",開課單位:"class_host",class_way:"class_way",上課方式:"class_way",class_t:"class_t",時數:"class_t",class_d:"class_d",日期:"class_d",class_tag:"class_tag"};
+/* 匯入欄位別名（標題先經 normHead 正規化：小寫、去空白、全形括號轉半形） */
+const ALIAS = {email:"email","e-mail":"email",信箱:"email",電子郵件:"email",
+  name:"name",姓名:"name",
+  dept:"dept",部科:"dept",
+  unit:"unit",單位:"unit",工作單位:"unit","工作單位(部門)":"unit",部門:"unit",
+  job:"job",職類:"job",職類別:"job",職稱:"job",
+  pid:"pid",身分證字號:"pid",身分證:"pid",身份證字號:"pid",
+  phone:"phone",聯絡電話:"phone",連絡電話:"phone",電話:"phone",
+  role:"role",角色:"role",擔任觀察員:"role","擔任觀察員(y/n)":"role",
+  active:"active",狀態:"active",
+  class_id:"class_id",課程編號:"class_id",class_name:"class_name",課程名稱:"class_name",class_host:"class_host",開課單位:"class_host",
+  class_way:"class_way",上課方式:"class_way",class_t:"class_t",時數:"class_t",class_d:"class_d",日期:"class_d",class_tag:"class_tag"};
 function normMember(o){
-  return {email:String(o.email).toLowerCase(), name:o.name || String(o.email).split("@")[0],
-    role: String(o.role||"").trim() || "學員", unit:o.unit||"", emp_id:o.emp_id||"", job:o.job||"",
-    active: /^(n|no|0|false|停用)$/i.test(o.active||"") ? "N" : "Y"};
+  const email = String(o.email||"").toLowerCase();
+  return {email, name:o.name || email.split("@")[0], role: normRole(o.role) || "一般學員", unit:o.unit||"", emp_id:o.emp_id||"", job:o.job||"",
+    active: /^(n|no|0|false|停用)$/i.test(o.active||"") ? "N" : "Y", dept:o.dept||"", pid:o.pid||"", phone:o.phone||""};
 }
 window.viewMember = email => { tabState.pm = email; tabState.pt = "rec"; route(); };
 window.backRoster = () => { tabState.pm = null; route(); };
 window.newMember = ()=>{ tabState.em = null; tabState.rt = "form"; route(); };
 window.editMember = email => { tabState.em = email; tabState.rt = "form"; route(); };
+const REKEY_REFS = [["Records","email","修課紀錄"],["External","email","外部訓練佐證"],["FitTests","email","密合度紀錄"],["Consents","email","同意書"],
+  ["Surveys","email","問卷"],["QuizResults","email","測驗成績"],["Tasks","assignee","任務"],["Attendance","reporter","人數填報"]];
+async function rekeyMember(cur, newEmail, data){
+  if(DB.Members.some(m=>eq(m.email,newEmail))) throw new Error("此 Email 已被其他學員使用");
+  const used = REKEY_REFS.filter(([t,k]) => (DB[t]||[]).some(x=>eq(x[k],cur.email))).map(x=>x[2]);
+  if(used.length) throw new Error(`此學員已有${used.join("、")}資料，無法變更 Email（會造成資料對不上）`);
+  await addRow("Members", normMember({...cur, ...data, email:newEmail}));
+  await deleteRow("Members","email",cur.email);
+}
 window.saveMember = act0(async()=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
-  const editing = tabState.em, email = (editing || val("m_email")).toLowerCase();
-  if(!/^\S+@\S+\.\S+$/.test(email)) throw new Error("請輸入有效的 Email");
-  if(!val("m_name")) throw new Error("請輸入姓名");
-  const data = {name:val("m_name"),role:val("m_role"),unit:val("m_unit"),emp_id:val("m_emp"),job:val("m_job"),active:val("m_active")};
+  const editing = tabState.em, name = val("m_name");
+  if(!name) throw new Error("請輸入姓名");
+  let email = val("m_email").toLowerCase();
+  if(email && !/^\S+@\S+\.\S+$/.test(email)) throw new Error("請輸入有效的 Email");
+  const data = {dept:val("m_dept"),unit:val("m_unit"),job:val("m_job"),name,pid:val("m_pid"),phone:val("m_phone"),
+    role:normRole(val("m_role")) || "一般學員",active:val("m_active")};
   if(editing){
-    await updateRow("Members","email",DB.Members.find(m=>eq(m.email,editing)).email,data); toast("已儲存變更");
+    const cur = DB.Members.find(m=>eq(m.email,editing));
+    if(isNoEmail(cur.email) && email){ await rekeyMember(cur, email, data); toast("已儲存變更，Email 已更新"); }
+    else { await updateRow("Members","email",cur.email,data); toast("已儲存變更"); }
   } else {
-    if(DB.Members.some(m=>eq(m.email,email))) throw new Error("此 Email 已存在");
+    if(!email){
+      if(!data.pid) throw new Error("沒有 Email 時，請至少填寫身分證字號（用來識別此學員）");
+      email = memberKey(data.pid, name);
+    }
+    if(DB.Members.some(m=>eq(m.email,email))) throw new Error(isNoEmail(email) ? "此學員已存在（身分證字號與姓名相同）" : "此 Email 已存在");
     await addRow("Members",normMember({email,...data})); toast("已新增學員");
   }
   tabState.em = null; tabState.rt = "list";
@@ -1019,25 +1075,53 @@ window.deleteMember = act0(async email=>{
   await deleteRow("Members","email",m.email);
   tabState.em = null; tabState.rt = "list"; toast("已刪除學員");
 });
-window.downloadTemplate = ()=> downloadText("學員匯入範本.csv", "email,name,unit,role,emp_id,job,active,class_id,class_name,class_host,class_way,class_t,class_d,class_tag\nexample@hospital.org,王小明,內科病房,一般學員,B001,護理師,Y,DEMO-001,個人防護裝備穿脫,感染管制中心,線上,1,2026-01-15,合格\n");
+window.downloadTemplate = ()=> downloadText("學員匯入範本.csv", "部科,工作單位(部門),職類別,姓名,身分證字號,聯絡電話,角色,Email\n護理部,急診,護理長,王小明,A123456789,8#0912,觀察員,\n護理部,C039,護理師,陳小華,B223456789,17039,一般學員,hua@hospital.org\n");
+async function readExcelRows(f){
+  if(!window.XLSX) await new Promise((ok,ng) => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    s.onload = ok; s.onerror = () => ng(new Error("無法載入 Excel 讀取元件（需要連網到 cdnjs）；請改存成 CSV 後匯入")); document.head.appendChild(s); });
+  const wb = XLSX.read(await f.arrayBuffer(), {type:"array"});
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:false, defval:""}).map(r => r.map(x => String(x ?? "").trim()));
+}
 window.importMembers = act0(async()=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
-  let text = val("m_csv"); const f = $("#m_file").files[0]; if(f) text = await readFileText(f);
-  if(!text) throw new Error("請貼上 CSV 內容或選擇檔案");
-  const rows = parseCSV(text), headRow = rows.shift().map(h=>ALIAS[h.trim().toLowerCase()]||"");
-  if(!headRow.includes("email")) throw new Error("找不到 email（Email／信箱）欄位");
-  let added=0, skipped=0, bad=0, recAdded=0, recSkipped=0, roleUpd=0;
-  for(const r of rows){
-    const o = {}; headRow.forEach((k,i)=>{ if(k) o[k] = (r[i]||"").trim(); });
-    const email = (o.email||"").toLowerCase();
-    if(!/^\S+@\S+\.\S+$/.test(email)){ bad++; continue; }
-    const exist = DB.Members.find(x=>eq(x.email,email));
+  const f = $("#m_file").files[0]; let rows;
+  if(f && /\.xlsx?$/i.test(f.name)) rows = await readExcelRows(f);
+  else { let text = val("m_csv"); if(f) text = await readFileText(f); if(!text) throw new Error("請貼上 CSV 內容，或選擇 CSV／Excel 檔案"); rows = parseCSV(text); }
+  // 標題列：在前 10 列中挑「能對應到最多已知欄位」的那一列（允許上方有標題或空白列）
+  let hi = 0, best = -1;
+  rows.slice(0,10).forEach((r,i) => { const n = r.filter(h => ALIAS[normHead(h)]).length; if(n > best){ best = n; hi = i; } });
+  if(best < 2) throw new Error("找不到標題列：請確認檔案含有 部科、工作單位(部門)、職類別、姓名、身分證字號、聯絡電話、角色、Email 等欄位名稱");
+  const headRow = rows[hi].map(h => ALIAS[normHead(h)] || "");
+  if(!headRow.includes("name") && !headRow.includes("email")) throw new Error("找不到「姓名」欄位");
+  await importRows(rows.slice(hi+1).map(r => { const o = {};
+    headRow.forEach((k,i) => { const v = String(r[i] ?? "").trim(); if(k && (v || !(k in o))) o[k] = v; });      // 同一欄位對應到多欄時，保留有值的
+    return o; }));
+});
+/* 匯入核心：CSV／Excel／PDF 共用。list＝[{dept,unit,job,name,pid,phone,role,email,class_*}] */
+async function importRows(list){
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  let added=0, skipped=0, bad=0, roleUpd=0, filled=0, recAdded=0, recSkipped=0, n=0;
+  for(const o of list){
+    if(Object.values(o).every(v => !String(v||"").trim())) continue;                       // 全空白列直接略過
+    if(++n % 20 === 0) toast(`匯入中… ${n} / ${list.length}`);
+    const name = String(o.name||"").trim(), pid = String(o.pid||"").trim();
+    let email = String(o.email||"").trim().toLowerCase();
+    if(email && !/^\S+@\S+\.\S+$/.test(email)){ bad++; continue; }
+    if(!email && !name){ bad++; continue; }
+    // 比對既有學員：有 Email → 以 Email；沒有 Email → 以「身分證字號＋姓名」
+    const exist = email ? DB.Members.find(x=>eq(x.email,email))
+                        : DB.Members.find(x=>eq(x.email,memberKey(pid,name)) || (pid && x.pid===pid && x.name===name));
+    if(!email) email = exist ? exist.email : memberKey(pid,name);
+    const role = o.role ? normRole(o.role) : "";                                           // 擔任觀察員 Y→觀察員、N→一般學員
     if(exist){
       skipped++;
-      // 已存在的學員：CSV 有填 role 且不同時，更新角色
-      if(o.role && o.role!==exist.role){ await updateRow("Members","email",exist.email,{role:o.role}); exist.role = o.role; roleUpd++; }
-    } else { await addRow("Members", normMember({...o,email})); added++; }
-    // 課程欄位（class_*）：有填課程編號或名稱時，一併建立該學員的修課紀錄
+      const patch = {};
+      if(role && roleLabel(role) !== roleLabel(exist.role)){ patch.role = role; roleUpd++; }
+      const fill = ["dept","unit","job","pid","phone"].filter(k => o[k] && !exist[k]);     // 只補空白欄位，不覆蓋既有資料
+      fill.forEach(k => patch[k] = o[k]); if(fill.length) filled++;
+      if(Object.keys(patch).length){ await updateRow("Members","email",exist.email,patch); Object.assign(exist,patch); }
+    } else { await addRow("Members", normMember({...o,email,role})); added++; }
+    // 課程欄位（class_*，進階用法）：有填課程編號或名稱時，一併建立該學員的修課紀錄
     if(o.class_id || o.class_name){
       const c = DB.Courses.find(x=>x.id===o.class_id || (x.code && x.code===o.class_id)) || {};
       const title = o.class_name || c.title || "";
@@ -1052,12 +1136,573 @@ window.importMembers = act0(async()=>{
     }
   }
   tabState.rt = "list";
-  toast(`匯入完成：新增 ${added} 位、略過重複 ${skipped} 位、格式錯誤 ${bad} 列` + (roleUpd ? `；更新角色 ${roleUpd} 位` : "") + (recAdded||recSkipped ? `；修課紀錄新增 ${recAdded} 筆、略過 ${recSkipped} 筆` : ""));
+  toast(`匯入完成：新增 ${added} 位、略過重複 ${skipped} 位、格式錯誤 ${bad} 列` + (roleUpd ? `；更新角色 ${roleUpd} 位` : "") + (filled ? `；補齊資料 ${filled} 位` : "") + (recAdded||recSkipped ? `；修課紀錄新增 ${recAdded} 筆、略過 ${recSkipped} 筆` : ""));
+}
+/* ===== PDF 表格擷取核心 ===== */
+/* ===== PDF 表格擷取核心（瀏覽器與 Node 共用）=====
+   原理：從 PDF 繪圖指令取出表格框線 → 還原儲存格格線與合併 → 依座標把文字放進儲存格
+   → 跨頁表格自動接起來。全程在本機執行，PDF 不會上傳。 */
+const PT = (() => {
+  const TOL = 2.5;                                   // 座標吸附容差（pt）
+
+  /* ---------- 矩陣 ---------- */
+  const mul = (a, b) => [a[0]*b[0]+a[1]*b[2], a[0]*b[1]+a[1]*b[3], a[2]*b[0]+a[3]*b[2], a[2]*b[1]+a[3]*b[3],
+                         a[4]*b[0]+a[5]*b[2]+b[4], a[4]*b[1]+a[5]*b[3]+b[5]];
+  const apply = (m, x, y) => [m[0]*x + m[2]*y + m[4], m[1]*x + m[3]*y + m[5]];
+
+  /* ---------- 1. 取出框線 ---------- */
+  async function getLines(page, OPS){
+    const list = await page.getOperatorList();
+    const H = [], V = [];                            // H:{y,a,b}  V:{x,a,b}
+    let ctm = [1,0,0,1,0,0]; const stack = [];
+    let segs = [], rects = [];
+    const addSeg = (p, q) => {
+      const dx = Math.abs(p[0]-q[0]), dy = Math.abs(p[1]-q[1]);
+      if(dy <= TOL && dx > 3) H.push({y:(p[1]+q[1])/2, a:Math.min(p[0],q[0]), b:Math.max(p[0],q[0])});
+      else if(dx <= TOL && dy > 3) V.push({x:(p[0]+q[0])/2, a:Math.min(p[1],q[1]), b:Math.max(p[1],q[1])});
+    };
+    const strokeOps = new Set([OPS.stroke, OPS.closeStroke, OPS.fillStroke, OPS.eoFillStroke, OPS.closeFillStroke, OPS.closeEOFillStroke]);
+    const fillOps   = new Set([OPS.fill, OPS.eoFill, OPS.fillStroke, OPS.eoFillStroke, OPS.closeFillStroke, OPS.closeEOFillStroke]);
+    for(let i=0;i<list.fnArray.length;i++){
+      const fn = list.fnArray[i], args = list.argsArray[i];
+      if(fn === OPS.save) stack.push(ctm.slice());
+      else if(fn === OPS.restore) ctm = stack.pop() || ctm;
+      else if(fn === OPS.transform) ctm = mul(args, ctm);
+      else if(fn === OPS.constructPath){
+        const ops = args[0], c = args[1]; let j = 0, cur = null, start = null;
+        for(const op of ops){
+          if(op === OPS.moveTo){ cur = apply(ctm, c[j], c[j+1]); start = cur; j += 2; }
+          else if(op === OPS.lineTo){ const p = apply(ctm, c[j], c[j+1]); if(cur) segs.push([cur,p]); cur = p; j += 2; }
+          else if(op === OPS.curveTo){ cur = apply(ctm, c[j+4], c[j+5]); j += 6; }
+          else if(op === OPS.curveTo2 || op === OPS.curveTo3){ cur = apply(ctm, c[j+2], c[j+3]); j += 4; }
+          else if(op === OPS.closePath){ if(cur && start) segs.push([cur,start]); cur = start; }
+          else if(op === OPS.rectangle){
+            const x = c[j], y = c[j+1], w = c[j+2], h = c[j+3]; j += 4;
+            rects.push([apply(ctm,x,y), apply(ctm,x+w,y), apply(ctm,x+w,y+h), apply(ctm,x,y+h)]);
+          }
+        }
+      } else if(strokeOps.has(fn) || fillOps.has(fn) || fn === OPS.endPath){
+        const stroke = strokeOps.has(fn), fill = fillOps.has(fn);
+        if(stroke) segs.forEach(s => addSeg(s[0], s[1]));
+        for(const r of rects){
+          const xs = r.map(p=>p[0]), ys = r.map(p=>p[1]);
+          const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+          const w = x1-x0, h = y1-y0;
+          if(stroke){ addSeg([x0,y0],[x1,y0]); addSeg([x1,y0],[x1,y1]); addSeg([x1,y1],[x0,y1]); addSeg([x0,y1],[x0,y0]); }
+          else if(fill && Math.min(w,h) <= 2.5 && Math.max(w,h) > 3){      // 用細長填色矩形畫的框線（Word／Excel 匯出常見）
+            if(h <= w) H.push({y:(y0+y1)/2, a:x0, b:x1}); else V.push({x:(x0+x1)/2, a:y0, b:y1});
+          }
+        }
+        segs = []; rects = [];
+      }
+    }
+    return {H, V};
+  }
+
+  /* ---------- 2. 文字 ---------- */
+  async function getText(page){
+    const tc = await page.getTextContent();
+    return tc.items.filter(i => i.str && i.str.trim() !== '')
+      .map(i => ({s:i.str, x:i.transform[4], y:i.transform[5], w:i.width, h:Math.abs(i.height) || Math.abs(i.transform[3]) || 10}));
+  }
+
+  /* ---------- 3. 框線分組（一頁可能有多張表）---------- */
+  function groupLines(H, V){
+    const segs = [...H.map(s=>({t:'h',...s})), ...V.map(s=>({t:'v',...s}))];
+    const parent = segs.map((_,i)=>i);
+    const find = i => parent[i] === i ? i : (parent[i] = find(parent[i]));
+    const hs = segs.map((s,i)=>[s,i]).filter(([s])=>s.t==='h'), vs = segs.map((s,i)=>[s,i]).filter(([s])=>s.t==='v');
+    for(const [h,hi] of hs) for(const [v,vi] of vs)
+      if(v.x >= h.a-TOL && v.x <= h.b+TOL && h.y >= v.a-TOL && h.y <= v.b+TOL) parent[find(hi)] = find(vi);
+    const groups = {};
+    segs.forEach((s,i)=>{ (groups[find(i)] ||= {H:[],V:[]})[s.t==='h'?'H':'V'].push(s); });
+    return Object.values(groups).filter(g => g.H.length >= 2 && g.V.length >= 2);
+  }
+
+  const cluster = (vals) => {                        // 數值吸附成不重複座標
+    const s = [...vals].sort((a,b)=>a-b), out = [];
+    s.forEach(v => { const last = out[out.length-1]; if(last && v - last.sum/last.n <= TOL) { last.sum += v; last.n++; } else out.push({sum:v,n:1}); });
+    return out.map(o => o.sum/o.n);
+  };
+  const near = (a, b) => Math.abs(a-b) <= TOL + 0.5;
+
+  // 區間聯集覆蓋比例
+  function coverage(intervals, lo, hi){
+    const iv = intervals.map(([a,b])=>[Math.max(a,lo),Math.min(b,hi)]).filter(([a,b])=>b>a).sort((p,q)=>p[0]-q[0]);
+    let covered = 0, curA = null, curB = null;
+    for(const [a,b] of iv){ if(curB === null || a > curB + TOL){ if(curB !== null) covered += curB-curA; curA = a; curB = b; } else curB = Math.max(curB,b); }
+    if(curB !== null) covered += curB-curA;
+    return covered / (hi-lo);
+  }
+
+  /* ---------- 4. 一組框線 → 表格（含合併儲存格）---------- */
+  function buildTable(g, items){
+    const xs = cluster(g.V.map(v=>v.x));
+    const ys = cluster(g.H.map(h=>h.y)).reverse();   // 由上到下
+    const C = xs.length-1, R = ys.length-1;
+    if(C < 1 || R < 1) return null;
+    const vAt = j => g.V.filter(v => near(v.x, xs[j])).map(v=>[v.a,v.b]);
+    const hAt = i => g.H.filter(h => near(h.y, ys[i])).map(h=>[h.a,h.b]);
+    const vIv = xs.map((_,j)=>vAt(j)), hIv = ys.map((_,i)=>hAt(i));
+    const vEdge = (j,i) => coverage(vIv[j], ys[i+1], ys[i]) >= 0.8;       // 第 j 條直線在第 i 列是否存在
+    const hEdge = (i,j) => coverage(hIv[i], xs[j], xs[j+1]) >= 0.8;       // 第 i 條橫線在第 j 欄是否存在
+
+    const id = (i,j) => i*C + j, parent = Array.from({length:R*C},(_,k)=>k);
+    const find = k => parent[k] === k ? k : (parent[k] = find(parent[k]));
+    for(let i=0;i<R;i++) for(let j=0;j<C-1;j++) if(!vEdge(j+1,i)) parent[find(id(i,j))] = find(id(i,j+1));
+    for(let i=0;i<R-1;i++) for(let j=0;j<C;j++) if(!hEdge(i+1,j)) parent[find(id(i,j))] = find(id(i+1,j));
+
+    const comps = {};
+    for(let i=0;i<R;i++) for(let j=0;j<C;j++){ (comps[find(id(i,j))] ||= []).push([i,j]); }
+    const cells = [], owner = Array.from({length:R},()=>Array(C).fill(null));
+    const add = (r,c,rs,cs) => { const cell = {r,c,rs,cs,t:'',items:[]}; cells.push(cell); for(let a=r;a<r+rs;a++) for(let b=c;b<c+cs;b++) owner[a][b] = cell; };
+    Object.values(comps).forEach(list => {
+      const r0 = Math.min(...list.map(p=>p[0])), r1 = Math.max(...list.map(p=>p[0]));
+      const c0 = Math.min(...list.map(p=>p[1])), c1 = Math.max(...list.map(p=>p[1]));
+      if((r1-r0+1)*(c1-c0+1) === list.length) add(r0, c0, r1-r0+1, c1-c0+1);
+      else list.forEach(([i,j]) => add(i,j,1,1));      // 形狀不規則：不合併，交給使用者處理
+    });
+
+    const box = {x0:xs[0], x1:xs[C], top:ys[0], bottom:ys[R]};
+    const outside = [];
+    items.forEach(it => {
+      const cx = it.x + it.w/2, cy = it.y + it.h*0.35;
+      if(cx < box.x0 || cx > box.x1 || cy < box.bottom || cy > box.top) return;
+      let j = -1, i = -1;
+      for(let k=0;k<C;k++) if(cx >= xs[k] && cx < xs[k+1]) j = k;
+      for(let k=0;k<R;k++) if(cy <= ys[k] && cy > ys[k+1]) i = k;
+      if(i < 0 || j < 0) return;
+      owner[i][j].items.push(it); it.used = true;
+    });
+    cells.forEach(c => { c.t = joinItems(c.items); delete c.items; });
+    return {xs, ys, R, C, cells, box};
+  }
+
+  function joinItems(items){
+    if(!items.length) return '';
+    const sorted = [...items].sort((a,b) => b.y - a.y || a.x - b.x);
+    const lines = [];
+    sorted.forEach(it => { const l = lines.find(l => Math.abs(l.y - it.y) <= it.h*0.5); l ? l.items.push(it) : lines.push({y:it.y, items:[it]}); });
+    lines.sort((a,b)=>b.y-a.y);
+    return lines.map(l => {
+      const row = l.items.sort((a,b)=>a.x-b.x); let s = '', prevEnd = null;
+      row.forEach(it => { if(prevEnd !== null && it.x - prevEnd > it.h*0.2 && !/[\u3000-\u9fff\uff00-\uffef]$/.test(s) ) s += ' '; s += it.s; prevEnd = it.x + it.w; });
+      return s.trim();
+    }).join('\n');
+  }
+
+  /* ---------- 5. 跨頁接合 ---------- */
+  const rowSig = (t, r) => t.cells.filter(c => c.r === r).sort((a,b)=>a.c-b.c).map(c => c.t.replace(/\s+/g,'')).join('|');
+  const sameCols = (a, b) => a.C === b.C && a.xs.every((x,i) => Math.abs(x - b.xs[i]) <= 4);
+
+  // 接合被切斷的文字：中日韓字或數字接數字 → 直接相連；英文字母之間 → 補一個空白
+  const CJK = /[\u3000-\u9fff\uff00-\uffef]/;
+  const joinFrag = (a, b) => {
+    a = String(a||'').trim(); b = String(b||'').trim(); if(!a) return b; if(!b) return a;
+    return (CJK.test(a.slice(-1)) || CJK.test(b[0]) || (/\d$/.test(a) && /^\d/.test(b))) ? a + b : a + ' ' + b;
+  };
+
+  function joinPages(tables, opts){
+    opts = {joinSplitRows:true, ...(opts||{})};
+    const out = [];
+    for(const t of tables){
+      const prev = out[out.length-1];
+      // 候選：下一頁的第一張表接在上一頁的最後一張表後面，且欄位格線對齊、新表從頁面上方開始
+      const cand = prev && t.page === prev.pages[prev.pages.length-1] + 1 && t.firstOnPage && prev.lastOnPage
+                   && sameCols(prev, t) && t.box.top >= t.pageH*0.60;
+      // 重複表頭（最多 4 列；表頭不可被跨列合併切斷）
+      let k = 0;
+      if(cand){
+        for(let n = Math.min(4, t.R-1, prev.R-1); n >= 1; n--){
+          let same = true;
+          for(let r=0;r<n;r++) if(rowSig(prev, r) !== rowSig(t, r) || rowSig(t,r) === '') { same = false; break; }
+          const crosses = t.cells.some(c => c.r < n && c.r + c.rs > n);
+          if(same && !crosses){ k = n; break; }
+        }
+      }
+      // 接合條件：有重複表頭，或上一頁的表格延伸到頁面下半部（自然換頁）
+      const isNext = cand && (k > 0 || prev.box.bottom <= prev.pageH*0.50);
+      if(!isNext){ out.push({...t, pages:[t.page], breaks:[]}); continue; }
+      const base = prev.R;
+      t.cells.filter(c => c.r >= k).forEach(c => prev.cells.push({...c, r: c.r - k + base}));
+      prev.R += t.R - k; prev.breaks.push(base); prev.pages.push(t.page);
+      // (a) 換頁時被切開的列：新頁開頭只剩一整列空白框 → 直接移除
+      const first = prev.cells.filter(c => c.r === base);
+      if(first.length && first.every(c => c.t.trim() === '' ) && prev.R - base > 1){
+        Ops.deleteRow(prev, base); prev.breaks.push(base); prev.droppedEmptyRows = (prev.droppedEmptyRows||0) + 1;
+      }
+      // (b) 跨頁的垂直合併儲存格：新頁開頭的空白（或同文字）儲存格，併回上一頁同欄的合併儲存格
+      for(const c of prev.cells.filter(c => c.r === base)){
+        const up = cellAt(prev, base-1, c.c);
+        if(up && up !== c && up.c === c.c && up.cs === c.cs && up.r + up.rs === base && up.rs > 1
+           && (c.t.trim() === '' || c.t.replace(/\s+/g,'') === up.t.replace(/\s+/g,''))){
+          up.rs += c.rs; prev.cells.splice(prev.cells.indexOf(c), 1);
+        }
+      }
+      // (c) 換頁時被切成兩半的資料列：新頁開頭只有少數儲存格有字（其餘欄位為空）→ 文字接回上一列同欄
+      if(opts.joinSplitRows && prev.R - base > 1){
+        const row = prev.cells.filter(c => c.r === base), above = prev.cells.filter(c => c.r <= base-1 && c.r + c.rs > base-1);
+        const cover = list => list.filter(c => c.t.trim() !== '').reduce((n,c) => n + c.cs, 0);
+        const aboveCover = cover(above.filter(c => c.rs === 1 || c.r + c.rs - 1 === base-1));
+        if(row.length && row.every(c => c.rs === 1) && cover(row) * 2 <= prev.C && cover(row) < aboveCover){
+          for(const x of row){
+            const up = cellAt(prev, base-1, x.c);
+            if(x.t.trim() && up && up !== x && up.c === x.c && up.cs === x.cs) up.t = joinFrag(up.t, x.t);
+          }
+          Ops.deleteRow(prev, base); prev.breaks.push(base); prev.joinedSplitRows = (prev.joinedSplitRows||0) + 1;
+        }
+      }
+      prev.box.bottom = t.box.bottom; prev.lastOnPage = t.lastOnPage; prev.pageH = t.pageH;
+      prev.skippedHeader = (prev.skippedHeader||0) + k;
+    }
+    return out;
+  }
+
+  /* ---------- 6. 主流程 ---------- */
+  async function extractTables(pdfjsLib, pdf, onProgress, opts){
+    const OPS = pdfjsLib.OPS, all = [];
+    for(let p=1;p<=pdf.numPages;p++){
+      const page = await pdf.getPage(p);
+      const [{H,V}, items] = await Promise.all([getLines(page, OPS), getText(page)]);
+      const pageH = page.view[3] - page.view[1];
+      const groups = groupLines(H, V).map(g => buildTable(g, items)).filter(Boolean)
+        .sort((a,b) => b.box.top - a.box.top);
+      groups.forEach((t,i) => all.push({...t, page:p, pageH, firstOnPage:i===0, lastOnPage:i===groups.length-1}));
+      onProgress && onProgress(p, pdf.numPages);
+    }
+    return joinPages(all, opts).map(t => toModel(t));
+  }
+
+  /* ---------- 7. 可編輯模型：cells=[{r,c,rs,cs,t}]，R、C ---------- */
+  function toModel(t){
+    return {R:t.R, C:t.C, droppedEmptyRows:t.droppedEmptyRows||0, joinedSplitRows:t.joinedSplitRows||0, cells:t.cells.map(({r,c,rs,cs,t:tx})=>({r,c,rs,cs,t:tx})), breaks:t.breaks||[], pages:t.pages||[t.page], skippedHeader:t.skippedHeader||0};
+  }
+  const cellAt = (m, r, c) => m.cells.find(x => r >= x.r && r < x.r+x.rs && c >= x.c && c < x.c+x.cs);
+  const fillBlank = (m) => { for(let r=0;r<m.R;r++) for(let c=0;c<m.C;c++) if(!cellAt(m,r,c)) m.cells.push({r,c,rs:1,cs:1,t:''}); };
+
+  const Ops = {
+    insertRow(m, at){                                 // 在 at 位置插入新列（at 以前的列不動）
+      m.cells.forEach(x => { if(x.r >= at) x.r++; else if(x.r + x.rs > at) x.rs++; });
+      m.R++; m.breaks = m.breaks.map(b => b >= at ? b+1 : b); fillBlank(m); return m;
+    },
+    deleteRow(m, i){
+      m.cells = m.cells.filter(x => !(x.r === i && x.rs === 1));
+      m.cells.forEach(x => { if(x.rs > 1 && x.r <= i && i < x.r+x.rs) x.rs--; else if(x.r > i) x.r--; });
+      m.R--; m.breaks = m.breaks.filter(b => b !== i).map(b => b > i ? b-1 : b); return m;
+    },
+    insertCol(m, at){
+      m.cells.forEach(x => { if(x.c >= at) x.c++; else if(x.c + x.cs > at) x.cs++; });
+      m.C++; fillBlank(m); return m;
+    },
+    deleteCol(m, j){
+      m.cells = m.cells.filter(x => !(x.c === j && x.cs === 1));
+      m.cells.forEach(x => { if(x.cs > 1 && x.c <= j && j < x.c+x.cs) x.cs--; else if(x.c > j) x.c--; });
+      m.C--; return m;
+    },
+    mergeRight(m, cell){
+      const nb = cellAt(m, cell.r, cell.c + cell.cs);
+      if(!nb || nb.r !== cell.r || nb.rs !== cell.rs) return false;
+      cell.t = [cell.t, nb.t].filter(Boolean).join('\n'); cell.cs += nb.cs; m.cells.splice(m.cells.indexOf(nb),1); return true;
+    },
+    mergeDown(m, cell){
+      const nb = cellAt(m, cell.r + cell.rs, cell.c);
+      if(!nb || nb.c !== cell.c || nb.cs !== cell.cs) return false;
+      cell.t = [cell.t, nb.t].filter(Boolean).join('\n'); cell.rs += nb.rs; m.cells.splice(m.cells.indexOf(nb),1); return true;
+    },
+    split(m, cell){
+      if(cell.rs === 1 && cell.cs === 1) return false;
+      cell.rs = 1; cell.cs = 1; fillBlank(m); return true;
+    },
+    // 手動把另一張表接在後面（欄數需相同），skip＝略過另一張表開頭幾列（重複表頭）
+    appendTable(m, other, skip=0){
+      if(m.C !== other.C) return false;
+      const base = m.R;
+      other.cells.filter(c => c.r >= skip).forEach(c => m.cells.push({...c, r: c.r - skip + base}));
+      m.R += other.R - skip; m.breaks.push(base); m.pages = [...m.pages, ...other.pages]; return true;
+    },
+    // 把第 r 列併入上一列（處理跨頁被切斷的列）：文字接在上一列同欄儲存格後面
+    mergeRowUp(m, r){
+      if(r <= 0) return false;
+      for(const x of m.cells.filter(x => x.r === r && x.rs === 1)){
+        const up = cellAt(m, r-1, x.c);
+        if(up && up !== x && up.c === x.c && up.cs === x.cs){ if(x.t) up.t = [up.t, x.t].filter(Boolean).join('\n'); x.t = ''; }
+      }
+      Ops.deleteRow(m, r); return true;
+    }
+  };
+
+  /* ---------- 8. 輸出給 Google 試算表 ---------- */
+  function toPayload(m){
+    const values = Array.from({length:m.R},()=>Array(m.C).fill(''));
+    const merges = [];
+    m.cells.forEach(x => { values[x.r][x.c] = x.t; if(x.rs > 1 || x.cs > 1) merges.push([x.r, x.c, x.rs, x.cs]); });
+    return {values, merges};
+  }
+
+  // 攤平成二維陣列；fill=true 時合併儲存格的內容填入它涵蓋的每一格（匯入資料用）
+  function flatten(m, fill=true){
+    const g = Array.from({length:m.R},()=>Array(m.C).fill(''));
+    m.cells.forEach(x => { for(let a=x.r;a<x.r+x.rs;a++) for(let b=x.c;b<x.c+x.cs;b++) g[a][b] = (fill || (a===x.r && b===x.c)) ? x.t : ''; });
+    return g;
+  }
+
+  return {extractTables, Ops, toPayload, flatten, joinFrag, cellAt, _internal:{getLines, getText, groupLines, buildTable, joinPages}};
+})();
+if(typeof module !== 'undefined') module.exports = PT;
+
+/* ---------- 從 PDF 匯入（學員名單／修課紀錄）：解析在瀏覽器本機完成，PDF 不會上傳 ---------- */
+const PI = {tables:[], cur:0, sel:null, pdf:null, hist:[], fileName:''};
+const PI_NOSPACE = new Set(["email","pid","class_id","class_d","class_t"]);
+const PI_TARGETS = [["","（略過此欄）"],["dept","部科"],["unit","工作單位(部門)"],["job","職類別"],["name","姓名"],["pid","身分證字號"],["phone","聯絡電話"],["email","Email"],
+  ["role","角色（含「擔任觀察員 Y/N」）"],["active","帳號狀態"],["class_id","課程編號"],["class_name","課程名稱"],["class_host","開課單位"],["class_way","上課方式"],["class_t","時數"],["class_d","日期"],["class_tag","修課狀態"]];
+const PI_GUESS = [[/e-?mail|信箱|電子郵件/i,"email"],[/姓名|^name$/i,"name"],[/身分證|身份證|證號/,"pid"],[/電話|手機|分機/,"phone"],[/部科/,"dept"],[/職類|職稱|^job/i,"job"],
+  [/觀察員|角色/,"role"],[/課程編號|課號/,"class_id"],[/課程名稱|課名|訓練名稱|課程$/,"class_name"],[/開課單位|主辦|承辦/,"class_host"],[/上課方式|授課方式/,"class_way"],
+  [/時數/,"class_t"],[/日期|上課時間/,"class_d"],[/修課狀態|成績|結果|合格/,"class_tag"],[/工作單位|單位|部門|科別|病房/,"unit"]];
+const piCss = `
+.pi-modal{position:fixed;inset:0;background:rgba(15,40,50,.5);z-index:100;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:18px}
+.pi-modal[hidden]{display:none}
+.pi-box{background:#fff;border-radius:14px;max-width:1120px;width:100%;padding:16px 18px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.pi-box h3{margin:0 0 4px}.pi-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#pi_drop{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--mute);cursor:pointer;margin-top:10px}
+#pi_drop.on{border-color:var(--brand);background:#eef7f8}
+.pi-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}.pi-bar .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.pi-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0}
+.pi-tabs button.on{background:var(--brand);color:#fff}
+#pi_wrap{overflow:auto;max-height:46vh;border:1px solid var(--line);border-radius:8px}
+table.pi-t{border-collapse:collapse;min-width:100%;font-size:13px}
+table.pi-t td{border:1px solid #9aa9ae;padding:5px 8px;min-width:70px;vertical-align:middle;white-space:pre-wrap;background:#fff;outline:none}
+table.pi-t td:focus{background:#fff8dc}table.pi-t td.sel{box-shadow:inset 0 0 0 2px var(--brand);background:#eef7f8}
+table.pi-t tr.pb td{border-top:3px dashed var(--red)}table.pi-t tr.hd td{background:#eaf3f4;font-weight:700}table.pi-t tr.skip td{opacity:.45}
+.pi-map{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin:8px 0}
+.pi-map div{border:1px solid var(--line);border-radius:8px;padding:6px 8px}.pi-map small{display:block;color:var(--mute);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi-map select{width:100%}
+.pi-msg{padding:8px 12px;border-radius:8px;margin:8px 0;background:#fff4e5;border:1px solid #f3d29a;color:#7a4a00}
+.pi-msg.err{background:#fdecea;border-color:#f5b7b1;color:#922b21}.pi-msg.ok{background:#e9f7ef;border-color:#a9dfbf;color:#145a32}
+.pi-legend i{display:inline-block;width:22px;border-top:3px dashed var(--red);vertical-align:middle;margin-right:4px}`;
+
+function piEnsureModal(){
+  if(document.getElementById("pi_modal")) return;
+  const st = document.createElement("style"); st.textContent = piCss; document.head.appendChild(st);
+  const d = document.createElement("div"); d.id = "pi_modal"; d.className = "pi-modal"; d.hidden = true;
+  d.innerHTML = `<div class="pi-box">
+    <div class="pi-top"><div><h3>從 PDF 匯入</h3><div class="hint">PDF 只在您的瀏覽器內解析，不會上傳。確認後才會寫入名單（走與 CSV 匯入相同的流程）。</div></div><button class="ghost" onclick="piClose()">✕ 關閉</button></div>
+    <div id="pi_drop">把 PDF 拖曳到這裡，或點此選擇檔案<input id="pi_file" type="file" accept="application/pdf" hidden></div>
+    <div id="pi_status"></div>
+    <label class="hint" style="display:block;margin-top:6px"><input type="checkbox" id="pi_split" checked style="width:auto"> 自動把「換頁時被切成兩半的資料列」併回上一列（勾選後重新解析；結果不對時可取消勾選）</label>
+    <div id="pi_main" hidden>
+      <div class="pi-tabs" id="pi_tabs"></div>
+      <div class="pi-bar">
+        <button class="ghost sm" data-op="rowAbove">↑ 上方插入列</button><button class="ghost sm" data-op="rowBelow">↓ 下方插入列</button><button class="danger sm" data-op="delRow">刪除列</button><span class="sep"></span>
+        <button class="ghost sm" data-op="colLeft">← 左側插入欄</button><button class="ghost sm" data-op="colRight">→ 右側插入欄</button><button class="danger sm" data-op="delCol">刪除欄</button><span class="sep"></span>
+        <button class="ghost sm" data-op="mergeRight">向右合併</button><button class="ghost sm" data-op="mergeDown">向下合併</button><button class="ghost sm" data-op="split">拆分</button><span class="sep"></span>
+        <button class="ghost sm" data-op="rowUp" title="跨頁被切成兩列的資料，併回上一列">本列併入上一列</button>
+        <button class="ghost sm" data-op="append" title="自動接合失敗時，手動接在前一張表後面">接在前一張表後面</button><span class="sep"></span>
+        <button class="ghost sm" data-op="undo">↶ 復原</button>
+      </div>
+      <div class="hint">點選儲存格可直接修改。<span class="pi-legend"><i></i>紅色虛線＝PDF 換頁處</span>　淡藍底＝標題列，變淡＝不匯入的列</div>
+      <div id="pi_wrap"><table class="pi-t" id="pi_tbl"></table></div>
+      <div style="margin-top:12px"><b>欄位對應</b> <span class="hint">（合併儲存格的內容會自動填入它涵蓋的每一列）</span></div>
+      <div class="row" style="margin-top:6px">
+        <div><label>標題列（第幾列）</label><select id="pi_hdr"></select></div>
+        <div><label>資料從第幾列開始</label><select id="pi_start"></select></div>
+      </div>
+      <div class="pi-map" id="pi_map"></div>
+      <div id="pi_prev"></div>
+      <div class="pi-bar"><button id="pi_go" onclick="importPdfRows()">匯入到名單</button><button class="ghost" onclick="piClose()">取消</button></div>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+  const inp = d.querySelector("#pi_file"), drop = d.querySelector("#pi_drop");
+  drop.onclick = () => inp.click();
+  inp.onchange = () => { piHandleFile(inp.files[0]); inp.value = ""; };
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add("on"); };
+  drop.ondragleave = () => drop.classList.remove("on");
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove("on"); piHandleFile(e.dataTransfer.files[0]); };
+  d.addEventListener("keydown", e => { if(e.key === "Escape") piClose(); });
+  /* 表格編輯事件 */
+  const tbl = d.querySelector("#pi_tbl"), cellOf = td => PI.tables[PI.cur].cells[+td.dataset.i];
+  tbl.addEventListener("focusin", e => { const td = e.target.closest("td"); if(!td) return; PI.sel = cellOf(td); tbl.querySelectorAll("td.sel").forEach(x=>x.classList.remove("sel")); td.classList.add("sel"); });
+  tbl.addEventListener("input", e => { const td = e.target.closest("td"); if(!td) return; cellOf(td).t = td.innerText.replace(/\n$/,""); piPreview(); });
+  d.querySelector("#pi_tabs").addEventListener("click", e => {
+    const b = e.target.closest("button"); if(!b) return;
+    if(b.dataset.tab === "blank"){ PI.tables.push({R:3,C:3,breaks:[],pages:[],droppedEmptyRows:0,skippedHeader:0,cells:[...Array(9)].map((_,i)=>({r:Math.floor(i/3),c:i%3,rs:1,cs:1,t:""}))}); PI.cur = PI.tables.length-1; }
+    else PI.cur = +b.dataset.tab;
+    PI.sel = null; piRender();
+  });
+  d.querySelector(".pi-bar").addEventListener("click", piToolbar);
+  d.querySelector("#pi_hdr").onchange = e => { const m = PI.tables[PI.cur]; m.map.hdr = +e.target.value; if(m.map.start <= m.map.hdr) m.map.start = m.map.hdr + 1; piGuess(m); piRender(); };
+  d.querySelector("#pi_start").onchange = e => { PI.tables[PI.cur].map.start = +e.target.value; piRender(); };
+  d.querySelector("#pi_split").onchange = () => { if(PI.pdf && (!PI.tables.length || confirm("重新解析會清除您目前對表格的修改，要繼續嗎？"))) piParse(); else d.querySelector("#pi_split").checked = !d.querySelector("#pi_split").checked; };
+  d.querySelector("#pi_map").addEventListener("change", e => { const s = e.target.closest("select"); if(!s) return; PI.tables[PI.cur].map.cols[+s.dataset.c] = s.value; piPreview(); });
+}
+const piSay = (html, cls="") => { document.getElementById("pi_status").innerHTML = html ? `<div class="pi-msg ${cls}">${html}</div>` : ""; };
+
+window.openPdfImport = () => {
+  if(!isAdmin()){ toast("僅管理者可操作"); return; }
+  piEnsureModal(); document.getElementById("pi_modal").hidden = false; document.body.style.overflow = "hidden";
+  if(!PI.tables.length) piSay("");
+};
+window.piClose = () => { const m = document.getElementById("pi_modal"); if(m) m.hidden = true; document.body.style.overflow = ""; };
+
+function piLoadPdfjs(){
+  if(window.pdfjsLib) return Promise.resolve();
+  return new Promise((ok,ng) => {
+    const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    s.onload = ok; s.onerror = () => ng(new Error("無法載入 pdf.js（需要連網到 cdnjs；內網環境請把 pdf.js 放到自己的伺服器）")); document.head.appendChild(s);
+  }).then(() => { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; });
+}
+async function piHandleFile(f){
+  if(!f) return;
+  if(!/\.pdf$/i.test(f.name) && !/pdf$/i.test(f.type)){ piSay("請選擇 PDF 檔案", "err"); return; }
+  piSay("讀取中…");
+  try{
+    await piLoadPdfjs();
+    PI.fileName = f.name.replace(/\.pdf$/i,"");
+    const CDN = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/";
+    const data = new Uint8Array(await f.arrayBuffer());
+    PI.pdf = await pdfjsLib.getDocument({data, cMapUrl: CDN+"cmaps/", cMapPacked: true, standardFontDataUrl: CDN+"standard_fonts/"}).promise;
+    await piParse(); return;
+  }catch(e){ console.error(e); piSay("解析失敗：" + esc(e.message || e), "err"); }
+}
+async function piParse(){
+  try{
+    piSay("解析中…");
+    const list = await PT.extractTables(pdfjsLib, PI.pdf, (p,n) => piSay(`解析第 ${p} / ${n} 頁…`), {joinSplitRows: document.getElementById("pi_split").checked});
+    if(!list.length){
+      const sample = await (await PI.pdf.getPage(1)).getTextContent();
+      piSay(sample.items.length === 0
+        ? "這份 PDF 沒有可選取的文字，看起來是<b>掃描影像</b>，無法直接擷取，請先做 OCR 再試。"
+        : "找不到<b>有框線</b>的表格。本功能靠表格框線判斷儲存格；無框線的表格可按「＋ 空白表格」手動貼上。", "err");
+      PI.tables = []; piRender(true); return;
+    }
+    PI.tables = list; PI.cur = 0; PI.sel = null; PI.hist.length = 0;
+    const joined = list.filter(t=>t.pages.length>1).length, dropped = list.reduce((a,t)=>a+t.droppedEmptyRows,0), split = list.reduce((a,t)=>a+t.joinedSplitRows,0);
+    piSay(`完成：找到 ${list.length} 張表格${joined?`，其中 ${joined} 張由多頁自動接合`:""}${list.some(t=>t.skippedHeader)?"，已略過各頁重複的表頭":""}${dropped?`，移除 ${dropped} 個換頁產生的空白列`:""}${split?`，併回 ${split} 個換頁被切斷的資料列`:""}。請核對表格、確認欄位對應後再匯入。`, "ok");
+    piRender();
+  }catch(e){ console.error(e); piSay("解析失敗：" + esc(e.message || e), "err"); }
+}
+
+/* ---------- 欄位對應 ---------- */
+const piHdrText = (m, g, c) => [...new Set(g.slice(m.map.hdr-1, m.map.start-1).map(r => (r[c]||"").replace(/\s+/g,"")).filter(Boolean))].join(" ");
+function piGuess(m){
+  const g = PT.flatten(m);
+  const used = new Set(); m.map.cols = [];
+  for(let c=0;c<m.C;c++){
+    const text = piHdrText(m, g, c).replace(/ /g,"");
+    let key = ALIAS[normHead(text)] || ""; if(key === "active") key = "";       // 「狀態」不當成帳號狀態
+    if(!key){ const hit = PI_GUESS.find(([re]) => re.test(text)); key = hit ? hit[1] : ""; }
+    if(key && !used.has(key)){ used.add(key); m.map.cols.push(key); } else m.map.cols.push("");
+  }
+}
+function piInit(m){
+  if(m.map && m.map.cols.length === m.C) return;
+  // 自動判斷標題列範圍：在前 4 列中，挑「能對應到最多欄位」的標題列數（同分取較少列）
+  let best = {n:-1, h:0};
+  for(let h=0; h<Math.min(4, m.R); h++){
+    m.map = {hdr:1, start:h+2, cols:[]}; piGuess(m);
+    const n = m.map.cols.filter(Boolean).length; if(n > best.n) best = {n, h};
+  }
+  m.map = {hdr:1, start:Math.min(best.h+2, m.R+1), cols:[]}; piGuess(m);
+}
+
+function piRows(){                                   // 依目前對應轉成匯入用的物件陣列
+  const m = PI.tables[PI.cur]; if(!m) return [];
+  const g = PT.flatten(m);
+  const out = [];
+  for(let r = m.map.start-1; r < m.R; r++){
+    const o = {}; let any = false;
+    m.map.cols.forEach((k,i) => {
+      if(!k) return;
+      let v = String(g[r][i]||"").split(/\s*\n\s*/).reduce((a,b) => PT.joinFrag(a,b), "");           // 儲存格內換行 → 接成一行
+      if(PI_NOSPACE.has(k)) v = v.replace(/\s+/g,"");                                              // Email、職編、日期、時數不含空白
+      if(v) any = true; o[k] = v;
+    });
+    if(!any) continue;
+    if(o.email) o.email = o.email.replace(/\s+/g,"");
+    out.push(o);
+  }
+  return out;
+}
+function piPreview(){
+  const m = PI.tables[PI.cur], box = document.getElementById("pi_prev"); if(!m || !box) return;
+  const rows = piRows(), valid = rows.filter(o => o.name || o.email).length;
+  const keys = m.map.cols.filter(Boolean);
+  const warn = !keys.includes("name") && !keys.includes("email") ? `<div class="pi-msg err">尚未對應「姓名」欄，請在下方指定哪一欄是姓名。</div>` : "";
+  const labels = Object.fromEntries(PI_TARGETS), show = [...keys];
+  if(!show.includes("email") && rows.some(o => o.email)) show.unshift("email");
+  box.innerHTML = warn + `<div class="hint" style="margin:6px 0">預覽：共 ${rows.length} 列資料，其中 <b>${valid}</b> 列有姓名或 Email（兩者都沒有的列會被略過）。${rows.length>6?"以下顯示前 6 列。":""}</div>` +
+    (rows.length ? `<div style="overflow:auto"><table><thead><tr>${show.map(k=>`<th>${esc(labels[k])}</th>`).join("")}</tr></thead><tbody>${
+      rows.slice(0,6).map(o=>`<tr>${show.map(k=>`<td>${esc(o[k]||"")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : "");
+}
+
+/* ---------- 畫面 ---------- */
+function piRender(noMain){
+  const main = document.getElementById("pi_main"), m = PI.tables[PI.cur];
+  main.hidden = !m; if(!m) return;
+  piInit(m);
+  document.getElementById("pi_tabs").innerHTML = PI.tables.map((t,i) => `<button class="ghost sm ${i===PI.cur?"on":""}" data-tab="${i}">表格 ${i+1}（${t.R}×${t.C}，${t.pages.length>1?`第 ${t.pages[0]}–${t.pages[t.pages.length-1]} 頁`:`第 ${t.pages[0]||"-"} 頁`}）</button>`).join("")
+    + `<button class="ghost sm" data-tab="blank">＋ 空白表格</button>`;
+  const rows = [];
+  for(let r=0;r<m.R;r++){
+    const cls = [m.breaks.includes(r)?"pb":"", r+1>=m.map.hdr && r+1<m.map.start ? "hd" : "", r+1<m.map.hdr ? "skip" : ""].join(" ");
+    const tds = m.cells.map((c,i)=>[c,i]).filter(([c])=>c.r===r).sort((a,b)=>a[0].c-b[0].c)
+      .map(([c,i]) => `<td data-i="${i}" contenteditable ${c.rs>1?`rowspan="${c.rs}"`:""} ${c.cs>1?`colspan="${c.cs}"`:""} class="${c===PI.sel?"sel":""}">${esc(c.t)}</td>`).join("");
+    rows.push(`<tr class="${cls}">${tds}</tr>`);
+  }
+  document.getElementById("pi_tbl").innerHTML = rows.join("");
+  const opt = (n, sel, label) => `<option value="${n}" ${n===sel?"selected":""}>${label||`第 ${n} 列`}</option>`;
+  document.getElementById("pi_hdr").innerHTML = Array.from({length:m.R},(_,i)=>opt(i+1, m.map.hdr)).join("");
+  document.getElementById("pi_start").innerHTML = Array.from({length:m.R-m.map.hdr},(_,i)=>opt(m.map.hdr+1+i, m.map.start)).join("") + opt(m.R+1, m.map.start, "（沒有資料列）");
+  const g = PT.flatten(m);
+  document.getElementById("pi_map").innerHTML = m.map.cols.map((k,c) => `<div><small title="${esc(piHdrText(m,g,c))}">第 ${c+1} 欄：${esc(piHdrText(m,g,c) || "（無標題）")}</small>
+    <select data-c="${c}">${PI_TARGETS.map(([v,l])=>`<option value="${v}" ${v===k?"selected":""}>${l}</option>`).join("")}</select></div>`).join("");
+  piPreview();
+}
+
+/* ---------- 編輯操作 ---------- */
+const piSnap = () => { PI.hist.push([PI.cur, JSON.stringify(PI.tables)]); if(PI.hist.length > 40) PI.hist.shift(); };
+const PI_OPS = {
+  rowAbove: m => PT.Ops.insertRow(m, PI.sel.r), rowBelow: m => PT.Ops.insertRow(m, PI.sel.r + PI.sel.rs),
+  delRow: m => m.R > 1 ? (PT.Ops.deleteRow(m, PI.sel.r), true) : false,
+  colLeft: m => PT.Ops.insertCol(m, PI.sel.c), colRight: m => PT.Ops.insertCol(m, PI.sel.c + PI.sel.cs),
+  delCol: m => m.C > 1 ? (PT.Ops.deleteCol(m, PI.sel.c), true) : false,
+  mergeRight: m => PT.Ops.mergeRight(m, PI.sel), mergeDown: m => PT.Ops.mergeDown(m, PI.sel), split: m => PT.Ops.split(m, PI.sel),
+  rowUp: m => PT.Ops.mergeRowUp(m, PI.sel.r)
+};
+function piToolbar(e){
+  const b = e.target.closest("button[data-op]"); if(!b) return;
+  const op = b.dataset.op, m = PI.tables[PI.cur]; piSay("");
+  if(op === "undo"){ const h = PI.hist.pop(); if(!h){ piSay("沒有可復原的操作"); return; } PI.tables = JSON.parse(h[1]); PI.cur = Math.min(h[0], PI.tables.length-1); PI.sel = null; piRender(); return; }
+  if(op === "append"){
+    if(PI.cur === 0){ piSay("這是第一張表格，前面沒有可接的表格", "err"); return; }
+    if(PI.tables[PI.cur-1].C !== m.C){ piSay(`欄數不同（前一張 ${PI.tables[PI.cur-1].C} 欄、這張 ${m.C} 欄），請先用「插入／刪除欄」調整成相同欄數`, "err"); return; }
+    const skip = parseInt(prompt("這張表開頭有幾列是重複的表頭，需要略過？","0")||"0",10) || 0;
+    piSnap(); PT.Ops.appendTable(PI.tables[PI.cur-1], m, skip); PI.tables[PI.cur-1].map = null; PI.tables.splice(PI.cur,1); PI.cur--; PI.sel = null; piRender(); return;
+  }
+  if(!PI.sel || !m.cells.includes(PI.sel)){ piSay("請先點選一個儲存格", "err"); return; }
+  piSnap(); const ok = PI_OPS[op](m);
+  if(ok === false){ PI.hist.pop(); piSay(op.startsWith("merge") ? "無法合併：相鄰儲存格的列數／欄數需與目前儲存格對齊" : op==="split" ? "這個儲存格沒有合併過" : "無法執行此操作", "err"); return; }
+  if(op.startsWith("col") || op==="delCol") m.map = null;               // 欄數變了 → 重新對應
+  else if(op==="delRow"||op==="rowAbove"||op==="rowBelow"||op==="rowUp"){ m.map.start = Math.min(m.map.start, m.R+1); m.map.hdr = Math.min(m.map.hdr, m.R); }
+  if(!m.cells.includes(PI.sel)) PI.sel = null; piRender();
+}
+
+window.importPdfRows = act0(async () => {
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const m = PI.tables[PI.cur]; if(!m) throw new Error("尚未載入表格");
+  const keys = m.map.cols.filter(Boolean);
+  if(!keys.includes("name") && !keys.includes("email")) throw new Error("請先指定「姓名」欄");
+  const list = piRows(), valid = list.filter(o => o.name || o.email).length;
+  if(!valid) throw new Error("沒有任何列有姓名或 Email，請檢查欄位對應");
+  if(!confirm(`確定要匯入嗎？\n共 ${list.length} 列，其中 ${valid} 列有姓名或 Email。\n已存在的學員不會重複新增；Email 留空者以「身分證字號＋姓名」建立內部代號。`)) return;
+  await importRows(list); piClose();
 });
+window.__piSetTables = list => { piEnsureModal(); PI.tables = list; PI.cur = 0; PI.sel = null; piRender(); };   // 供測試使用
+
 window.exportRoster = ()=>{
   const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
-  const lines = [csvLine(["姓名","Email","職編","職類","單位","角色","帳號狀態",yr+"年度時數","是否達標"])];
-  DB.Members.forEach(m=>{ const h = hoursOf(m.email,yr); lines.push(csvLine([m.name,m.email,m.emp_id,m.job,m.unit,m.role,isActive(m)?"啟用":"停用",h,h>=tgt?"是":"否"])); });
+  const lines = [csvLine(["部科","工作單位(部門)","職類別","姓名","身分證字號","連絡電話","Email","角色","帳號狀態",yr+"年度時數","是否達標"])];
+  DB.Members.forEach(m=>{ const h = hoursOf(m.email,yr); lines.push(csvLine([m.dept,m.unit,m.job,m.name,m.pid,m.phone,showEmail(m.email),roleLabel(m.role),isActive(m)?"啟用":"停用",h,h>=tgt?"是":"否"])); });
   downloadText(`學員名單_${yr}.csv`, lines.join("\n"));
 };
 /* ---------- 其他動作 ---------- */
@@ -1171,6 +1816,32 @@ function route(keepFocus){
   if(k === "course") initCourse();
   if(k === "courses") syncMedia();
 }
+/* 搜尋框：只更新搜尋框以外的內容、保留輸入框本身，因此輸入法組字（注音／拼音）期間也能即時搜尋 */
+function patchDom(oldEl,newEl,keepId){
+  const on=[...oldEl.childNodes], nn=[...newEl.childNodes];
+  nn.forEach((n,i)=>{
+    const o=on[i];
+    if(!o){ oldEl.appendChild(n.cloneNode(true)); return; }
+    if(o.nodeType===1 && n.nodeType===1 && o.tagName===n.tagName && (o.id===keepId || o.querySelector("#"+keepId))){
+      if(o.id!==keepId) patchDom(o,n,keepId);
+    } else if(!o.isEqualNode(n)) o.replaceWith(n.cloneNode(true));
+  });
+  for(let i=on.length-1;i>=nn.length;i--) on[i].remove();
+}
+const SEARCH_IDS = ["cq","jq","rq"];
+window.onSearch = el => {
+  if(tabState[el.id] === el.value || (!tabState[el.id] && !el.value)) return;
+  tabState[el.id] = el.value;
+  const k = (location.hash||"#overview").slice(1).split("/")[0], v = VIEWS[k];
+  if(!v || !document.getElementById(el.id)){ route(true); return; }
+  const tmp = document.createElement("div"); tmp.innerHTML = v();
+  patchDom($("#view"), tmp, el.id);
+};
+["input","keyup","compositionupdate","compositionend","change","search","paste","cut"].forEach(ev =>
+  $("#view").addEventListener(ev, e => {
+    const el = e.target; if(!el || !SEARCH_IDS.includes(el.id)) return;
+    if(ev==="paste" || ev==="cut") setTimeout(()=>onSearch(el),0); else onSearch(el);
+  }, true));
 window.addEventListener("hashchange",()=>route());
 /* 示範模式：資料存在 localStorage，同一瀏覽器的其他分頁（例如一個管理者、一個學員）修改後，這裡自動同步 */
 if(DEMO){
