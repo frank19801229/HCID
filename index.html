@@ -101,6 +101,7 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 <body>
 <aside>
   <div class="logo"><b>HCID</b><div>智慧應變與即時訓練<small>感染管制中心</small></div></div>
+  <div class="sep">學員工作空間</div>
   <a href="#overview" id="navOverview">整備總覽</a>
   <a href="#courses">課程與教材</a>
   <a href="#jit">即時訓練</a>
@@ -143,7 +144,8 @@ const TABLES = {
   Surveys:   ["email","course_id","course_title","survey","answer","time"],
   QuizResults: ["email","course_id","course_title","score","total","answers","time"],
   SurveyQuestions: ["id","order","text","type","options","required"],
-  Attendance:["course_id","date","count","reporter"]
+  Attendance:["course_id","date","count","reporter"],
+  FitResults:["id","emp_id","pid","name","dept","op_type","task","wear","brand","method","result","note"]   // 密合度測試結果（由 PDF 批次匯入）
 };
 const MEDIA_TYPES = [["none","純文字教材（無檔案）"],["mp4","MP4 影片"],["hls","HLS 串流（.m3u8）"],["pdf","PDF"],["ppt","PPT / PPTX"],["iframe","iframe / 網頁嵌入（含 YouTube）"]];
 const MEDIA_LABEL = Object.fromEntries(MEDIA_TYPES);
@@ -748,11 +750,12 @@ const VIEWS = {
     let body="";
     if(t==="consent") body = table([["同意書",r=>esc(r)],["狀態",r=>{const s=signed.find(x=>x.consent===r);return s?`<span class="tag green">已簽署 ${esc(s.signed_at)}</span>`:`<button class="sm" onclick="sign('${r}')">線上簽署</button>`}]],consents);
     if(t==="sq" && isAdmin()) body = sqAdminView();
+    if(t==="fit" && isAdmin()) body = fitAdminView();
     if(t==="att") body = `<div class="row"><div><label>課程</label><select id="a_course">${DB.Courses.map(c=>`<option value="${esc(c.id)}">${esc(c.title)}</option>`).join("")}</select></div>
       ${field("a_date","上課日期","date")}${field("a_count","上課人數","number")}</div><button onclick="addAtt()">填報</button>
       <div style="height:12px"></div>${table([["日期",r=>esc(r.date)],["課程",r=>esc(r.course_id)],["人數",r=>esc(r.count)],["填報人",r=>esc(r.reporter)]],DB.Attendance,"尚無填報")}`;
     return head("同意書與問卷","依授權範圍管理與查閱資料。") + `<div class="sp"><b>同意書與簽署紀錄</b></div>` +
-      tabs("ft",[["consent","線上同意書"],...(isAdmin()?[["sq","問卷題目管理"]]:[]),["att","上課人數填報"]],"consent") + `<div class="card">${body}</div>`;
+      tabs("ft",[["consent","線上同意書"],...(isAdmin()?[["sq","問卷題目管理"],["fit","密合度測試結果"]]:[]),["att","上課人數填報"]],"consent") + (t==="fit" && isAdmin() ? body : `<div class="card">${body}</div>`);
   }
 };
 
@@ -1139,6 +1142,138 @@ window.exportRoster = ()=>{
   DB.Members.forEach(m=>{ const h = hoursOf(m.email,yr); lines.push(csvLine([m.dept,m.unit,m.job,m.name,m.pid,m.phone,showEmail(m.email),roleLabel(m.role),isActive(m)?"啟用":"停用",h,h>=tgt?"是":"否"])); });
   downloadText(`學員名單_${yr}.csv`, lines.join("\n"));
 };
+/* ---------- 密合度測試結果：PDF 解析（依欄位 x 座標切分） ---------- */
+const FIT_COLS = [["no",0],["emp_id",62],["name",120],["dept",185],["op_type",248],["task",313],["wear",380],["brand",487],["method",600],["result",664],["note",730]];
+function fitColOf(x){ let k = FIT_COLS[0][0]; for(const [n,l] of FIT_COLS){ if(x >= l) k = n; } return k; }
+const CJKC = "㐀-鿿（）、，。：";
+const cjkSpace = s => s.replace(new RegExp("\\s+(?=["+CJKC+"])","g"),"").replace(new RegExp("(?<=["+CJKC+"])\\s+","g"),"");
+function fitPageRows(items){
+  const its = items.map(i=>({s:String(i.str||""), x:i.transform[4], y:i.transform[5]})).filter(i=>i.s !== "" && i.y > 60 && !/以下空白/.test(i.s));
+  const head = its.find(i=>i.s.includes("項次"));
+  const topY = head ? head.y - 10 : 1e9;
+  const nl = {}; its.filter(i=>i.x < 62 && i.y < topY).forEach(i=>{ (nl[Math.round(i.y)] = nl[Math.round(i.y)] || []).push(i); });
+  const anchors = Object.entries(nl).map(([y,a])=>({s:a.sort((p,q)=>p.x-q.x).map(i=>i.s).join("").trim(), y:Number(y)})).filter(a=>/^\d{1,4}$/.test(a.s)).sort((a,b)=>b.y-a.y);
+  if(!anchors.length) return [];
+  const rows = anchors.map(a=>({no:a.s.trim(), cells:{}, y:a.y}));
+  const band = y => { for(let i=0;i<rows.length;i++){ const lo = i===rows.length-1 ? -1e9 : (rows[i].y+rows[i+1].y)/2; if(y >= lo) return i; } return rows.length-1; };
+  its.filter(i=>i.y < topY).forEach(i=>{
+    const r = rows[band(i.y)], c = fitColOf(i.x); if(c==="no") return;
+    ((r.cells[c] = r.cells[c] || {})[Math.round(i.y)] = r.cells[c][Math.round(i.y)] || []).push(i);
+  });
+  return rows.map(r=>{
+    const lines = c => Object.entries(r.cells[c]||{}).sort((a,b)=>b[0]-a[0]).map(([,arr])=>arr.sort((a,b)=>a.x-b.x).map(i=>i.s).join("").replace(/\s+/g," ").trim()).filter(Boolean);
+    const joined = (c,sep="") => cjkSpace(lines(c).join(sep));
+    const joinedRaw = (c,sep=" ") => lines(c).join(sep).replace(/\s+/g," ").trim();
+    const picked = c => { const l = lines(c).find(t=>t.includes("▓")); return l ? cjkSpace(l.replace(/▓/g,"").replace(/\s+/g," ").trim()) : ""; };
+    const emp = joined("emp_id").replace(/\s/g,"");
+    return {no:r.no, emp_id: emp==="-" ? "" : emp, name:joined("name"), dept:joined("dept"), op_type:picked("op_type"), task:joined("task"),
+      wear:picked("wear"), brand:joinedRaw("brand"), method:picked("method"), result:picked("result"), note:joined("note")};
+  }).filter(r=>r.name);
+}
+
+/* ---------- 密合度測試結果（管理者）：表格、搜尋、批次上傳 PDF ---------- */
+const FIT_FIELDS = [["emp_id","員工編號"],["pid","身分證字號"],["name","姓名"],["dept","部門"],["op_type","作業型態"],["task","作業別"],["wear","配戴大約時間"],["brand","呼吸防護具廠牌/面體型號/尺寸"],["method","密合度測試方法"],["result","測定結果"],["note","備註"]];
+const fitResTag = v => v==="通過" ? `<span class="tag green">通過</span>` : v==="不通過" ? `<span class="tag red">不通過</span>` : esc(v);
+const fitKey = r => r.emp_id ? "e|"+String(r.emp_id).toLowerCase()+"|"+r.name : "n|"+r.name+"|"+r.dept;
+function fitAdminView(){
+  const q = (tabState.fq||"").toLowerCase(), fr = tabState.fres||"", lim = tabState.flim||100;
+  const all = DB.FitResults || [];
+  const rows = all.filter(r => (!q || FIT_FIELDS.map(f=>r[f[0]]).join(" ").toLowerCase().includes(q)) && (!fr || r.result===fr));
+  const shown = rows.slice(0, lim), bad = all.filter(r=>r.result==="不通過").length;
+  const ed = tabState.fedit, e = ed && ed!=="new" ? (all.find(x=>x.id===ed)||{}) : {};
+  return `
+  <div class="card" style="margin-bottom:14px"><b>批次上傳 PDF</b>
+    <p class="hint">可一次選擇多個「密合度測試結果彙整」PDF，系統依表格欄位自動解析（員工編號、姓名、部門、作業型態、作業別、配戴時間、廠牌／型號／尺寸、測試方法、測定結果、備註）並寫入下方表格。PDF 內沒有「身分證字號」，系統會嘗試以學員名單（員工編號或唯一同名者）補上，找不到則留空，可再編輯。</p>
+    <div class="row"><div><label>選擇 PDF（可多選）</label><input id="fit_files" type="file" accept=".pdf,application/pdf" multiple></div>
+      <div><label>遇到重複資料（員工編號＋姓名相同）</label><select id="fit_dup">${opts([["update","以新檔案更新既有資料"],["skip","略過，保留既有資料"]],"update")}</select></div></div>
+    <button onclick="importFitPdfs()">解析並匯入</button>
+    ${tabState.flog?`<div class="notice" style="white-space:pre-line">${esc(tabState.flog)}</div>`:""}</div>
+  <div class="card">
+    <div class="filters" style="grid-template-columns:3fr 1fr">
+      <input id="fq" placeholder="搜尋員工編號、身分證字號、姓名、部門、作業別、廠牌、備註…" value="${esc(tabState.fq||"")}">
+      <select onchange="tabState.fres=this.value;tabState.flim=100;route()">${opts([["","全部測定結果"],["通過","通過"],["不通過","不通過"]],fr)}</select></div>
+    <div class="sp"><span class="hint">共 ${all.length} 筆，符合 ${rows.length} 筆；不通過 ${bad} 筆</span>
+      <span><button class="ghost sm" onclick="editFit('new')">新增一筆</button> <button class="ghost sm" onclick="exportFit()">匯出 CSV</button> <button class="danger sm" onclick="clearFit()">清空全部</button></span></div>` +
+    table([...FIT_FIELDS.map(([k,l])=>[l, r=> k==="result" ? fitResTag(r.result) : k==="brand" ? `<div style="min-width:150px">${esc(r[k])}</div>` : k==="note" ? `<div style="min-width:160px">${esc(r[k])}</div>` : esc(r[k])]),
+      ["",r=>`<button class="ghost sm" onclick="editFit('${esc(r.id)}')">編輯</button> <button class="danger sm" onclick="deleteFit('${esc(r.id)}')">刪除</button>`]], shown, all.length ? "沒有符合的資料" : "尚無資料，請由上方批次上傳 PDF") +
+    (rows.length > lim ? `<div style="text-align:center;margin-top:10px"><button class="ghost sm" onclick="tabState.flim=${lim+100};route()">顯示更多（已顯示 ${lim} / ${rows.length}）</button></div>` : "") + `</div>` +
+  (ed ? `<div class="card" style="margin-top:14px"><div class="sp"><b>${ed==="new"?"新增一筆":"編輯資料"}</b></div><div class="row">` +
+    FIT_FIELDS.map(([k,l]) => k==="result"
+      ? `<div><label>${l}</label><select id="fe_${k}">${opts([["通過","通過"],["不通過","不通過"]], e[k]||"通過")}</select></div>`
+      : field("fe_"+k, l, "text", "", e[k]||"")).join("") +
+    `</div><button onclick="saveFit()">儲存</button> <button class="ghost" onclick="tabState.fedit=null;route()">取消</button></div>` : "");
+}
+window.editFit = id => { tabState.fedit = id; route(); };
+window.saveFit = act0(async()=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const data = {}; FIT_FIELDS.forEach(([k])=>{ data[k] = val("fe_"+k); });
+  if(!data.name) throw new Error("請輸入姓名");
+  if(tabState.fedit === "new") await addRow("FitResults",{id:"F"+uid(),...data});
+  else await updateRow("FitResults","id",tabState.fedit,data);
+  tabState.fedit = null; toast("已儲存");
+});
+window.deleteFit = act0(async id=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const r = DB.FitResults.find(x=>x.id===id); if(!r) return;
+  if(!confirm(`確定要刪除「${r.name}」的密合度測試結果嗎？`)) return;
+  await deleteRow("FitResults","id",id); toast("已刪除");
+});
+window.clearFit = act0(async()=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const n = DB.FitResults.length; if(!n) return;
+  if(!confirm(`確定要清空全部 ${n} 筆密合度測試結果嗎？此動作無法復原。`)) return;
+  for(const r of [...DB.FitResults]){ await deleteRow("FitResults","id",r.id); }
+  tabState.flog = ""; toast("已清空");
+});
+window.exportFit = ()=>{
+  const lines = [csvLine(FIT_FIELDS.map(f=>f[1]))];
+  DB.FitResults.forEach(r=>lines.push(csvLine(FIT_FIELDS.map(([k])=>r[k]))));
+  downloadText("密合度測試結果.csv", lines.join("\n"));
+};
+function fitLookupPid(r){
+  const byEmp = r.emp_id ? DB.Members.find(m=>m.emp_id && String(m.emp_id)===r.emp_id && m.pid) : null;
+  if(byEmp) return byEmp.pid;
+  const same = DB.Members.filter(m=>m.name===r.name && m.pid);
+  return same.length===1 ? same[0].pid : "";
+}
+async function readFitPdf(f, onPage){
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const pdf = await pdfjsLib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise, out = [];
+  for(let p=1;p<=pdf.numPages;p++){
+    out.push(...fitPageRows((await (await pdf.getPage(p)).getTextContent()).items));
+    if(onPage) onPage(p, pdf.numPages);
+  }
+  return out;
+}
+window.importFitPdfs = act0(async()=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const files = [...$("#fit_files").files]; if(!files.length) throw new Error("請先選擇 PDF 檔案");
+  const skipDup = val("fit_dup")==="skip", log = [];
+  let added=0, updated=0, skipped=0, total=0;
+  for(const f of files){
+    if(!/\.pdf$/i.test(f.name) && f.type!=="application/pdf"){ log.push(`✗ ${f.name}：不是 PDF`); continue; }
+    let rows;
+    try{ rows = await readFitPdf(f, (p,n)=>toast(`解析 ${f.name}：第 ${p} / ${n} 頁`)); }
+    catch(e){ log.push(`✗ ${f.name}：無法讀取（${e.message}）`); continue; }
+    if(!rows.length){ log.push(`✗ ${f.name}：沒有偵測到密合度測試表格（版面不符）`); continue; }
+    log.push(`✓ ${f.name}：解析 ${rows.length} 筆`); total += rows.length;
+    let i = 0;
+    for(const r of rows){
+      const rec = {emp_id:r.emp_id,pid:"",name:r.name,dept:r.dept,op_type:r.op_type,task:r.task,wear:r.wear,brand:r.brand,method:r.method,result:r.result,note:r.note};
+      const ex = DB.FitResults.find(x=>fitKey(x)===fitKey(rec));
+      if(ex){
+        if(skipDup){ skipped++; continue; }
+        const patch = {...rec, pid: ex.pid || fitLookupPid(rec)};
+        await updateRow("FitResults","id",ex.id,patch); updated++;
+      } else { rec.pid = fitLookupPid(rec); await addRow("FitResults",{id:"F"+uid()+(i++),...rec}); added++; }
+      if((added+updated+skipped) % 20 === 0) toast(`寫入中… ${added+updated+skipped} / ${total}`);
+    }
+  }
+  tabState.flog = log.join("\n") + `\n新增 ${added} 筆、更新 ${updated} 筆、略過 ${skipped} 筆`;
+  toast(`匯入完成：新增 ${added}、更新 ${updated}、略過 ${skipped}`);
+});
+
 /* ---------- 其他動作 ---------- */
 window.markDone = async id => { const c = DB.Courses.find(x=>x.id===id); if(c){ await awardCredit(c); } };
 window.addTask = act(async()=>{ if(!val("t_title")||!val("t_who")) throw new Error("請填寫任務與對象");
@@ -1262,7 +1397,7 @@ function patchDom(oldEl,newEl,keepId){
   });
   for(let i=on.length-1;i>=nn.length;i--) on[i].remove();
 }
-const SEARCH_IDS = ["cq","jq","rq"];
+const SEARCH_IDS = ["cq","jq","rq","fq"];
 window.onSearch = el => {
   if(tabState[el.id] === el.value || (!tabState[el.id] && !el.value)) return;
   tabState[el.id] = el.value;
