@@ -101,7 +101,6 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 <body>
 <aside>
   <div class="logo"><b>HCID</b><div>智慧應變與即時訓練<small>感染管制中心</small></div></div>
-  <div class="sep">學員工作空間</div>
   <a href="#overview" id="navOverview">整備總覽</a>
   <a href="#courses">課程與教材</a>
   <a href="#jit">即時訓練</a>
@@ -959,10 +958,10 @@ function rosterList(){
     <div class="filters">
       <input id="rq" placeholder="搜尋部科、單位、職類別、姓名、身分證字號、電話、Email" value="${esc(tabState.rq||"")}">
       <select onchange="tabState.rd=this.value;tabState.ru='';route()"><option value="">全部部科</option>${opts(depts,fd)}</select>
-      <select onchange="tabState.ru=this.value;route()"><option value="">全部工作單位</option>${opts(units,fu)}</select>
-      <select onchange="tabState.rr=this.value;route()">${opts([["","全部角色"],...ROLES.map(r=>[r,r])],fr)}</select>
-      <select onchange="tabState.rs=this.value;route()">${opts([["","全部達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select>
-      <select onchange="tabState.rf=this.value;route()">${opts([["","全部密合度測試"],["通過","密合度測試：通過"],["未通過","密合度測試：未通過"]],ff)}</select></div>
+      <select onchange="tabState.ru=this.value;route()"><option value="">工作單位</option>${opts(units,fu)}</select>
+      <select onchange="tabState.rr=this.value;route()">${opts([["","角色"],...ROLES.map(r=>[r,r])],fr)}</select>
+      <select onchange="tabState.rs=this.value;route()">${opts([["","達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select>
+      <select onchange="tabState.rf=this.value;route()">${opts([["","密合度測試"],["通過","通過"],["未通過","未通過"]],ff)}</select></div>
     <div class="sp"><span class="hint">共 ${rows.length} 位</span><button class="ghost sm" onclick="exportRoster()">匯出名單 CSV</button></div>` +
     table([
       ["部科",r=>esc(r.dept)],
