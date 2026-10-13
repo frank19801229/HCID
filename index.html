@@ -76,7 +76,7 @@ video.player{width:100%;max-height:68vh;border-radius:10px;background:#000}
 .qn::before{counter-increment:qz;content:counter(qz) "."}
 .qrow textarea{min-height:44px}
 @media(max-width:760px){.qrow{grid-template-columns:auto 1fr}.qrow select,.qrow button{grid-column:2}}
-.filters{display:grid;grid-template-columns:2fr repeat(5,1fr);gap:10px;margin-bottom:12px}
+.filters{display:grid;grid-template-columns:2fr repeat(6,1fr);gap:10px;margin-bottom:12px}
 @media(max-width:900px){.filters{grid-template-columns:1fr 1fr}}
 details.grp{border-top:1px solid var(--line);background:#fafafa}
 details.grp summary{cursor:pointer;padding:12px 8px;display:flex;align-items:center;gap:10px;list-style:none}
@@ -340,11 +340,12 @@ function hoursOf(email, year=curYear()){
   return sumH(effRecords(email,year).filter(r=>stOf(r)==="合格")) + sumH(extOf(email,year));
 }
 const isActive = m => m.active !== "N";
-function stats(){
-  const members = DB.Members.filter(isActive), ok = members.filter(m => hoursOf(m.email) >= CONFIG.ANNUAL_TARGET).length;
+function stats(yr=curYear()){
+  const members = DB.Members.filter(isActive), ok = members.filter(m => hoursOf(m.email, yr) >= CONFIG.ANNUAL_TARGET).length;
   return {members:members.length, ok, pct: members.length ? Math.round(ok/members.length*100) : 0,
     courses: DB.Courses.length, openTasks: DB.Tasks.filter(t=>t.status!=="已完成").length, fits: DB.FitTests.length};
 }
+const yearList = (rows, f) => { const ys = new Set([curYear()]); rows.forEach(r=>{ const y=yearOf(r[f]); if(y) ys.add(y); }); return [...ys].sort((a,b)=>b-a); };
 function yearOptions(email){
   const ys = new Set([curYear()]);
   DB.Records.filter(r=>!email||eq(r.email,email)).forEach(r=>{ const y=yearOf(r.date); if(y) ys.add(y); });
@@ -603,11 +604,11 @@ function sqAdminView(){
 
 const VIEWS = {
   overview(){
-    const s = stats();
+    const oy = Number(tabState.oy) || curYear(), s = stats(oy);
     const tasks = DB.Tasks.filter(t=>t.status!=="已完成").slice(0,5);
     const jit = DB.Courses.filter(c=>c.jit==="Y").slice(0,4);
     return head("整備總覽","掌握團隊整備進度，讓每一次應變都有準備。") + `
-    <div class="card" style="margin-bottom:16px"><b>年度時數達標比例</b>
+    <div class="card" style="margin-bottom:16px"><div class="sp"><b>${oy} 年度時數達標比例</b><select style="width:auto" onchange="tabState.oy=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),oy)}</select></div>
       <div class="kpi"><div class="n">${s.pct} %</div></div>
       <div class="bar"><i style="width:${s.pct}%"></i></div>
       <div class="l" style="color:var(--mute);font-size:14px">${s.ok} / ${s.members} 位成員達標 · 依目前可見資料</div></div>
@@ -720,7 +721,8 @@ const VIEWS = {
   news(){
     const t = "alert";
     const admin = isAdmin();
-    const rows = DB.News.filter(n=>n.type===t).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    const ny = tabState.ny||"", allNews = DB.News.filter(n=>n.type===t);
+    const rows = allNews.filter(n=>!ny || String(yearOf(n.date))===ny).sort((a,b)=>String(b.date).localeCompare(String(a.date)));
     let sel = rows.find(n=>n.id===tabState.nsel) || rows.find(n=>newsSrc(n)) || rows[0];
     tabState.nsel = sel ? sel.id : null;
     let viewer;
@@ -737,7 +739,7 @@ const VIEWS = {
     ], rows, "目前沒有 PDF");
     return head("疫情與公告","點選下方 PDF 即可在上方檢視內容。") + tabs("nt",[["alert","傳染病訊息及公告"]],"alert") +
     `<div class="card">${viewer}</div>
-    <div class="card" style="margin-top:14px"><div class="sp"><b>PDF 列表（共 ${rows.length} 份）</b></div>${list}</div>` +
+    <div class="card" style="margin-top:14px"><div class="sp"><b>PDF 列表（共 ${rows.length} 份）</b><select style="width:auto" onchange="tabState.ny=this.value;route()">${opts([["","全部年度"],...yearList(allNews,"date").map(y=>[y,y+" 年度"])],ny)}</select></div>${list}</div>` +
     (admin?`<div class="card" style="margin-top:14px"><b>上傳 PDF（管理者）</b><div class="row">
       ${field("n_title","標題")}
       <div><label>PDF 檔案（上限 ${CONFIG.MAX_UPLOAD_MB}MB${DEMO?"；示範模式限 3MB":""}）</label><input id="n_file" type="file" accept=".pdf,application/pdf"></div></div>
@@ -749,11 +751,12 @@ const VIEWS = {
     const consents = ["個人資料蒐集同意書","訓練影像紀錄同意書","N95 密合度測試同意書"];
     const signed = DB.Consents.filter(c=>eq(c.email,user.email));
     let body="";
+    const ay = tabState.ay||"", attRows = DB.Attendance.filter(r=>!ay || String(yearOf(r.date))===ay);
     if(t==="consent") body = table([["同意書",r=>esc(r)],["狀態",r=>{const s=signed.find(x=>x.consent===r);return s?`<span class="tag green">已簽署 ${esc(s.signed_at)}</span>`:`<button class="sm" onclick="sign('${r}')">線上簽署</button>`}]],consents);
     if(t==="sq" && isAdmin()) body = sqAdminView();
     if(t==="att") body = `<div class="row"><div><label>課程</label><select id="a_course">${DB.Courses.map(c=>`<option value="${esc(c.id)}">${esc(c.title)}</option>`).join("")}</select></div>
       ${field("a_date","上課日期","date")}${field("a_count","上課人數","number")}</div><button onclick="addAtt()">填報</button>
-      <div style="height:12px"></div>${table([["日期",r=>esc(r.date)],["課程",r=>esc(r.course_id)],["人數",r=>esc(r.count)],["填報人",r=>esc(r.reporter)]],DB.Attendance,"尚無填報")}`;
+      <div style="height:12px"></div><div class="sp"><span class="hint">共 ${attRows.length} 筆</span><select style="width:auto" onchange="tabState.ay=this.value;route()">${opts([["","全部年度"],...yearList(DB.Attendance,"date").map(y=>[y,y+" 年度"])],ay)}</select></div>${table([["日期",r=>esc(r.date)],["課程",r=>esc(r.course_id)],["人數",r=>esc(r.count)],["填報人",r=>esc(r.reporter)]],attRows,"尚無填報")}`;
     return head("同意書與問卷","依授權範圍管理與查閱資料。") + `<div class="sp"><b>同意書與簽署紀錄</b></div>` +
       tabs("ft",[["consent","線上同意書"],...(isAdmin()?[["sq","問卷題目管理"]]:[]),["att","上課人數填報"]],"consent") + `<div class="card">${body}</div>`;
   },
@@ -958,6 +961,7 @@ function rosterList(){
   <div class="card">
     <div class="filters">
       <input id="rq" placeholder="搜尋部科、單位、職類別、姓名、身分證字號、電話、Email" value="${esc(tabState.rq||"")}">
+      <select onchange="tabState.py=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),yr)}</select>
       <select onchange="tabState.rd=this.value;tabState.ru='';route()"><option value="">部科</option>${opts(depts,fd)}</select>
       <select onchange="tabState.ru=this.value;route()"><option value="">工作單位</option>${opts(units,fu)}</select>
       <select onchange="tabState.rr=this.value;route()">${opts([["","角色"],...ROLES.map(r=>[r,r])],fr)}</select>
