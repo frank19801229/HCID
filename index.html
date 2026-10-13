@@ -894,7 +894,20 @@ window.parseFitPdf = act0(async()=>{
   }
   toast(`解析完成：PDF ${recs.length} 人，與學員名單交集 ${mt.rows.length} 位，已更新 ${saved} 位的密合度測試結果`);
 });
-window.clearFit = ()=>{ tabState.fitPdf = null; route(); };
+window.clearFit = act0(async()=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const mt = fitMatch();
+  const n = mt ? mt.rows.length : 0;
+  const targets = mt ? mt.rows.filter(x => DB.FitTests.some(t => eq(t.email, x.m.email) && t.result !== "未通過")) : [];
+  if(!confirm(`確定清除結果？\n將清空目前的比對結果，並把交集的 ${n} 位學員的密合度測試改為「未通過」。`)) return;
+  let done = 0;
+  for(const x of targets){
+    await updateRow("FitTests","email",x.m.email,{date:today(),result:"未通過"});
+    if(++done % 20 === 0) toast(`更新密合度結果… ${done} / ${targets.length}`);
+  }
+  tabState.fitPdf = null;
+  toast(`已清除結果，交集的 ${n} 位學員密合度測試皆為未通過`);
+});
 window.exportFit = ()=>{
   const mt = fitMatch(); if(!mt || !mt.rows.length) return;
   const lines = [csvLine(FIT_COLS)];
