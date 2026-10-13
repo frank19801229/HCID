@@ -168,7 +168,22 @@ const DEFAULT_QUIZ = [
   {q:"所有注射溶液使用超過24小時應丟棄",a:0},
   {q:"血液及其他血液製品應在4小時內注射完畢",a:0}];   // a：0＝A. 正確、1＝B. 錯誤
 const QUIZ_OPTS = ["正確","錯誤"];
-const parseQuiz = c => { try{ const a = JSON.parse(c?.quiz || "[]"); return Array.isArray(a) ? a.filter(x=>x && x.q).map(x=>({q:String(x.q),a:Number(x.a)===1?1:0})) : []; }catch(e){ return []; } };
+const parseQuiz = c => { try{ const a = JSON.parse(c?.quiz || "[]"); return Array.isArray(a) ? a.filter(x=>x && x.q).map(x=>{
+  if((x.t==="single"||x.t==="multi") && Array.isArray(x.o) && x.o.length){
+    const o = x.o.map(String);
+    return x.t==="multi" ? {q:String(x.q),t:"multi",o,a:(Array.isArray(x.a)?x.a:[]).map(Number).filter(k=>k>=0&&k<o.length).sort((m,n)=>m-n)}
+                         : {q:String(x.q),t:"single",o,a:Number(x.a)};
+  }
+  return {q:String(x.q),t:"tf",a:Number(x.a)===1?1:0};
+}) : []; }catch(e){ return []; } };
+/* 題型：tf＝是非題（舊格式）、single＝單選題、multi＝複選題 */
+const QZ_TYPES = {tf:"是非題",single:"單選題",multi:"複選題"};
+const qzLetter = k => String.fromCharCode(65+k);
+const qzOpts = q => q.t==="tf" ? QUIZ_OPTS : q.o;
+const qzCorrect = (q,a) => q.t==="multi" ? (Array.isArray(a) && a.map(Number).sort((m,n)=>m-n).join()===q.a.join()) : Number(a)===q.a;
+const qzAnsText = (q,a) => { const f = k => `${qzLetter(k)}. ${qzOpts(q)[k]??""}`;
+  return q.t==="multi" ? (Array.isArray(a) && a.length ? a.map(Number).sort((m,n)=>m-n).map(f).join("、") : "未作答") : (a===undefined||a===null||a==="" ? "未作答" : f(Number(a))); };
+const qzRightText = q => q.t==="multi" ? q.a.map(k=>`${qzLetter(k)}. ${q.o[k]}`).join("、") : `${qzLetter(q.a)}. ${qzOpts(q)[q.a]??""}`;
 const SCALE5 = ["非常滿意","滿意","尚可","差","很差"];
 const defaultSurveyQs = (base=0) => {
   const scaleQs = ["課程內容實用性","與實際工作關聯性","講者表達能力","講者專業知識","活動安排時間","講題之選定"];
@@ -539,10 +554,24 @@ function courseSurvey(c){
   </div>`).join("") + `<button onclick="addSurvey('${esc(c.id)}')">提交問卷</button></div>`;
 }
 
+let qzSeq = 0;
+function qzOptRow(id, multi, text, checked){
+  return `<div class="qz_opt" style="display:flex;gap:8px;align-items:center;margin:6px 0"><input class="qz_ock" type="${multi?"checkbox":"radio"}" name="qzr_${id}" ${checked?"checked":""} title="勾選為正確答案" style="width:auto;margin:0;flex:none">
+    <input class="qz_otext" placeholder="選項內容" value="${esc(text)}"><button type="button" class="danger sm" onclick="this.closest('.qz_opt').remove()">刪除</button></div>`;
+}
+function qzArea(t, q){
+  if(t==="tf") return `<select class="qz_ans">${QUIZ_OPTS.map((o,k)=>`<option value="${k}" ${Number(q.a)===k?"selected":""}>正解：${qzLetter(k)}. ${o}</option>`).join("")}</select>`;
+  const id = ++qzSeq, multi = t==="multi", o = (q.o && q.o.length) ? q.o : ["","","",""];
+  const ans = multi ? (Array.isArray(q.a)?q.a:[]) : [Number(q.a)];
+  return `<div class="qz_opts">${o.map((x,k)=>qzOptRow(id,multi,x,ans.includes(k))).join("")}</div>
+    <button type="button" class="ghost sm" onclick="addQzOpt(this,${id},${multi})">＋ 新增選項</button>
+    <span class="hint"> ${multi?"勾選所有正確答案（至少 1 個）":"點選圓圈指定唯一正確答案"}</span>`;
+}
 function quizRow(q){
+  const t = q.t || "tf";
   return `<div class="qrow"><span class="qn"></span>
-    <textarea class="qz_text" rows="2" placeholder="題目">${esc(q.q)}</textarea>
-    <select class="qz_ans">${QUIZ_OPTS.map((o,k)=>`<option value="${k}" ${q.a===k?"selected":""}>正解：${"AB"[k]}. ${o}</option>`).join("")}</select>
+    <div><textarea class="qz_text" rows="2" placeholder="題目">${esc(q.q)}</textarea><div class="qz_area" style="margin-top:8px">${qzArea(t,q)}</div></div>
+    <select class="qz_type" onchange="qzType(this)">${Object.entries(QZ_TYPES).map(([k,l])=>`<option value="${k}" ${t===k?"selected":""}>${l}</option>`).join("")}</select>
     <button type="button" class="danger sm" onclick="this.closest('.qrow').remove()">刪除</button></div>`;
 }
 const lastQuiz = c => (DB.QuizResults||[]).filter(x=>eq(x.email,user.email) && String(x.course_id||"")===String(c.id))
@@ -556,23 +585,24 @@ function courseQuizLearner(c){
     const tries = DB.QuizResults.filter(x=>eq(x.email,user.email) && String(x.course_id||"")===String(c.id)).length;
     return `<div class="card"><div class="sp"><b>課後測驗</b><span class="tag green">最近成績：${esc(last.score)} / ${esc(last.total)}</span></div>
       <div class="notice">已作答 ${tries} 次，最近一次：${esc(fmtDT(last.time).slice(0,16))}</div>` +
-      qs.map((q,i)=>{ const a = ans[i]; const ok = a && Number(a.a) === q.a;
-        return `<div class="card" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b>
-          <div class="opt" style="cursor:default;color:${ok?"var(--ok)":"var(--red)"}">${ok?"✓":"✗"} 您的答案：${a?`${"AB"[Number(a.a)]}. ${QUIZ_OPTS[Number(a.a)]}`:"未作答"}</div>
-          ${ok?"":`<div class="opt" style="cursor:default">正確答案：${"AB"[q.a]}. ${QUIZ_OPTS[q.a]}</div>`}</div>`; }).join("") +
+      qs.map((q,i)=>{ const a = ans[i]; const ok = a && qzCorrect(q, a.a);
+        return `<div class="card" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b> <span class="hint">（${QZ_TYPES[q.t]}）</span>
+          <div class="opt" style="cursor:default;color:${ok?"var(--ok)":"var(--red)"}">${ok?"✓":"✗"} 您的答案：${a?esc(qzAnsText(q,a.a)):"未作答"}</div>
+          ${ok?"":`<div class="opt" style="cursor:default">正確答案：${esc(qzRightText(q))}</div>`}</div>`; }).join("") +
       `<button onclick="retakeQuiz('${cid}')">重新作答</button></div>`;
   }
   return `<div class="card"><div class="sp"><b>課後測驗（共 ${qs.length} 題）</b>${last?`<span class="hint">上次成績：${esc(last.score)} / ${esc(last.total)}</span>`:""}</div>` +
-    qs.map((q,i)=>`<div class="card" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b> <span class="req">*</span>
-      ${QUIZ_OPTS.map((o,k)=>`<label class="opt"><input type="radio" name="qz_${i}" value="${k}"> ${"AB"[k]}. ${o}</label>`).join("")}</div>`).join("") +
+    qs.map((q,i)=>`<div class="card" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b> <span class="req">*</span> <span class="hint">（${QZ_TYPES[q.t]}${q.t==="multi"?"，可複選":""}）</span>
+      ${qzOpts(q).map((o,k)=>`<label class="opt"><input type="${q.t==="multi"?"checkbox":"radio"}" name="qz_${i}" value="${k}"> ${qzLetter(k)}. ${esc(o)}</label>`).join("")}</div>`).join("") +
     `<button onclick="addQuiz('${cid}')">提交測驗</button></div>`;
 }
 function courseQuizAdmin(c){
   const qs = parseQuiz(c);
   const head = `<div class="sp"><b>課後測驗（共 ${qs.length} 題）</b><button class="ghost sm" onclick="editCourse('${esc(c.id)}',true)">編輯測驗</button></div>`;
   if(!qs.length) return `<div class="card">${head}<div class="empty">此課程尚未設定測驗題目</div></div>`;
-  return `<div class="card">${head}` + qs.map((q,i)=>`<div class="card" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b>` +
-    QUIZ_OPTS.map((o,k)=>`<div class="opt" style="cursor:default;${q.a===k?"color:var(--ok);font-weight:700":""}">${q.a===k?"✓":"○"} ${"AB"[k]}. ${o}${q.a===k?"（正解）":""}</div>`).join("") + `</div>`).join("") + `</div>`;
+  return `<div class="card">${head}` + qs.map((q,i)=>{ const right = k => q.t==="multi" ? q.a.includes(k) : q.a===k;
+    return `<div class="card" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b> <span class="hint">（${QZ_TYPES[q.t]}）</span>` +
+    qzOpts(q).map((o,k)=>`<div class="opt" style="cursor:default;${right(k)?"color:var(--ok);font-weight:700":""}">${right(k)?"✓":"○"} ${qzLetter(k)}. ${esc(o)}${right(k)?"（正解）":""}</div>`).join("") + `</div>`; }).join("") + `</div>`;
 }
 function sqAdminView(){
   const qs = sortedQs();
@@ -1100,11 +1130,13 @@ function courseForm(){
 
   <fieldset class="fieldset" id="quiz_block"><legend>課後測驗</legend>
     <div id="quiz_list">${(editing ? parseQuiz(e) : DEFAULT_QUIZ).map(quizRow).join("")}</div>
-    <button type="button" class="ghost sm" onclick="addQuizRow()">＋ 新增題目</button>
-    <div class="hint">是非題（A. 正確／B. 錯誤），每題需指定正解。全部刪除代表此課程沒有測驗。</div></fieldset>
+    <button type="button" class="ghost sm" onclick="addQuizRow('tf')">＋ 新增是非題</button>
+    <button type="button" class="ghost sm" onclick="addQuizRow('single')">＋ 新增單選題</button>
+    <button type="button" class="ghost sm" onclick="addQuizRow('multi')">＋ 新增複選題</button>
+    <div class="hint">是非題（A. 正確／B. 錯誤）、單選題（唯一正解）、複選題（需全部選對才算答對），每題需指定正解。全部刪除代表此課程沒有測驗。</div></fieldset>
 
   <button onclick="saveCourse()">${editing?"儲存變更":"新增課程"}</button>
-  ${editing?` <button class="danger" onclick="deleteCourse('${esc(e.id)}')">刪除此課程</button>`:""}</div>`;
+  ${editing?` <button class="danger" onclick="deleteCourse('${esc(e.id)}')">刪除此課程</button> <button class="ghost" onclick="cancelEditCourse()">放棄修改</button>`:""}</div>`;
 }
 const MEDIA_HINT = {
   none:"純文字教材不需網址。",
@@ -1127,7 +1159,13 @@ window.editCourse = (id, toQuiz) => {
   if(location.hash === "#courses") route(); else location.hash = "courses";
   if(toQuiz) setTimeout(()=>document.getElementById("quiz_block")?.scrollIntoView({behavior:"smooth",block:"start"}), 150);
 };
-window.addQuizRow = () => { document.getElementById("quiz_list").insertAdjacentHTML("beforeend", quizRow({q:"",a:0})); };
+window.addQuizRow = (t="tf") => { document.getElementById("quiz_list").insertAdjacentHTML("beforeend", quizRow({q:"",t,a:t==="multi"?[]:t==="single"?-1:0})); };
+window.addQzOpt = (btn, id, multi) => { btn.previousElementSibling.insertAdjacentHTML("beforeend", qzOptRow(id, multi, "", false)); };
+window.qzType = sel => {
+  const r = sel.closest(".qrow"), t = sel.value, prev = [...r.querySelectorAll(".qz_otext")].map(i=>i.value);
+  r.querySelector(".qz_area").innerHTML = qzArea(t, {o:prev, a:t==="multi"?[]:t==="single"?-1:0});
+};
+window.cancelEditCourse = () => { tabState.editId = null; tabState.ct = "list"; route(); };
 window.toggleOpen = act0(async id=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   const c = DB.Courses.find(x=>x.id===id); if(!c) return;
@@ -1162,7 +1200,16 @@ window.saveCourse = act0(async()=>{
   const data = {title:val("c_title"),hours:val("c_hours")||0,jit:val("c_jit"),content:val("c_content"),
     required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:val("c_cmode"),credit_rule:val("c_rule"),
     code:val("c_code"),unit:val("c_unit"),method:val("c_method")};
-  const quiz = [...document.querySelectorAll("#quiz_list .qrow")].map(r=>({q:r.querySelector(".qz_text").value.trim(), a:Number(r.querySelector(".qz_ans").value)})).filter(x=>x.q);
+  const quiz = [...document.querySelectorAll("#quiz_list .qrow")].map((r,i)=>{
+    const q = r.querySelector(".qz_text").value.trim(), t = r.querySelector(".qz_type").value;
+    if(!q) return null;
+    if(t==="tf") return {q, a:Number(r.querySelector(".qz_ans").value)};   // 是非題維持舊格式
+    const o = [], a = [];
+    r.querySelectorAll(".qz_opt").forEach(row=>{ const x = row.querySelector(".qz_otext").value.trim(); if(!x) return; if(row.querySelector(".qz_ock").checked) a.push(o.length); o.push(x); });
+    if(o.length < 2) throw new Error(`第 ${i+1} 題（${QZ_TYPES[t]}）至少需要 2 個選項`);
+    if(!a.length) throw new Error(`第 ${i+1} 題（${QZ_TYPES[t]}）請勾選正確答案`);
+    return {q, t, o, a: t==="single" ? a[0] : a};
+  }).filter(Boolean);
   data.quiz = quiz.length ? JSON.stringify(quiz) : "";
   if(tabState.editId){
     await updateRow("Courses","id",tabState.editId,data); toast("已儲存變更");
@@ -1340,9 +1387,10 @@ window.addQuiz = act(async cid=>{
   const qs = parseQuiz(c); if(!qs.length) throw new Error("此課程沒有測驗題目");
   const ans = [];
   for(let i=0;i<qs.length;i++){
-    const sel = [...document.getElementsByName("qz_"+i)].find(x=>x.checked);
-    if(!sel) throw new Error(`請回答第 ${i+1} 題`);
-    ans.push({q:qs[i].q, a:Number(sel.value), correct:Number(sel.value)===qs[i].a});
+    const picked = [...document.getElementsByName("qz_"+i)].filter(x=>x.checked).map(x=>Number(x.value));
+    if(!picked.length) throw new Error(`請回答第 ${i+1} 題`);
+    const a = qs[i].t==="multi" ? picked : picked[0];
+    ans.push({q:qs[i].q, a, correct:qzCorrect(qs[i], a)});
   }
   const score = ans.filter(x=>x.correct).length;
   tabState.cst = "quiz"; tabState.qzRetake = null;
