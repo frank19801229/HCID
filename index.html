@@ -290,10 +290,28 @@ function head(title, sub){
   return `<h1>${title}</h1><p class="sub">${sub}</p>` +
     (DEMO ? `<div class="banner">建置展示版：示範資料均為虛構，存在本機瀏覽器；尚未串接院內帳號、手機推播與官方疫情來源。 <a href="#" onclick="resetDemo();return false">重設示範資料</a></div>` : "");
 }
+/* ---------- 表格分頁：每頁 50 筆（超過 50 筆才顯示換頁列） ---------- */
+const PAGE_SIZE = 50, PG = {}, TBL = {view:"", seq:{}};
+const tblReset = view => { TBL.view = view; TBL.seq = {}; };   // 每次重畫畫面時重設，讓同一張表格取得相同的代號
+const hashStr = str => { let h = 5381; for(const ch of str) h = ((h*33) ^ ch.codePointAt(0)) >>> 0; return h.toString(36); };
+function pager(key, p, pages, total){
+  const b = (label, to, dis, cur) => `<button class="${cur?"":"ghost "}sm" ${dis?"disabled":""} onclick="setPg('${key}',${to})">${label}</button>`;
+  let btns = "", last = 0;
+  for(let i=1;i<=pages;i++){ if(i===1 || i===pages || Math.abs(i-p)<=2){ if(i-last>1) btns += `<span class="hint">…</span>`; btns += b(i, i, false, i===p); last = i; } }
+  const from = (p-1)*PAGE_SIZE+1, to = Math.min(total, p*PAGE_SIZE);
+  return `<div class="pager" style="display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap;margin-top:10px"><span class="hint" style="margin:0 8px 0 0">第 ${from}–${to} 筆，共 ${total} 筆（第 ${p} / ${pages} 頁）</span>${b("上一頁",p-1,p<=1)}${btns}${b("下一頁",p+1,p>=pages)}</div>`;
+}
+window.setPg = (key, p) => { if(PG[key]){ PG[key].p = p; route(); } };
 function table(cols, rows, empty="目前沒有資料"){
+  const sig = hashStr(cols.map(c=>c[0]).join("|")), n = TBL.seq[sig] = (TBL.seq[sig]||0) + 1, key = `${TBL.view}_${sig}_${n}`;
   if(!rows.length) return `<div class="empty">${empty}</div>`;
+  const total = rows.length, pages = Math.ceil(total/PAGE_SIZE), st = PG[key];
+  const p = (st && st.n === total) ? Math.min(Math.max(1, st.p), pages) : 1;   // 筆數變動（篩選、搜尋、新增刪除）時回到第 1 頁
+  PG[key] = {p, n:total};
+  const shown = total > PAGE_SIZE ? rows.slice((p-1)*PAGE_SIZE, p*PAGE_SIZE) : rows;
   return `<div class="tablewrap"><table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>` +
-    rows.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("") + `</tbody></table></div>`;
+    shown.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("") + `</tbody></table></div>` +
+    (total > PAGE_SIZE ? pager(key, p, pages, total) : "");
 }
 function tabs(id, items, def){
   const cur = tabState[id] || def;
@@ -1465,6 +1483,7 @@ function route(keepFocus){
   if(k === "course"){ const id = decodeURIComponent(arg||""); if(tabState.cid !== id) tabState.cst = null; tabState.cid = id; }
   const v = VIEWS[k] || VIEWS.overview;
   const focusId = document.activeElement?.id, pos = document.activeElement?.selectionStart;
+  tblReset(k);
   $("#view").innerHTML = v();
   const active = k === "course" ? "courses" : k;
   document.querySelectorAll("aside a").forEach(a=>a.classList.toggle("on", a.getAttribute("href")==="#"+active));
@@ -1490,6 +1509,7 @@ window.onSearch = el => {
   tabState[el.id] = el.value;
   const k = (location.hash||"#overview").slice(1).split("/")[0], v = VIEWS[k];
   if(!v || !document.getElementById(el.id)){ route(true); return; }
+  tblReset(k);
   const tmp = document.createElement("div"); tmp.innerHTML = v();
   patchDom($("#view"), tmp, el.id);
 };
