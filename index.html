@@ -736,10 +736,14 @@ const VIEWS = {
 
   tasks(){
     const mine = isAdmin() ? DB.Tasks : DB.Tasks.filter(t=>eq(t.assignee,user.email));
+    const tq = (tabState.tq||"").trim().toLowerCase(), tqRows = DB.Courses.filter(c => !tq || String(c.title||"").toLowerCase().includes(tq) || String(c.code||"").toLowerCase().includes(tq));
         return head("任務與通知","依授權範圍管理與查閱資料。")  +
     `<div class="card">${table([["任務",r=>esc(r.title)],["指派對象",r=>esc(r.assignee)],["期限",r=>esc(r.due)],
       ["狀態",r=>`<span class="tag ${r.status==="已完成"?"green":""}">${esc(r.status)}</span>`],
       ["",r=>r.status!=="已完成"?`<button class="sm" onclick="doneTask('${esc(r.id)}')">完成</button>`:""]],mine,"目前沒有任務")}</div>` +
+    (isAdmin()?`<div class="card" style="margin-top:14px"><div class="sp"><b>課程列表</b><span class="hint">共 ${tqRows.length} 門</span></div>
+      <input id="tq" placeholder="輸入課程名稱或課程編號搜尋" value="${esc(tabState.tq||"")}">
+      <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程")}</div>`:"") +
     (isAdmin()?`<div class="card" style="margin-top:14px"><b>指派任務（管理者）</b><div class="row">
       ${field("t_title","任務名稱")}${field("t_who","指派對象 Email","email")}${field("t_due","期限","date")}</div><button onclick="addTask()">指派</button></div>`:"");
   },
@@ -1480,7 +1484,7 @@ function patchDom(oldEl,newEl,keepId){
   });
   for(let i=on.length-1;i>=nn.length;i--) on[i].remove();
 }
-const SEARCH_IDS = ["cq","jq","rq"];
+const SEARCH_IDS = ["cq","jq","rq","tq"];
 window.onSearch = el => {
   if(tabState[el.id] === el.value || (!tabState[el.id] && !el.value)) return;
   tabState[el.id] = el.value;
