@@ -76,7 +76,7 @@ video.player{width:100%;max-height:68vh;border-radius:10px;background:#000}
 .qn::before{counter-increment:qz;content:counter(qz) "."}
 .qrow textarea{min-height:44px}
 @media(max-width:760px){.qrow{grid-template-columns:auto 1fr}.qrow select,.qrow button{grid-column:2}}
-.filters{display:grid;grid-template-columns:2fr repeat(5,1fr);gap:10px;margin-bottom:12px}
+.filters{display:grid;grid-template-columns:2fr repeat(6,1fr);gap:10px;margin-bottom:12px}
 @media(max-width:900px){.filters{grid-template-columns:1fr 1fr}}
 details.grp{border-top:1px solid var(--line);background:#fafafa}
 details.grp summary{cursor:pointer;padding:12px 8px;display:flex;align-items:center;gap:10px;list-style:none}
@@ -340,16 +340,16 @@ function hoursOf(email, year=curYear()){
   return sumH(effRecords(email,year).filter(r=>stOf(r)==="合格")) + sumH(extOf(email,year));
 }
 const isActive = m => m.active !== "N";
-function stats(){
-  const members = DB.Members.filter(isActive), ok = members.filter(m => hoursOf(m.email) >= CONFIG.ANNUAL_TARGET).length;
+function stats(yr=curYear()){
+  const members = DB.Members.filter(isActive), ok = members.filter(m => hoursOf(m.email, yr) >= CONFIG.ANNUAL_TARGET).length;
   return {members:members.length, ok, pct: members.length ? Math.round(ok/members.length*100) : 0,
     courses: DB.Courses.length, openTasks: DB.Tasks.filter(t=>t.status!=="已完成").length, fits: DB.FitTests.length};
 }
 function yearOptions(email){
-  const ys = new Set([curYear()]);
+  const ys = new Set(Array.from({length:11}, (_,i)=>curYear()+i));   // 今年 ～ 後十年
   DB.Records.filter(r=>!email||eq(r.email,email)).forEach(r=>{ const y=yearOf(r.date); if(y) ys.add(y); });
   DB.External.filter(r=>!email||eq(r.email,email)).forEach(r=>{ const y=yearOf(r.date); if(y) ys.add(y); });
-  return [...ys].sort((a,b)=>b-a);
+  return [...ys].sort((a,b)=>a-b);
 }
 
 /* ---------- 教材：網址處理 ---------- */
@@ -603,11 +603,11 @@ function sqAdminView(){
 
 const VIEWS = {
   overview(){
-    const s = stats();
+    const oy = Number(tabState.oy) || curYear(), s = stats(oy);
     const tasks = DB.Tasks.filter(t=>t.status!=="已完成").slice(0,5);
     const jit = DB.Courses.filter(c=>c.jit==="Y").slice(0,4);
     return head("整備總覽","掌握團隊整備進度，讓每一次應變都有準備。") + `
-    <div class="card" style="margin-bottom:16px"><b>年度時數達標比例</b>
+    <div class="card" style="margin-bottom:16px"><div class="sp"><b>${oy} 年度時數達標比例</b><select style="width:auto" onchange="tabState.oy=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),oy)}</select></div>
       <div class="kpi"><div class="n">${s.pct} %</div></div>
       <div class="bar"><i style="width:${s.pct}%"></i></div>
       <div class="l" style="color:var(--mute);font-size:14px">${s.ok} / ${s.members} 位成員達標 · 依目前可見資料</div></div>
@@ -958,6 +958,7 @@ function rosterList(){
   <div class="card">
     <div class="filters">
       <input id="rq" placeholder="搜尋部科、單位、職類別、姓名、身分證字號、電話、Email" value="${esc(tabState.rq||"")}">
+      <select onchange="tabState.py=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),yr)}</select>
       <select onchange="tabState.rd=this.value;tabState.ru='';route()"><option value="">部科</option>${opts(depts,fd)}</select>
       <select onchange="tabState.ru=this.value;route()"><option value="">工作單位</option>${opts(units,fu)}</select>
       <select onchange="tabState.rr=this.value;route()">${opts([["","角色"],...ROLES.map(r=>[r,r])],fr)}</select>
