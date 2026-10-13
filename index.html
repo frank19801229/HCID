@@ -634,8 +634,10 @@ const VIEWS = {
       ${admin?`<button class="${t==="form"?"on":""}" onclick="newCourse()">${tabState.editId?"編輯課程":"新增課程"}</button>`:""}</div>`;
     let body = "";
     if(t==="list"){
-      const rows = DB.Courses.filter(c => !q || JSON.stringify(c).toLowerCase().includes(q));
-      body = `<div class="card"><input id="cq" value="${esc(tabState.cq||"")}">
+      const cu = tabState.cu||"", cUnits = [...new Set(DB.Courses.map(c=>String(c.unit||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"zh-Hant"));
+      const rows = DB.Courses.filter(c => (!q || JSON.stringify(c).toLowerCase().includes(q)) && (!cu || String(c.unit||"").trim()===cu));
+      body = `<div class="card"><div style="display:grid;grid-template-columns:2fr 1fr;gap:10px"><input id="cq" placeholder="輸入課程名稱搜尋" value="${esc(tabState.cq||"")}">
+      <select onchange="tabState.cu=this.value;route()"><option value="">開課單位（全部）</option>${opts(cUnits,cu)}</select></div>
       <div style="height:10px"></div>` + table([
         ["課程",r=>`<b>${esc(r.title)}</b><div class="hint">${esc([r.code,r.unit,r.pathogen,r.topic,r.jit==="Y"?"即時訓練":""].filter(Boolean).join(" · "))}</div>`],
         ["教材",r=>`<span class="tag">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span><div class="hint">${esc(r.method||"")}</div>`],
