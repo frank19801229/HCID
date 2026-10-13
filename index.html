@@ -968,7 +968,7 @@ function rosterList(){
       <select onchange="tabState.rr=this.value;route()">${opts([["","角色"],...ROLES.map(r=>[r,r])],fr)}</select>
       <select onchange="tabState.rs=this.value;route()">${opts([["","達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select>
       <select onchange="tabState.rf=this.value;route()">${opts([["","密合度測試"],["通過","通過"],["未通過","未通過"]],ff)}</select></div>
-    <div class="sp"><span class="hint">共 ${rows.length} 位</span><button class="ghost sm" onclick="exportRoster()">匯出名單 CSV</button></div>` +
+    <div class="sp"><span class="hint" style="font-size:13px;color:#4338ca">共 ${rows.length} 位</span><button class="ghost sm" onclick="exportRoster()">匯出名單 CSV</button></div>` +
     table([
       ["部科",r=>esc(r.dept)],
       ["工作單位(部門)",r=>esc(r.unit)],
