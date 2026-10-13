@@ -936,18 +936,22 @@ const memberKey = (pid,name) => { let a=5381, b=52711; const s = String(pid||"")
   for(const ch of s){ const c = ch.codePointAt(0); a = ((a*33)^c)>>>0; b = ((b*31)+c)>>>0; }
   return "m-" + a.toString(36) + b.toString(36) + NOEMAIL; };
 const normHead = h => String(h||"").trim().toLowerCase().replace(/（/g,"(").replace(/）/g,")").replace(/\s+/g,"");
-function rosterList(){
+function rosterFiltered(){
   const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
   const q = (tabState.rq||"").toLowerCase(), fd = tabState.rd||"", fu = tabState.ru||"", fr = tabState.rr||"", fs = tabState.rs||"", ff = tabState.rf||"";
   const all = DB.Members.map(m => ({...m, h: hoursOf(m.email, yr)}));
-  const depts = [...new Set(DB.Members.map(m=>m.dept).filter(Boolean))].sort();
-  const units = [...new Set(DB.Members.filter(m=>!fd || m.dept===fd).map(m=>m.unit).filter(Boolean))].sort();
   const rows = all.filter(m =>
     (!q || [m.dept,m.unit,m.job,m.name,m.pid,m.phone,showEmail(m.email),roleLabel(m.role)].join(" ").toLowerCase().includes(q)) &&
     (!fd || m.dept===fd) && (!fu || m.unit===fu) &&
     (!fr || roleLabel(m.role)===fr) &&
     (!fs || (fs==="ok" ? m.h>=tgt : m.h<tgt)) &&
     (!ff || fitStatus(m.email)===ff));
+  return {yr, tgt, fd, fu, fr, fs, ff, all, rows};
+}
+function rosterList(){
+  const {yr, tgt, fd, fu, fr, fs, ff, all, rows} = rosterFiltered();
+  const depts = [...new Set(DB.Members.map(m=>m.dept).filter(Boolean))].sort();
+  const units = [...new Set(DB.Members.filter(m=>!fd || m.dept===fd).map(m=>m.unit).filter(Boolean))].sort();
   const act = all.filter(isActive), okN = act.filter(m=>m.h>=tgt).length, avg = act.length ? (act.reduce((s,m)=>s+m.h,0)/act.length) : 0;
   return `
   <div class="grid kpis">
@@ -1285,9 +1289,9 @@ async function importRows(list){
   toast(`匯入完成：新增 ${added} 位、略過重複 ${skipped} 位、格式錯誤 ${bad} 列` + (roleUpd ? `；更新角色 ${roleUpd} 位` : "") + (filled ? `；補齊資料 ${filled} 位` : "") + (recAdded||recSkipped ? `；修課紀錄新增 ${recAdded} 筆、略過 ${recSkipped} 筆` : ""));
 }
 window.exportRoster = ()=>{
-  const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
-  const lines = [csvLine(["部科","工作單位(部門)","職類別","姓名","身分證字號","連絡電話","Email","角色","帳號狀態",yr+"年度時數","是否達標"])];
-  DB.Members.forEach(m=>{ const h = hoursOf(m.email,yr); lines.push(csvLine([m.dept,m.unit,m.job,m.name,m.pid,m.phone,showEmail(m.email),roleLabel(m.role),isActive(m)?"啟用":"停用",h,h>=tgt?"是":"否"])); });
+  const {yr, tgt, rows} = rosterFiltered();
+  const lines = [csvLine(["部科","工作單位(部門)","職類別","姓名","身分證字號","連絡電話","Email","角色",yr+" 年度時數","密合度測試"])];
+  rows.forEach(m=>{ const h = m.h; lines.push(csvLine([m.dept,m.unit,m.job,m.name,m.pid,m.phone,showEmail(m.email),roleLabel(m.role),h,fitStatus(m.email)])); });
   downloadText(`學員名單_${yr}.csv`, lines.join("\n"));
 };
 /* ---------- 其他動作 ---------- */
