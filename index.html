@@ -702,7 +702,7 @@ const VIEWS = {
         [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id && stOf(x)==="合格").length+" 人"
             : (hasCredit(r.id)?`<span class="badge rounded-pill bg-success-subtle text-success-emphasis">已採認</span>`:(progPct(r)?`<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">${progPct(r)}%</span>`:`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">未開始</span>`))],
         ["",r=>(canOpen(r)?`<a class="btn btn-primary btn-sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="btn btn-primary btn-sm" disabled>未開放</button>`) + (admin?` <button class="btn btn-outline-primary btn-sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="btn btn-outline-danger btn-sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button> <label class="form-check form-switch d-inline-block ms-2 mb-0 align-middle small text-secondary" title="${isClosed(r)?"目前未開放，滑動以開放":"目前開放，滑動以設為未開放"}"><input class="form-check-input" type="checkbox" role="switch" ${isClosed(r)?"":"checked"} onchange="toggleOpen('${esc(r.id)}')">${isClosed(r)?"未開放":"開放"}</label>`:"")]
-      ], rows, "沒有符合的課程或教材") + `</div>`;
+      ], rows, "沒有符合的課程或教材", {size: admin ? 10 : PAGE_SIZE}) + `</div>`;
     }
     if(t==="form" && admin) body = courseForm();
     return head("課程與教材","依授權範圍管理與查閱資料。") + tabBtns + body;
