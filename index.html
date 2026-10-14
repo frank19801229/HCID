@@ -864,7 +864,7 @@ const VIEWS = {
         return head("任務與通知","依授權範圍管理與查閱資料。")  +
     `<div class="card card-body">${table([["任務",r=>esc(r.title)],["指派對象",r=>esc(r.assignee)],["期限",r=>esc(r.due)],
       ["狀態",r=>`<span class="${TAGC(r.status==="已完成"?"green":"")}">${esc(r.status)}</span>`],
-      ["",r=>r.status!=="已完成"?`<button class="btn btn-primary btn-sm" onclick="doneTask('${esc(r.id)}')">完成</button>`:""]],mine,"目前沒有任務")}</div>` +
+      ["",r=>r.status!=="已完成"?`<button class="btn btn-primary btn-sm" onclick="openTask('${esc(r.id)}')">開啟</button>`:""]],mine,"目前沒有任務")}</div>` +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課程列表</b><span class="form-text" style="font-size:13px;font-weight:700">共 ${tqRows.length} 堂</span></div>
       <input class="form-control" id="tq" placeholder="輸入課程名稱或課程編號搜尋" value="${esc(tabState.tq||"")}">
       <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程",{size:10,rowAttr:r=>`style="cursor:pointer" title="點選將課程名稱帶入任務名稱" onclick="pickCourseTitle('${esc(r.id)}')"`})}</div>`:"") +
@@ -1530,6 +1530,16 @@ window.pickCourseTitle = id => {
 window.addTask = act(async()=>{ if(!val("t_title")||!val("t_who")) throw new Error("請填寫任務與對象");
   await addRow("Tasks",{id:"T"+uid(),title:val("t_title"),assignee:val("t_who").toLowerCase(),due:val("t_due"),status:"待完成"}); toast("已指派"); });
 window.doneTask = act(async id=>{ await updateRow("Tasks","id",id,{status:"已完成"}); toast("已完成"); });
+/* 任務「開啟」：由任務名稱（「完成課程：課程名稱」或課程名稱）找出課程，導向該課程內容 */
+window.openTask = id => {
+  const t = DB.Tasks.find(x => String(x.id) === String(id)); if(!t) return;
+  const name = String(t.title||"").replace(/^完成課程[：:]\s*/, "").trim();
+  const c = DB.Courses.find(x => String(x.title||"").trim() === name)
+         || (name && DB.Courses.find(x => { const ct = String(x.title||"").trim(); return ct && (ct.includes(name) || name.includes(ct)); }));
+  if(!c){ toast("找不到此任務對應的課程"); return; }
+  if(!canOpen(c)){ toast("此課程目前未開放"); return; }
+  location.hash = "course/" + encodeURIComponent(c.id);
+};
 window.addExt = act(async()=>{ if(!val("e_title")) throw new Error("請輸入訓練名稱");
   await addRow("External",{email:viewEmail(),title:val("e_title"),hours:val("e_hours")||0,date:val("e_date")||today(),note:val("e_note")}); toast("已新增"); });
 window.addNews = act(async type=>{ if(!val("n_title")) throw new Error("請輸入標題");
