@@ -296,24 +296,30 @@ function head(title, sub){
 const PAGE_SIZE = 50, PG = {}, TBL = {view:"", seq:{}};
 const tblReset = view => { TBL.view = view; TBL.seq = {}; };   // 每次重畫畫面時重設，讓同一張表格取得相同的代號
 const hashStr = str => { let h = 5381; for(const ch of str) h = ((h*33) ^ ch.codePointAt(0)) >>> 0; return h.toString(36); };
-function pager(key, p, pages, total){
+function pager(key, p, pages, total, size=PAGE_SIZE){
   const b = (label, to, dis, cur) => `<button class="btn btn-sm ${cur?"btn-primary":"btn-outline-primary"}" ${dis?"disabled":""} onclick="setPg('${key}',${to})">${label}</button>`;
   let btns = "", last = 0;
   for(let i=1;i<=pages;i++){ if(i===1 || i===pages || Math.abs(i-p)<=2){ if(i-last>1) btns += `<span class="form-text">…</span>`; btns += b(i, i, false, i===p); last = i; } }
-  const from = (p-1)*PAGE_SIZE+1, to = Math.min(total, p*PAGE_SIZE);
+  const from = (p-1)*size+1, to = Math.min(total, p*size);
   return `<div class="pager d-flex gap-2 align-items-center justify-content-end flex-wrap mt-2"><span class="form-text" style="margin:0 8px 0 0">第 ${from}–${to} 筆，共 ${total} 筆（第 ${p} / ${pages} 頁）</span>${b("上一頁",p-1,p<=1)}${btns}${b("下一頁",p+1,p>=pages)}</div>`;
 }
-window.setPg = (key, p) => { if(PG[key]){ PG[key].p = p; route(); } };
-function table(cols, rows, empty="目前沒有資料"){
+window.setPg = (key, p) => { if(PG[key]){
+  PG[key].p = p;
+  const keep = {}; ["t_title","t_who","t_due"].forEach(id => { const el = document.getElementById(id); if(el) keep[id] = el.value; });   // 換頁會重畫畫面，先保留「指派任務」已輸入的內容
+  route();
+  Object.keys(keep).forEach(id => { const el = document.getElementById(id); if(el) el.value = keep[id]; });
+} };
+function table(cols, rows, empty="目前沒有資料", opts={}){
+  const SIZE = opts.size || PAGE_SIZE, rowAttr = opts.rowAttr || (()=>"");
   const sig = hashStr(cols.map(c=>c[0]).join("|")), n = TBL.seq[sig] = (TBL.seq[sig]||0) + 1, key = `${TBL.view}_${sig}_${n}`;
   if(!rows.length) return `<div class="text-center text-secondary p-4">${empty}</div>`;
-  const total = rows.length, pages = Math.ceil(total/PAGE_SIZE), st = PG[key];
+  const total = rows.length, pages = Math.ceil(total/SIZE), st = PG[key];
   const p = (st && st.n === total) ? Math.min(Math.max(1, st.p), pages) : 1;   // 筆數變動（篩選、搜尋、新增刪除）時回到第 1 頁
   PG[key] = {p, n:total};
-  const shown = total > PAGE_SIZE ? rows.slice((p-1)*PAGE_SIZE, p*PAGE_SIZE) : rows;
+  const shown = total > SIZE ? rows.slice((p-1)*SIZE, p*SIZE) : rows;
   return `<div class="table-responsive"><table class="table table-hover align-top mb-0"><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>` +
-    shown.map(r=>`<tr>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("") + `</tbody></table></div>` +
-    (total > PAGE_SIZE ? pager(key, p, pages, total) : "");
+    shown.map(r=>`<tr ${rowAttr(r)}>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("") + `</tbody></table></div>` +
+    (total > SIZE ? pager(key, p, pages, total, SIZE) : "");
 }
 function tabs(id, items, def){
   const cur = tabState[id] || def;
@@ -763,7 +769,7 @@ const VIEWS = {
       ["",r=>r.status!=="已完成"?`<button class="btn btn-primary btn-sm" onclick="doneTask('${esc(r.id)}')">完成</button>`:""]],mine,"目前沒有任務")}</div>` +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課程列表</b><span class="form-text">共 ${tqRows.length} 門</span></div>
       <input class="form-control" id="tq" placeholder="輸入課程名稱或課程編號搜尋" value="${esc(tabState.tq||"")}">
-      <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程")}</div>`:"") +
+      <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程",{size:10,rowAttr:r=>`style="cursor:pointer" title="點選將課程名稱帶入任務名稱" onclick="pickCourseTitle('${esc(r.id)}')"`})}</div>`:"") +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><b>指派任務（管理者）</b><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
       ${field("t_title","任務名稱")}<div class="who-wrap">${field("t_who","指派對象 Email","email","可輸入學員中文姓名搜尋","","autocomplete=\"off\"")}<div id="t_who_list" class="who-list" style="display:none"></div></div>${field("t_due","期限","date")}</div><button class="btn btn-primary" onclick="addTask()">指派</button></div>`:"");
   },
@@ -1382,6 +1388,12 @@ window.exportRoster = ()=>{
 };
 /* ---------- 其他動作 ---------- */
 window.markDone = async id => { const c = DB.Courses.find(x=>x.id===id); if(c){ await awardCredit(c); } };
+window.pickCourseTitle = id => {
+  const c = DB.Courses.find(x => String(x.id) === String(id)); if(!c) return;
+  const el = document.getElementById("t_title"); if(!el) return;
+  el.value = c.title || "";
+  el.scrollIntoView({block:"nearest", behavior:"smooth"});
+};
 window.addTask = act(async()=>{ if(!val("t_title")||!val("t_who")) throw new Error("請填寫任務與對象");
   await addRow("Tasks",{id:"T"+uid(),title:val("t_title"),assignee:val("t_who").toLowerCase(),due:val("t_due"),status:"待完成"}); toast("已指派"); });
 window.doneTask = act(async id=>{ await updateRow("Tasks","id",id,{status:"已完成"}); toast("已完成"); });
