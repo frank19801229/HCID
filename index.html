@@ -13,7 +13,7 @@
   --bs-body-font-size:17px;--bs-body-font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
 main{min-width:0}
 main a:not(.btn){color:var(--brand2)}
-main a:not(.btn):hover{color:#7c2d12;background:#ffe8cc}
+main a:not(.btn):hover{color:#7c2d12;background:#ffd9a8}
 /* 側邊欄 */
 aside{background:var(--brand2);color:#e6f3f5;padding:8px}
 @media(min-width:768px){aside{width:236px;padding:18px 12px;align-content:flex-start}}
@@ -68,7 +68,9 @@ textarea.form-control{min-height:70px}
 .nav-pills .nav-link.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 /* 表格 */
 .table{--bs-table-bg:transparent;font-size:15px}
-.table-hover{--bs-table-hover-bg:#fff1e0;--bs-table-hover-color:var(--ink)}   /* 表格滑鼠移過的底色（淡暖橘色） */
+.table-hover{--bs-table-hover-bg:#ffcf8a;--bs-table-hover-color:#3b1d08}   /* 表格滑鼠移過的底色（明顯的暖橘色） */
+.table-hover>tbody>tr:hover>*{background-color:#ffcf8a;color:#3b1d08;box-shadow:none}
+.table-hover>tbody>tr:hover>td:first-child,.table-hover>tbody>tr:hover>th:first-child{box-shadow:inset 4px 0 0 #c2620a}
 .table thead th{background:#e0e7ff;color:#3730a3;font-weight:700;letter-spacing:.5px;border-bottom:2px solid #818cf8}
 /* 徽章 */
 .badge{font-weight:400;font-size:13px}
@@ -83,7 +85,7 @@ textarea.form-control{min-height:70px}
 details.grp{border-top:1px solid var(--line);background:#fafafa}
 details.grp summary{cursor:pointer;padding:12px 8px;display:flex;align-items:center;gap:10px;list-style:none}
 details.grp summary::-webkit-details-marker{display:none}
-details.grp summary:hover{background:#ffe8cc}
+details.grp summary:hover{background:#ffd9a8}
 details.grp summary::before{content:"›";font-weight:700;transition:transform .15s}
 details.grp[open] summary::before{transform:rotate(90deg)}
 details.grp .gname{flex:1;min-width:0}
@@ -94,7 +96,7 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 .who-wrap{position:relative}
 .who-list{position:absolute;left:0;right:0;top:100%;z-index:50;margin-top:2px;max-height:260px;overflow-y:auto;background:#fff;border:1px solid var(--line,#dee2e6);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
 .who-item{padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}
-.who-item:hover,.who-item.on{background:#ffe8cc}
+.who-item:hover,.who-item.on{background:#ffd9a8}
 .who-item.dis:hover{background:#fafafa}
 .who-item.dis{color:#999;cursor:not-allowed;background:#fafafa}
 .who-item .who-name{font-weight:600}
