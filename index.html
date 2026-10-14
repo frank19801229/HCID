@@ -307,9 +307,26 @@ function swalConfirm(text){
 }
 
 /* ---------- 使用者 ---------- */
+/* 登入：一律以「學員名單」中的帳號（Email）與密碼登入；沒有訪客登入。密碼空白＝預設密碼 */
+const memberPw = m => m.password || CONFIG.DEFAULT_PASSWORD;
 async function initUser(){
   let e = localStorage.getItem("hcid_user");
-  if(!e){ const r = await Swal.fire({title:"請輸入 Email 以登入", text:"示範模式可用 demo@example.com 或 admin@example.com", input:"text", inputPlaceholder:"name@example.com", showCancelButton:true, confirmButtonText:"登入", cancelButtonText:"以訪客進入", reverseButtons:true, allowOutsideClick:false}); e = (r.value || "").trim().toLowerCase(); if(!e) e="guest@example.com"; localStorage.setItem("hcid_user", e); }
+  const stored = e && (DB.Members||[]).find(x => eq(x.email, e));
+  if(!stored || !isActive(stored)){      // 沒有登入紀錄、帳號已不在名單或已停用 → 重新登入
+    localStorage.removeItem("hcid_user");
+    const r = await Swal.fire({
+      title:"登入", confirmButtonText:"登入", allowOutsideClick:false, allowEscapeKey:false, focusConfirm:false,
+      html:`<div style="font-size:.9em;color:#555;margin-bottom:4px">請輸入學員名單中的帳號（Email）與密碼，預設密碼為 ${CONFIG.DEFAULT_PASSWORD}</div><input id="lg_email" type="text" class="swal2-input" placeholder="帳號（Email）" autocomplete="username"><input id="lg_pw" type="password" class="swal2-input" placeholder="密碼" autocomplete="current-password">`,
+      didOpen:p => { p.querySelectorAll("input").forEach(i => i.addEventListener("keydown", ev => { if(ev.key === "Enter"){ ev.preventDefault(); Swal.clickConfirm(); } })); document.getElementById("lg_email").focus(); },
+      preConfirm:() => {
+        const em = document.getElementById("lg_email").value.trim().toLowerCase(), pw = document.getElementById("lg_pw").value;
+        const m = (DB.Members||[]).find(x => eq(x.email, em));
+        if(!em || !m || memberPw(m) !== pw) return Swal.showValidationMessage("帳號或密碼錯誤，請使用學員名單中的帳號登入");
+        if(!isActive(m)) return Swal.showValidationMessage("此帳號已停用，無法登入");
+        return m.email.toLowerCase();
+      }});
+    e = r.value; localStorage.setItem("hcid_user", e);
+  }
   setUser(e);
 }
 function setUser(e){
@@ -319,7 +336,6 @@ function setUser(e){
   $("#navProfile").text(isAdmin() ? "學員名單管理" : "個人學習履歷");
   $("#navOverview").toggle(isAdmin());   // 整備總覽僅管理者可見
   $("#navFit").toggle(isAdmin());        // 密合度測試結果僅管理者可見
-  $("#navAccounts").toggle(isAdmin());   // 帳號密碼管理僅管理者可見
 }
 async function changeUser(){ localStorage.removeItem("hcid_user"); tabState.pm = null; await initUser(); route(); }
 const isAdmin = () => CONFIG.ADMIN_ROLES.includes(user.role);
@@ -721,7 +737,18 @@ const VIEWS = {
   },
 
   accounts(){
-    if(!isAdmin()) return head("帳號密碼管理","僅管理者可使用。");
+    if(!isAdmin()){
+      const me = (DB.Members||[]).find(x => eq(x.email, user.email)), DP = CONFIG.DEFAULT_PASSWORD, show = !!tabState.pwShow;
+      const pw = me ? (me.password || DP) : DP;
+      return head("帳號密碼管理", "檢視自己的登入帳號與密碼。") +
+        `<div class="card card-body" style="max-width:520px">
+          <div class="mb-3"><label class="form-label" for="my_acct">帳號（Email）</label><input class="form-control" id="my_acct" value="${esc(user.email)}" disabled><div class="form-text">帳號預設為 Email，無法修改。</div></div>
+          <div class="mb-3"><label class="form-label" for="my_pw">密碼</label><input class="form-control" id="my_pw" type="${show?"text":"password"}" value="${esc(pw)}" readonly>
+            <div class="form-check form-switch mt-2"><input class="form-check-input" type="checkbox" role="switch" id="pwShow" ${show?"checked":""} onchange="tabState.pwShow=this.checked;route()"><label class="form-check-label" for="pwShow">顯示密碼</label></div>
+            <div class="form-text">${me && me.password ? "已自行修改密碼。" : `預設密碼為 ${esc(DP)}。`}</div></div>
+          <div><button class="btn btn-primary" onclick="setMyPwd()" ${me ? "" : "disabled"}>修改密碼</button>${me ? "" : `<span class="form-text ms-2">此帳號不在學員名單中，無法修改密碼。</span>`}</div>
+        </div>`;
+    }
     const q = (tabState.aq||"").toLowerCase().trim(), show = !!tabState.pwShow, DP = CONFIG.DEFAULT_PASSWORD;
     const rows = (DB.Members||[]).filter(m => !q || [m.name, showEmail(m.email), m.dept, m.unit].join(" ").toLowerCase().includes(q));
     const ok = m => !!showEmail(m.email);
@@ -1346,6 +1373,23 @@ window.resetPwd = act0(async email=>{
   await updateRow("Members","email",m.email,{password:""});
   toast("已重設為預設密碼");
 });
+window.setMyPwd = act0(async ()=>{
+  const m = DB.Members.find(x=>eq(x.email,user.email)); if(!m) return;
+  const DP = CONFIG.DEFAULT_PASSWORD, cur = m.password || DP;
+  const r = await Swal.fire({title:"修改密碼", showCancelButton:true, confirmButtonText:"儲存", cancelButtonText:"取消", reverseButtons:true,
+    html:`<input id="pw0" type="password" class="swal2-input" placeholder="目前密碼" autocomplete="off"><input id="pw1" type="password" class="swal2-input" placeholder="新密碼（至少 6 個字元，不含空白）" autocomplete="off"><input id="pw2" type="password" class="swal2-input" placeholder="再次輸入新密碼" autocomplete="off">`,
+    focusConfirm:false,
+    preConfirm:()=>{
+      const a = document.getElementById("pw0").value, b = document.getElementById("pw1").value, c = document.getElementById("pw2").value;
+      if(a !== cur) return Swal.showValidationMessage("目前密碼不正確");
+      if(b.length < 6 || /\s/.test(b)) return Swal.showValidationMessage("新密碼至少 6 個字元，且不可含空白");
+      if(b !== c) return Swal.showValidationMessage("兩次輸入的新密碼不一致");
+      return b;
+    }});
+  if(!r.isConfirmed) return;
+  await updateRow("Members","email",m.email,{password: r.value === DP ? "" : r.value});
+  toast("已更新密碼");
+});
 window.viewMember = email => { tabState.pm = email; tabState.pt = "rec"; route(); };
 window.backRoster = () => { tabState.pm = null; route(); };
 window.newMember = ()=>{ tabState.em = null; tabState.rt = "form"; route(); };
@@ -1566,7 +1610,7 @@ function route(keepFocus){
   clearInterval(T.timer); clearTimeout(tick.t);
   if(T.hls){ try{T.hls.destroy();}catch(e){} T.hls = null; }
   let [k,arg] = (location.hash||"#overview").slice(1).split("/");
-  if(!isAdmin() && (k === "overview" || k === "fit" || k === "accounts" || !VIEWS[k])){ k = "courses"; arg = undefined; history.replaceState(null,"","#courses"); }   // 學員沒有整備總覽，改進課程與教材
+  if(!isAdmin() && (k === "overview" || k === "fit" || !VIEWS[k])){ k = "courses"; arg = undefined; history.replaceState(null,"","#courses"); }   // 學員沒有整備總覽，改進課程與教材
   if(k === "course"){ const id = decodeURIComponent(arg||""); if(tabState.cid !== id) tabState.cst = null; tabState.cid = id; }
   const v = VIEWS[k] || VIEWS.overview;
   const focusId = document.activeElement?.id, pos = document.activeElement?.selectionStart;
