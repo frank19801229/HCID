@@ -339,7 +339,7 @@ function setUser(e){
   const m = (DB.Members||[]).find(x => eq(x.email, e));
   user = eq(e, CONFIG.ADMIN_ACCOUNT) ? {email:CONFIG.ADMIN_ACCOUNT, name:"系統管理者", role:"管理者"}
     : {email:e, name: m?.name || e.split("@")[0], role: m?.role || "學員"};
-  $("#who").text(`${user.email} · ${roleLabel(user.role)}`);
+  $("#who").text(`${user.name} · ${user.email} · ${roleLabel(user.role)}`);
   $("#navProfile").text(isAdmin() ? "學員名單管理" : "個人學習履歷");
   $("#navOverview").toggle(isAdmin());   // 整備總覽僅管理者可見
   $("#navFit").toggle(isAdmin());        // 密合度測試結果僅管理者可見
