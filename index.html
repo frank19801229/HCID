@@ -87,6 +87,14 @@ details.grp .gname{flex:1;min-width:0}
 details.grp .gbody{padding:0 8px 12px;background:#fff}
 .dot{display:inline-block;width:16px;height:16px;border-radius:50%;margin-left:5px;vertical-align:middle}
 .dot.ok{background:var(--g)}.dot.enr{background:var(--o)}.dot.no{background:#c4c9cc}
+/* 指派對象：學員姓名自動完成 */
+.who-wrap{position:relative}
+.who-list{position:absolute;left:0;right:0;top:100%;z-index:50;margin-top:2px;max-height:260px;overflow-y:auto;background:#fff;border:1px solid var(--line,#dee2e6);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+.who-item{padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.who-item:hover,.who-item.on{background:#eef5ff}
+.who-item.dis{color:#999;cursor:not-allowed;background:#fafafa}
+.who-item .who-name{font-weight:600}
+.who-item .who-sub{font-size:12px;color:#6c757d;text-align:right;word-break:break-all}
 </style>
 </head>
 <body class="d-flex flex-column flex-md-row min-vh-100">
@@ -757,7 +765,7 @@ const VIEWS = {
       <input class="form-control" id="tq" placeholder="輸入課程名稱或課程編號搜尋" value="${esc(tabState.tq||"")}">
       <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程")}</div>`:"") +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><b>指派任務（管理者）</b><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
-      ${field("t_title","任務名稱")}${field("t_who","指派對象 Email","text","輸入學員姓名或 Email","","autocomplete=\"off\"")}${field("t_due","期限","date")}</div><button class="btn btn-primary" onclick="addTask()">指派</button></div>`:"");
+      ${field("t_title","任務名稱")}<div class="who-wrap">${field("t_who","指派對象 Email","email","可輸入學員中文姓名搜尋","","autocomplete=\"off\"")}<div id="t_who_list" class="who-list" style="display:none"></div></div>${field("t_due","期限","date")}</div><button class="btn btn-primary" onclick="addTask()">指派</button></div>`:"");
   },
 
   profile(){
@@ -1510,66 +1518,47 @@ $("#view").on("input keyup compositionupdate compositionend change search paste 
   const el = this;
   if(e.type === "paste" || e.type === "cut") setTimeout(()=>onSearch(el),0); else onSearch(el);
 });
-/* 指派對象：輸入學員姓名 → 下方跳出學員全名 → 點選後帶入該學員 Email */
+/* 指派任務：「指派對象 Email」輸入學員中文姓名 → 下方列出符合的學員全名 → 點選後帶入該學員 Email */
 (function(){
-  let box = null, items = [], cur = -1, hideTimer = null;
-  const norm = x => String(x||"").trim().toLowerCase();
-  const inp = () => document.getElementById("t_who");
-  function hide(){ if(box){ box.remove(); box = null; } items = []; cur = -1; }
-  function place(){
-    const el = inp(); if(!box) return;
-    if(!el){ hide(); return; }
-    const r = el.getBoundingClientRect();
-    box.style.left = (r.left + window.scrollX) + "px";
-    box.style.top = (r.bottom + window.scrollY + 2) + "px";
-    box.style.width = r.width + "px";
+  let whoIdx = -1;
+  const $list = () => $("#t_who_list");
+  const hideWho = () => { $list().hide().empty(); whoIdx = -1; };
+  function showWho(){
+    const q = ($("#t_who").val()||"").trim().toLowerCase();
+    if(!q){ hideWho(); return; }
+    const hits = (DB.Members||[]).filter(m => isActive(m) && String(m.name||"").toLowerCase().includes(q)).slice(0,30);
+    if(!hits.length){ hideWho(); return; }
+    whoIdx = -1;
+    $list().html(hits.map(m => {
+      const mail = showEmail(m.email), sub = [m.dept, m.unit].filter(Boolean).join(" · ");
+      return `<div class="who-item${mail?"":" dis"}" data-email="${esc(mail)}"><span class="who-name">${esc(m.name)}</span><span class="who-sub">${esc(mail || "未填 Email，無法指派")}${sub?`<br>${esc(sub)}`:""}</span></div>`;
+    }).join("")).show();
   }
-  function paint(){
-    if(!box) return;
-    box.innerHTML = items.length
-      ? items.map((m,i)=>`<button type="button" class="list-group-item list-group-item-action py-2 ${i===cur?"active":""}" data-i="${i}">
-          <div class="fw-bold">${esc(m.name)}</div>
-          <div class="small ${i===cur?"":"text-secondary"}">${esc([m.unit,m.email].filter(Boolean).join("　｜　"))}</div></button>`).join("")
-      : `<div class="list-group-item text-secondary small py-2">找不到符合的學員</div>`;
+  function pickWho(el){
+    const mail = $(el).attr("data-email");
+    if(!mail) return;
+    $("#t_who").val(mail);
+    hideWho();
   }
-  function pick(i){
-    const m = items[i], el = inp(); if(!m || !el) return;
-    el.value = String(m.email).toLowerCase();
-    hide(); el.focus();
-  }
-  function show(){
-    const el = inp(); if(!el) return;
-    const q = norm(el.value);
-    if(!q){ hide(); return; }
-    items = (DB.Members||[])
-      .filter(m => isActive(m) && m.email && !isNoEmail(m.email) && (norm(m.name).includes(q) || norm(m.email).includes(q)))
-      .sort((a,b)=> (norm(b.name).startsWith(q)) - (norm(a.name).startsWith(q)) || String(a.name).localeCompare(String(b.name),"zh-Hant"))
-      .slice(0,20);
-    cur = -1;
-    if(!box){
-      box = document.createElement("div");
-      box.className = "list-group shadow";
-      box.style.cssText = "position:absolute;z-index:2000;max-height:260px;overflow-y:auto";
-      box.addEventListener("pointerdown", e => {
-        const b = e.target.closest("[data-i]"); e.preventDefault();
-        if(b) pick(+b.dataset.i);
-      });
-      document.body.appendChild(box);
-    }
-    paint(); place();
-  }
-  $(document).on("input compositionend", "#t_who", show);
-  $(document).on("focus", "#t_who", () => { clearTimeout(hideTimer); });
-  $(document).on("blur", "#t_who", () => { hideTimer = setTimeout(hide, 150); });
-  $(document).on("keydown", "#t_who", e => {
-    if(!box || !items.length) return;
-    if(e.key === "ArrowDown"){ e.preventDefault(); cur = (cur + 1) % items.length; paint(); box.querySelector(".active")?.scrollIntoView({block:"nearest"}); }
-    else if(e.key === "ArrowUp"){ e.preventDefault(); cur = (cur - 1 + items.length) % items.length; paint(); box.querySelector(".active")?.scrollIntoView({block:"nearest"}); }
-    else if(e.key === "Enter" && cur >= 0){ e.preventDefault(); pick(cur); }
-    else if(e.key === "Escape"){ hide(); }
+  $("#view").on("input keyup compositionupdate compositionend", "#t_who", function(e){
+    if(e.type === "keyup" && ["ArrowUp","ArrowDown","Enter","Escape"].includes(e.key)) return;
+    showWho();
   });
-  $(window).on("scroll resize hashchange", () => { if(box) place(); });
-  $(window).on("hashchange", hide);
+  $("#view").on("focus", "#t_who", showWho);
+  $("#view").on("keydown", "#t_who", function(e){
+    const $items = $list().find(".who-item:not(.dis)");
+    if(!$items.length || !$list().is(":visible")) return;
+    if(e.key === "ArrowDown" || e.key === "ArrowUp"){
+      e.preventDefault();
+      whoIdx = (whoIdx + (e.key === "ArrowDown" ? 1 : -1) + $items.length) % $items.length;
+      $items.removeClass("on").eq(whoIdx).addClass("on")[0].scrollIntoView({block:"nearest"});
+    } else if(e.key === "Enter" && whoIdx >= 0){
+      e.preventDefault(); pickWho($items[whoIdx]);
+    } else if(e.key === "Escape"){ hideWho(); }
+  });
+  // mousedown 先於 blur，避免輸入框失焦導致選單先消失
+  $("#view").on("mousedown", ".who-item", function(e){ e.preventDefault(); pickWho(this); });
+  $(document).on("mousedown", e => { if(!$(e.target).closest(".who-wrap").length) hideWho(); });
 })();
 $(window).on("hashchange", ()=>route());
 /* 示範模式：資料存在 localStorage，同一瀏覽器的其他分頁（例如一個管理者、一個學員）修改後，這裡自動同步 */
