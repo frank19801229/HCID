@@ -757,7 +757,7 @@ const VIEWS = {
       <input class="form-control" id="tq" placeholder="輸入課程名稱或課程編號搜尋" value="${esc(tabState.tq||"")}">
       <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程")}</div>`:"") +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><b>指派任務（管理者）</b><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
-      ${field("t_title","任務名稱")}${field("t_who","指派對象 Email","email")}${field("t_due","期限","date")}</div><button class="btn btn-primary" onclick="addTask()">指派</button></div>`:"");
+      ${field("t_title","任務名稱")}${field("t_who","指派對象 Email","text","輸入學員姓名或 Email","","autocomplete=\"off\"")}${field("t_due","期限","date")}</div><button class="btn btn-primary" onclick="addTask()">指派</button></div>`:"");
   },
 
   profile(){
@@ -1510,6 +1510,67 @@ $("#view").on("input keyup compositionupdate compositionend change search paste 
   const el = this;
   if(e.type === "paste" || e.type === "cut") setTimeout(()=>onSearch(el),0); else onSearch(el);
 });
+/* 指派對象：輸入學員姓名 → 下方跳出學員全名 → 點選後帶入該學員 Email */
+(function(){
+  let box = null, items = [], cur = -1, hideTimer = null;
+  const norm = x => String(x||"").trim().toLowerCase();
+  const inp = () => document.getElementById("t_who");
+  function hide(){ if(box){ box.remove(); box = null; } items = []; cur = -1; }
+  function place(){
+    const el = inp(); if(!box) return;
+    if(!el){ hide(); return; }
+    const r = el.getBoundingClientRect();
+    box.style.left = (r.left + window.scrollX) + "px";
+    box.style.top = (r.bottom + window.scrollY + 2) + "px";
+    box.style.width = r.width + "px";
+  }
+  function paint(){
+    if(!box) return;
+    box.innerHTML = items.length
+      ? items.map((m,i)=>`<button type="button" class="list-group-item list-group-item-action py-2 ${i===cur?"active":""}" data-i="${i}">
+          <div class="fw-bold">${esc(m.name)}</div>
+          <div class="small ${i===cur?"":"text-secondary"}">${esc([m.unit,m.email].filter(Boolean).join("　｜　"))}</div></button>`).join("")
+      : `<div class="list-group-item text-secondary small py-2">找不到符合的學員</div>`;
+  }
+  function pick(i){
+    const m = items[i], el = inp(); if(!m || !el) return;
+    el.value = String(m.email).toLowerCase();
+    hide(); el.focus();
+  }
+  function show(){
+    const el = inp(); if(!el) return;
+    const q = norm(el.value);
+    if(!q){ hide(); return; }
+    items = (DB.Members||[])
+      .filter(m => isActive(m) && m.email && !isNoEmail(m.email) && (norm(m.name).includes(q) || norm(m.email).includes(q)))
+      .sort((a,b)=> (norm(b.name).startsWith(q)) - (norm(a.name).startsWith(q)) || String(a.name).localeCompare(String(b.name),"zh-Hant"))
+      .slice(0,20);
+    cur = -1;
+    if(!box){
+      box = document.createElement("div");
+      box.className = "list-group shadow";
+      box.style.cssText = "position:absolute;z-index:2000;max-height:260px;overflow-y:auto";
+      box.addEventListener("pointerdown", e => {
+        const b = e.target.closest("[data-i]"); e.preventDefault();
+        if(b) pick(+b.dataset.i);
+      });
+      document.body.appendChild(box);
+    }
+    paint(); place();
+  }
+  $(document).on("input compositionend", "#t_who", show);
+  $(document).on("focus", "#t_who", () => { clearTimeout(hideTimer); });
+  $(document).on("blur", "#t_who", () => { hideTimer = setTimeout(hide, 150); });
+  $(document).on("keydown", "#t_who", e => {
+    if(!box || !items.length) return;
+    if(e.key === "ArrowDown"){ e.preventDefault(); cur = (cur + 1) % items.length; paint(); box.querySelector(".active")?.scrollIntoView({block:"nearest"}); }
+    else if(e.key === "ArrowUp"){ e.preventDefault(); cur = (cur - 1 + items.length) % items.length; paint(); box.querySelector(".active")?.scrollIntoView({block:"nearest"}); }
+    else if(e.key === "Enter" && cur >= 0){ e.preventDefault(); pick(cur); }
+    else if(e.key === "Escape"){ hide(); }
+  });
+  $(window).on("scroll resize hashchange", () => { if(box) place(); });
+  $(window).on("hashchange", hide);
+})();
 $(window).on("hashchange", ()=>route());
 /* 示範模式：資料存在 localStorage，同一瀏覽器的其他分頁（例如一個管理者、一個學員）修改後，這裡自動同步 */
 if(DEMO){
