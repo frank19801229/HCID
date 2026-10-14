@@ -317,7 +317,7 @@ async function initUser(){
   if(!(e && eq(e, CONFIG.ADMIN_ACCOUNT)) && (!stored || !isActive(stored))){      // 沒有登入紀錄、帳號已不在名單或已停用 → 重新登入
     localStorage.removeItem("hcid_user");
     const r = await Swal.fire({
-      title:"登入", confirmButtonText:"登入", allowOutsideClick:false, allowEscapeKey:false, focusConfirm:false,
+      title:"登入", confirmButtonText:"登入", showCancelButton:true, cancelButtonText:"取消", reverseButtons:true, allowOutsideClick:false, allowEscapeKey:false, focusConfirm:false,
       html:`<div style="font-size:.9em;color:#555;margin-bottom:4px">請輸入學員名單中的帳號（Email）與密碼，預設密碼為 ${CONFIG.DEFAULT_PASSWORD}；管理者請使用 ${CONFIG.ADMIN_ACCOUNT} 帳號</div><input id="lg_email" type="text" class="swal2-input" placeholder="帳號（Email）" autocomplete="username"><input id="lg_pw" type="password" class="swal2-input" placeholder="密碼" autocomplete="current-password">`,
       didOpen:p => { p.querySelectorAll("input").forEach(i => i.addEventListener("keydown", ev => { if(ev.key === "Enter"){ ev.preventDefault(); Swal.clickConfirm(); } })); document.getElementById("lg_email").focus(); },
       preConfirm:() => {
@@ -331,10 +331,14 @@ async function initUser(){
         if(!isActive(m)) return Swal.showValidationMessage("此帳號已停用，無法登入");
         return m.email.toLowerCase();
       }});
+    if(!r.isConfirmed) return false;      // 按「取消」：關閉視窗，維持原本畫面
     e = r.value; localStorage.setItem("hcid_user", e);
   }
   setUser(e);
+  return true;
 }
+/* 尚未登入（取消登入）時的畫面 */
+function showLoginNeeded(){ $("#view").html('<div class="card card-body text-center"><div class="mb-3">尚未登入，請先登入後使用。</div><div><button class="btn btn-primary" onclick="changeUser()">登入</button></div></div>'); }
 function setUser(e){
   const m = (DB.Members||[]).find(x => eq(x.email, e));
   user = eq(e, CONFIG.ADMIN_ACCOUNT) ? {email:CONFIG.ADMIN_ACCOUNT, name:"系統管理者", role:"管理者"}
@@ -344,7 +348,12 @@ function setUser(e){
   $("#navOverview").toggle(isAdmin());   // 整備總覽僅管理者可見
   $("#navFit").toggle(isAdmin());        // 密合度測試結果僅管理者可見
 }
-async function changeUser(){ localStorage.removeItem("hcid_user"); tabState.pm = null; await initUser(); route(); }
+async function changeUser(){
+  const prev = localStorage.getItem("hcid_user");
+  localStorage.removeItem("hcid_user");
+  if(!(await initUser())){ if(prev) localStorage.setItem("hcid_user", prev); return; }   // 取消：保留原本登入者與畫面
+  tabState.pm = null; route();
+}
 const isAdmin = () => CONFIG.ADMIN_ROLES.includes(user.role);
 const viewEmail = () => (isAdmin() && tabState.pm) ? tabState.pm : user.email;
 
@@ -1614,6 +1623,7 @@ window.downloadCSV = ()=>{
 
 /* ---------- 路由 ---------- */
 function route(keepFocus){
+  if(!user){ showLoginNeeded(); return; }
   clearInterval(T.timer); clearTimeout(tick.t);
   if(T.hls){ try{T.hls.destroy();}catch(e){} T.hls = null; }
   let [k,arg] = (location.hash||"#overview").slice(1).split("/");
@@ -1714,7 +1724,8 @@ if(DEMO){
 $(window).on("beforeunload", ()=>{ $("video").each(function(){ this.pause(); }); });
 $(async function(){
   try{ await loadAll(); }catch(e){ $("#view").html(`<div class="alert alert-warning py-2 small">無法連線後端：${esc(e.message)}。請檢查 CONFIG.GAS_URL 與 GAS 部署權限。</div>`); return; }
-  await initUser(); route();
+  if(!(await initUser())){ showLoginNeeded(); return; }
+  route();
 });
 </script>
 </body>
