@@ -16,7 +16,7 @@ main a:not(.btn){color:var(--brand2)}
 main a:not(.btn):hover{color:#06323a;background:#cfeef4}
 /* 側邊欄 */
 aside{background:var(--brand2);color:#e6f3f5;padding:8px}
-@media(min-width:768px){aside{width:236px;padding:18px 12px;align-content:flex-start}}
+@media(min-width:768px){aside{width:300px;padding:18px 12px;align-content:flex-start}}
 .logo{padding:4px 8px 16px}
 .logo b{background:#fff;color:var(--brand2);border-radius:8px;padding:6px 8px;font-size:13px;letter-spacing:1px}
 .logo small{display:block;font-weight:400;opacity:.75;font-size:12px}
@@ -109,7 +109,8 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 .swal2-styled.swal2-confirm{background-color:var(--brand,#0f6e7a)!important}
 .swal2-styled.swal2-confirm.swal-danger{background-color:#b91c1c!important}
 /* 頁首橫幅 */
-.site-banner{background:#fff;border:1px solid var(--line);border-radius:8px;line-height:0;margin-bottom:12px;overflow:hidden;max-width:400px}
+.site-banner{background:#fff;border:1px solid var(--line);border-radius:8px;line-height:0;margin-bottom:12px;overflow:hidden;max-width:none}
+@media(min-width:768px){.site-banner{width:276px}}   /* 原約 212px，長寬各放大 30% */
 .site-banner img{display:block;width:100%;height:auto}
 /* 全站字體粗體 */
 *,*::before,*::after{font-weight:700!important}
