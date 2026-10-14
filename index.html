@@ -13,7 +13,7 @@
   --bs-body-font-size:17px;--bs-body-font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
 main{min-width:0}
 main a:not(.btn){color:var(--brand2)}
-main a:not(.btn):hover{color:#d9480f;background:#fff3bf}
+main a:not(.btn):hover{color:#1c7ed6;background:#d0ebff}
 /* 側邊欄 */
 aside{background:var(--brand2);color:#e6f3f5;padding:8px}
 @media(min-width:768px){aside{width:236px;padding:18px 12px;align-content:flex-start}}
@@ -21,7 +21,7 @@ aside{background:var(--brand2);color:#e6f3f5;padding:8px}
 .logo b{background:#fff;color:var(--brand2);border-radius:8px;padding:6px 8px;font-size:13px;letter-spacing:1px}
 .logo small{display:block;font-weight:400;opacity:.75;font-size:12px}
 aside .nav-link{color:inherit;padding:10px 12px;border-radius:8px;font-size:15px;white-space:nowrap}
-aside .nav-link:hover{background:#ffd43b;color:#0a1a22}
+aside .nav-link:hover{background:#22d3ee;color:#0a1a22}
 aside .nav-link.active{background:#fff;color:var(--brand2);font-weight:700}
 /* 標題 */
 .eyebrow{font-size:13px;letter-spacing:2px;color:var(--brand2);font-weight:700}
@@ -30,8 +30,8 @@ h2.sec{font-size:21px;margin:22px 0 10px;display:flex;align-items:center;gap:8px
 /* 按鈕 */
 .btn{--bs-btn-padding-y:8px;--bs-btn-padding-x:14px;--bs-btn-font-size:15px;--bs-btn-border-radius:8px}
 .btn-sm{--bs-btn-padding-y:4px;--bs-btn-padding-x:10px;--bs-btn-font-size:13px}
-.btn-primary{--bs-btn-bg:var(--brand);--bs-btn-border-color:var(--brand);--bs-btn-hover-bg:#d9480f;--bs-btn-hover-border-color:#d9480f;--bs-btn-hover-color:#fff;--bs-btn-active-bg:#d9480f;--bs-btn-active-border-color:var(--brand2);--bs-btn-disabled-bg:var(--brand);--bs-btn-disabled-border-color:var(--brand)}
-.btn-outline-primary{--bs-btn-color:var(--brand2);--bs-btn-bg:#fff;--bs-btn-border-color:var(--brand);--bs-btn-hover-bg:#ffa94d;--bs-btn-hover-border-color:#e8590c;--bs-btn-hover-color:#0a1a22;--bs-btn-active-bg:#ffa94d;--bs-btn-active-border-color:var(--brand);--bs-btn-disabled-color:var(--brand2);--bs-btn-disabled-border-color:var(--brand)}
+.btn-primary{--bs-btn-bg:var(--brand);--bs-btn-border-color:var(--brand);--bs-btn-hover-bg:#1c7ed6;--bs-btn-hover-border-color:#1c7ed6;--bs-btn-hover-color:#fff;--bs-btn-active-bg:#1c7ed6;--bs-btn-active-border-color:var(--brand2);--bs-btn-disabled-bg:var(--brand);--bs-btn-disabled-border-color:var(--brand)}
+.btn-outline-primary{--bs-btn-color:var(--brand2);--bs-btn-bg:#fff;--bs-btn-border-color:var(--brand);--bs-btn-hover-bg:#4dabf7;--bs-btn-hover-border-color:#1971c2;--bs-btn-hover-color:#0a1a22;--bs-btn-active-bg:#4dabf7;--bs-btn-active-border-color:var(--brand);--bs-btn-disabled-color:var(--brand2);--bs-btn-disabled-border-color:var(--brand)}
 .btn-outline-danger{--bs-btn-color:var(--red);--bs-btn-bg:#fff;--bs-btn-border-color:var(--red);--bs-btn-hover-bg:#e03131;--bs-btn-hover-border-color:#e03131;--bs-btn-hover-color:#fff;--bs-btn-active-bg:#e03131;--bs-btn-active-border-color:var(--red);--bs-btn-disabled-color:var(--red);--bs-btn-disabled-border-color:var(--red)}
 /* 卡片、KPI */
 .card{--bs-card-border-color:var(--line);--bs-card-border-radius:12px;--bs-card-spacer-y:16px;--bs-card-spacer-x:16px;--bs-card-bg:#fff}
@@ -64,11 +64,11 @@ textarea.form-control{min-height:70px}
 /* 分頁標籤（nav-pills） */
 .nav-pills{--bs-nav-pills-border-radius:8px}
 .nav-pills .nav-link{background:#fff;color:var(--ink);border:1px solid var(--line);font-size:15px;padding:8px 14px}
-.nav-pills .nav-link:not(.active):hover{background:#ffd43b;color:#0a1a22}
+.nav-pills .nav-link:not(.active):hover{background:#22d3ee;color:#0a1a22}
 .nav-pills .nav-link.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 /* 表格 */
 .table{--bs-table-bg:transparent;font-size:15px}
-.table-hover{--bs-table-hover-bg:#ffe066;--bs-table-hover-color:var(--ink)}   /* 表格滑鼠移過的底色（亮黃色） */
+.table-hover{--bs-table-hover-bg:#a5d8ff;--bs-table-hover-color:var(--ink)}   /* 表格滑鼠移過的底色（亮藍色） */
 .table thead th{background:#e0e7ff;color:#3730a3;font-weight:700;letter-spacing:.5px;border-bottom:2px solid #818cf8}
 /* 徽章 */
 .badge{font-weight:400;font-size:13px}
@@ -83,7 +83,7 @@ textarea.form-control{min-height:70px}
 details.grp{border-top:1px solid var(--line);background:#fafafa}
 details.grp summary{cursor:pointer;padding:12px 8px;display:flex;align-items:center;gap:10px;list-style:none}
 details.grp summary::-webkit-details-marker{display:none}
-details.grp summary:hover{background:#ffe066}
+details.grp summary:hover{background:#a5d8ff}
 details.grp summary::before{content:"›";font-weight:700;transition:transform .15s}
 details.grp[open] summary::before{transform:rotate(90deg)}
 details.grp .gname{flex:1;min-width:0}
@@ -94,7 +94,7 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 .who-wrap{position:relative}
 .who-list{position:absolute;left:0;right:0;top:100%;z-index:50;margin-top:2px;max-height:260px;overflow-y:auto;background:#fff;border:1px solid var(--line,#dee2e6);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
 .who-item{padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}
-.who-item:hover,.who-item.on{background:#ffe066}
+.who-item:hover,.who-item.on{background:#a5d8ff}
 .who-item.dis:hover{background:#fafafa}
 .who-item.dis{color:#999;cursor:not-allowed;background:#fafafa}
 .who-item .who-name{font-weight:600}
