@@ -865,7 +865,7 @@ const VIEWS = {
     `<div class="card card-body">${table([["任務",r=>esc(r.title)],["指派對象",r=>esc(r.assignee)],["期限",r=>esc(r.due)],
       ["狀態",r=>`<span class="${TAGC(r.status==="已完成"?"green":"")}">${esc(r.status)}</span>`],
       ["",r=>r.status!=="已完成"?`<button class="btn btn-primary btn-sm" onclick="doneTask('${esc(r.id)}')">完成</button>`:""]],mine,"目前沒有任務")}</div>` +
-    (isAdmin()?`<div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課程列表</b><span class="form-text" style="font-size:13px;font-weight:700">共 ${tqRows.length} 門</span></div>
+    (isAdmin()?`<div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課程列表</b><span class="form-text" style="font-size:13px;font-weight:700">共 ${tqRows.length} 堂</span></div>
       <input class="form-control" id="tq" placeholder="輸入課程名稱或課程編號搜尋" value="${esc(tabState.tq||"")}">
       <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程",{size:10,rowAttr:r=>`style="cursor:pointer" title="點選將課程名稱帶入任務名稱" onclick="pickCourseTitle('${esc(r.id)}')"`})}</div>`:"") +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><b>指派任務（管理者）</b><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
