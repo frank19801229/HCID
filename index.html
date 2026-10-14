@@ -496,7 +496,7 @@ function schedState(c){
   return "open";
 }
 const SCHED = {upcoming:["未開放","yellow"], ended:["已結束","red"], open:["開放中","green"]};
-/* 管理者手動覆寫：open=Y 強制開放、N 強制未開放、空白＝依排程（未完成／已結束皆不可開啟） */
+/* 管理者手動覆寫：open=Y 強制開放、N 強制未開放、空白＝依排程（未開始／已結束皆不可開啟） */
 const openFlag = c => String(c.open||"").toUpperCase();
 const isOpenNow = c => openFlag(c)==="Y" ? true : openFlag(c)==="N" ? false : schedState(c)==="open";
 const isClosed = c => !isOpenNow(c);
@@ -526,6 +526,12 @@ function taskStatus(t){
   const c = taskCourse(t);
   if(!c) return t.status;
   return courseDone(t.assignee, c) ? "已完成" : (t.status === "已完成" ? "待完成" : t.status);
+}
+/* 任務尚缺哪幾項（無對應課程回傳 null；三項都完成回傳空陣列） */
+function taskMissing(t){
+  const c = taskCourse(t); if(!c) return null;
+  const e = t.assignee;
+  return [creditOk(e,c)?"":"學習進度", quizOk(e,c)?"":"測驗", surveyOk(e,c)?"":"問卷"].filter(Boolean);
 }
 async function syncTaskDone(c){
   if(!courseDone(user.email, c)) return;
@@ -566,7 +572,7 @@ function updateProgressUI(c){
   else if(kind==="dwell") txt = `已停留 ${mm(p.sec)} / ${rule} 分鐘，達標自動採認 ${c.hours} 小時（頁籤需保持在前景）。`;
   else txt = "此課程無教材檔案，請由管理者設定採認方式。";
   $("#ptxt").text(txt);
-  $("#cstate").text(done ? "已採認" : "進行中").attr("class", TAGC(done?"green":"yellow"));
+  $("#cstate").text(done ? "已完成" : "進行中").attr("class", TAGC(done?"green":"yellow"));
   $("#markBtn").prop("disabled", done);
 }
 async function awardCredit(c){
@@ -819,7 +825,7 @@ const VIEWS = {
         ["排程",r=>`${schedTag(r)}<div class="form-text">${esc(schedText(r))}</div>`],
         ["類別 / 學分",r=>`${esc(reqLabel(r.required))} · ${esc(r.hours)} 小時<div class="form-text">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
         [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id && stOf(x)==="合格").length+" 人"
-            : (courseDone(user.email,r)?`<span class="badge rounded-pill bg-success-subtle text-success-emphasis">已完成</span>`:hasCredit(r.id)?`<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">待完成：${[quizOk(user.email,r)?"":"測驗", surveyOk(user.email,r)?"":"問卷"].filter(Boolean).join("、")}</span>`:(progPct(r)?`<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">${progPct(r)}%</span>`:`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">未完成</span>`))],
+            : (courseDone(user.email,r)?`<span class="badge rounded-pill bg-success-subtle text-success-emphasis">已完成</span>`:hasCredit(r.id)?`<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">待完成：${[quizOk(user.email,r)?"":"測驗", surveyOk(user.email,r)?"":"問卷"].filter(Boolean).join("、")}</span>`:(progPct(r)?`<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">${progPct(r)}%</span>`:`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">未開始</span>`))],
         ["",r=>(canOpen(r)?`<a class="btn btn-primary btn-sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="btn btn-primary btn-sm" disabled>未開放</button>`) + (admin?` <button class="btn btn-outline-primary btn-sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="btn btn-outline-danger btn-sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button> <label class="form-check form-switch d-inline-block ms-2 mb-0 align-middle small text-secondary" title="${isClosed(r)?"目前未開放，滑動以開放":"目前開放，滑動以設為未開放"}"><input class="form-check-input" type="checkbox" role="switch" ${isClosed(r)?"":"checked"} onchange="toggleOpen('${esc(r.id)}')">${isClosed(r)?"未開放":"開放"}</label>`:"")]
       ], rows, "沒有符合的課程或教材", {size: admin ? 10 : PAGE_SIZE}) + `</div>`;
     }
@@ -885,7 +891,8 @@ const VIEWS = {
         return head("任務與通知","依授權範圍管理與查閱資料。")  +
     `<div class="card card-body">${table([["任務",r=>esc(r.title)],["指派對象",r=>esc(r.assignee)],["期限",r=>esc(r.due)],
       ["狀態",r=>`<span class="${TAGC(taskStatus(r)==="已完成"?"green":"")}">${esc(taskStatus(r))}</span>`],
-      ["",r=>taskStatus(r)!=="已完成"?`<button class="btn btn-primary btn-sm" onclick="openTask('${esc(r.id)}')">開啟</button>`:""]],mine,"目前沒有任務")}</div>` +
+      ["",r=>{ if(isAdmin()){ const m = taskMissing(r); return m===null ? "" : m.length ? `<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">待完成：${m.join("、")}</span>` : `<span class="badge rounded-pill bg-success-subtle text-success-emphasis">已完成</span>`; }
+        return taskStatus(r)!=="已完成"?`<button class="btn btn-primary btn-sm" onclick="openTask('${esc(r.id)}')">開啟</button>`:""; }]],mine,"目前沒有任務")}</div>` +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課程列表</b><span class="form-text" style="font-size:13px;font-weight:700">共 ${tqRows.length} 堂</span></div>
       <input class="form-control" id="tq" placeholder="輸入課程名稱或課程編號搜尋" value="${esc(tabState.tq||"")}">
       <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程",{size:10,rowAttr:r=>`style="cursor:pointer" title="點選將課程名稱帶入任務名稱" onclick="pickCourseTitle('${esc(r.id)}')"`})}</div>`:"") +
@@ -1269,7 +1276,7 @@ function courseForm(){
 
   <fieldset class="fieldset"><legend>課程排程</legend><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
     ${field("c_start","開放時間","datetime-local","",e.schedule_start)}${field("c_end","截止時間","datetime-local","",e.schedule_end)}</div>
-    <div class="form-text">留空代表不限時間。學員只能在開放期間開啟課程；未完成或已結束的課程會顯示「未開放」。</div>
+    <div class="form-text">留空代表不限時間。學員只能在開放期間開啟課程；未開始或已結束的課程會顯示「未開放」。</div>
     ${editing?"":`<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="c_assign"><label class="form-check-label" for="c_assign">同時指派為全體成員的任務（期限＝截止日期）</label></div>`}</fieldset>
 
   <fieldset class="fieldset"><legend>學分採認</legend><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
@@ -1761,4 +1768,3 @@ $(async function(){
 </script>
 </body> 
 </html>
- 
