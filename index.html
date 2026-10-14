@@ -454,7 +454,7 @@ const isActive = m => m.active !== "N";
 function stats(yr=curYear()){
   const members = DB.Members.filter(isActive), ok = members.filter(m => hoursOf(m.email, yr) >= CONFIG.ANNUAL_TARGET).length;
   return {members:members.length, ok, pct: members.length ? Math.round(ok/members.length*100) : 0,
-    courses: DB.Courses.length, openTasks: DB.Tasks.filter(t=>t.status!=="已完成").length, fits: DB.FitTests.length};
+    courses: DB.Courses.length, openTasks: DB.Tasks.filter(t=>taskStatus(t)!=="已完成").length, fits: DB.FitTests.length};
 }
 function yearOptions(email){
   const ys = new Set(Array.from({length:11}, (_,i)=>curYear()+i));   // 今年 ～ 後十年
@@ -509,6 +509,30 @@ const progKey = cid => `hcid_prog_${user.email}_${cid}`;
 function getProg(cid){ try{ return JSON.parse(localStorage.getItem(progKey(cid))) || {sec:0,dur:0}; }catch(e){ return {sec:0,dur:0}; } }
 function saveProg(cid,p){ try{ localStorage.setItem(progKey(cid), JSON.stringify(p)); }catch(e){} }
 const hasCredit = cid => DB.Records.some(r => eq(r.email,user.email) && r.course_id===cid && stOf(r)==="合格");
+/* 課程「已完成」＝ 學習進度與學分已採認 ＋ 課後測驗已作答（課程有測驗題才需要）＋ 課後滿意度問卷已填寫（有問卷題目才需要） */
+const creditOk = (email,c) => DB.Records.some(r => eq(r.email,email) && r.course_id===c.id && stOf(r)==="合格");
+const quizOk   = (email,c) => !parseQuiz(c).length || (DB.QuizResults||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id));
+const surveyOk = (email,c) => !sortedQs().length || (DB.Surveys||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id));
+const courseDone = (email,c) => creditOk(email,c) && quizOk(email,c) && surveyOk(email,c);
+/* 任務對應的課程：任務名稱為「完成課程：課程名稱」或課程名稱 */
+function taskCourse(t){
+  const name = String(t.title||"").replace(/^完成課程[：:]\s*/, "").trim();
+  return DB.Courses.find(x => String(x.title||"").trim() === name)
+      || (name && DB.Courses.find(x => { const ct = String(x.title||"").trim(); return ct && (ct.includes(name) || name.includes(ct)); }))
+      || null;
+}
+/* 任務狀態：對應課程的任務，須三項都完成才算「已完成」 */
+function taskStatus(t){
+  const c = taskCourse(t);
+  if(!c) return t.status;
+  return courseDone(t.assignee, c) ? "已完成" : (t.status === "已完成" ? "待完成" : t.status);
+}
+async function syncTaskDone(c){
+  if(!courseDone(user.email, c)) return;
+  for(const t of DB.Tasks.filter(t => eq(t.assignee,user.email) && t.status!=="已完成" && taskCourse(t)?.id === c.id)){
+    try{ await updateRow("Tasks","id",t.id,{status:"已完成"}); }catch(e){}
+  }
+}
 function recFromCourse(c, status, email){
   return {id:"R"+uid(), email, course_id:c.id, code:c.code||"", course_title:c.title, unit:c.unit||"", topic:c.topic||"", method:c.method||"線上",
     hours:c.hours, date:today(), status, category:reqLabel(c.required)};
@@ -536,13 +560,13 @@ function updateProgressUI(c){
   const mm = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
   bar.css("width", (done ? 100 : progPct(c)) + "%");
   let txt = "";
-  if(done) txt = `已完成 ${c.hours} 小時，紀錄已寫入個人學習履歷。`;
+  if(done) txt = `已採認 ${c.hours} 小時，紀錄已寫入個人學習履歷。`;
   else if(c.credit_mode==="manual") txt = "此課程由學員自行標記完成後採認學分。";
   else if(kind==="video") txt = `有效觀看 ${progPct(c)}%（${mm(p.sec)} / ${p.dur?mm(p.dur):"--:--"}），達 ${rule}% 自動採認 ${c.hours} 小時。快轉跳過的片段不計入。`;
   else if(kind==="dwell") txt = `已停留 ${mm(p.sec)} / ${rule} 分鐘，達標自動採認 ${c.hours} 小時（頁籤需保持在前景）。`;
   else txt = "此課程無教材檔案，請由管理者設定採認方式。";
   $("#ptxt").text(txt);
-  $("#cstate").text(done ? "已完成" : "進行中").attr("class", TAGC(done?"green":"yellow"));
+  $("#cstate").text(done ? "已採認" : "進行中").attr("class", TAGC(done?"green":"yellow"));
   $("#markBtn").prop("disabled", done);
 }
 async function awardCredit(c){
@@ -550,10 +574,7 @@ async function awardCredit(c){
   T.awarding = true;
   try{
     await addRow("Records", recFromCourse(c,"合格",user.email));   // 同課程取最佳狀態，合格會覆蓋「已選課」
-    const tt = "完成課程：" + c.title;
-    for(const t of DB.Tasks.filter(t=>eq(t.assignee,user.email) && t.title===tt && t.status!=="已完成")){
-      try{ await updateRow("Tasks","id",t.id,{status:"已完成"}); }catch(e){}
-    }
+    await syncTaskDone(c);   // 三項都完成才會把任務標為已完成
     toast(`已自動採認 ${c.hours} 小時`);
   }catch(e){ toast("採認失敗：" + e.message); }
   finally{ T.awarding = false; updateProgressUI(c); }
@@ -731,7 +752,7 @@ function sqAdminView(){
 const VIEWS = {
   overview(){
     const oy = Number(tabState.oy) || curYear(), s = stats(oy);
-    const tasks = DB.Tasks.filter(t=>t.status!=="已完成").slice(0,5);
+    const tasks = DB.Tasks.filter(t=>taskStatus(t)!=="已完成").slice(0,5);
     const jit = DB.Courses.filter(c=>c.jit==="Y").slice(0,4);
     return head("整備總覽","掌握團隊整備進度，讓每一次應變都有準備。") + `
     <div class="card card-body" style="margin-bottom:16px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${oy} 年度時數達標比例</b><select class="w-auto form-select" onchange="tabState.oy=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),oy)}</select></div>
@@ -798,7 +819,7 @@ const VIEWS = {
         ["排程",r=>`${schedTag(r)}<div class="form-text">${esc(schedText(r))}</div>`],
         ["類別 / 學分",r=>`${esc(reqLabel(r.required))} · ${esc(r.hours)} 小時<div class="form-text">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
         [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id && stOf(x)==="合格").length+" 人"
-            : (hasCredit(r.id)?`<span class="badge rounded-pill bg-success-subtle text-success-emphasis">已完成</span>`:(progPct(r)?`<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">${progPct(r)}%</span>`:`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">未開始</span>`))],
+            : (courseDone(user.email,r)?`<span class="badge rounded-pill bg-success-subtle text-success-emphasis">已完成</span>`:hasCredit(r.id)?`<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">待完成：${[quizOk(user.email,r)?"":"測驗", surveyOk(user.email,r)?"":"問卷"].filter(Boolean).join("、")}</span>`:(progPct(r)?`<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">${progPct(r)}%</span>`:`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">未開始</span>`))],
         ["",r=>(canOpen(r)?`<a class="btn btn-primary btn-sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="btn btn-primary btn-sm" disabled>未開放</button>`) + (admin?` <button class="btn btn-outline-primary btn-sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="btn btn-outline-danger btn-sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button> <label class="form-check form-switch d-inline-block ms-2 mb-0 align-middle small text-secondary" title="${isClosed(r)?"目前未開放，滑動以開放":"目前開放，滑動以設為未開放"}"><input class="form-check-input" type="checkbox" role="switch" ${isClosed(r)?"":"checked"} onchange="toggleOpen('${esc(r.id)}')">${isClosed(r)?"未開放":"開放"}</label>`:"")]
       ], rows, "沒有符合的課程或教材", {size: admin ? 10 : PAGE_SIZE}) + `</div>`;
     }
@@ -863,8 +884,8 @@ const VIEWS = {
     const tq = (tabState.tq||"").trim().toLowerCase(), tqRows = DB.Courses.filter(c => !tq || String(c.title||"").toLowerCase().includes(tq) || String(c.code||"").toLowerCase().includes(tq));
         return head("任務與通知","依授權範圍管理與查閱資料。")  +
     `<div class="card card-body">${table([["任務",r=>esc(r.title)],["指派對象",r=>esc(r.assignee)],["期限",r=>esc(r.due)],
-      ["狀態",r=>`<span class="${TAGC(r.status==="已完成"?"green":"")}">${esc(r.status)}</span>`],
-      ["",r=>r.status!=="已完成"?`<button class="btn btn-primary btn-sm" onclick="openTask('${esc(r.id)}')">開啟</button>`:""]],mine,"目前沒有任務")}</div>` +
+      ["狀態",r=>`<span class="${TAGC(taskStatus(r)==="已完成"?"green":"")}">${esc(taskStatus(r))}</span>`],
+      ["",r=>taskStatus(r)!=="已完成"?`<button class="btn btn-primary btn-sm" onclick="openTask('${esc(r.id)}')">開啟</button>`:""]],mine,"目前沒有任務")}</div>` +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課程列表</b><span class="form-text" style="font-size:13px;font-weight:700">共 ${tqRows.length} 堂</span></div>
       <input class="form-control" id="tq" placeholder="輸入課程名稱或課程編號搜尋" value="${esc(tabState.tq||"")}">
       <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程",{size:10,rowAttr:r=>`style="cursor:pointer" title="點選將課程名稱帶入任務名稱" onclick="pickCourseTitle('${esc(r.id)}')"`})}</div>`:"") +
@@ -1533,9 +1554,7 @@ window.doneTask = act(async id=>{ await updateRow("Tasks","id",id,{status:"已�
 /* 任務「開啟」：由任務名稱（「完成課程：課程名稱」或課程名稱）找出課程，導向該課程內容 */
 window.openTask = id => {
   const t = DB.Tasks.find(x => String(x.id) === String(id)); if(!t) return;
-  const name = String(t.title||"").replace(/^完成課程[：:]\s*/, "").trim();
-  const c = DB.Courses.find(x => String(x.title||"").trim() === name)
-         || (name && DB.Courses.find(x => { const ct = String(x.title||"").trim(); return ct && (ct.includes(name) || name.includes(ct)); }));
+  const c = taskCourse(t);
   if(!c){ toast("找不到此任務對應的課程"); return; }
   if(!canOpen(c)){ toast("此課程目前未開放"); return; }
   location.hash = "course/" + encodeURIComponent(c.id);
@@ -1559,6 +1578,7 @@ window.addSurvey = act(async cid=>{
   }
   tabState.cst = "survey";
   await addRow("Surveys",{email:user.email,course_id:c.id,course_title:c.title,survey:"課後滿意度",answer:JSON.stringify(ans),time:new Date().toISOString()});
+  await syncTaskDone(c);
   toast("感謝填寫");
 });
 window.addQuiz = act(async cid=>{
@@ -1574,6 +1594,7 @@ window.addQuiz = act(async cid=>{
   const score = ans.filter(x=>x.correct).length;
   tabState.cst = "quiz"; tabState.qzRetake = null;
   await addRow("QuizResults",{email:user.email,course_id:c.id,course_title:c.title,score,total:qs.length,answers:JSON.stringify(ans),time:new Date().toISOString()});
+  await syncTaskDone(c);
   toast(`測驗完成：答對 ${score} / ${qs.length} 題`);
 });
 window.retakeQuiz = cid => { tabState.qzRetake = cid; tabState.cst = "quiz"; route(); };
@@ -1740,4 +1761,3 @@ $(async function(){
 </script>
 </body> 
 </html>
- 
