@@ -1050,7 +1050,9 @@ function fitParsePage(items, prevLayout){
   const heads = items.filter(t => FIT_HEADS.includes(t.s));
   const hb = heads.length ? Math.max(...heads.map(t => t.y)) + 4 : 0;
   const ctr = k => { const i = items.find(t => t.s === k); return i ? i.x + i.w/2 : null; };
-  const cs = ["項次","員工編號","姓名","部門","作業型態"].map(ctr);
+  // 「作業型態」表頭在部分頁面會被拆成「作業」「型態」兩個文字塊，取其左緣
+  const lft = () => { const i = items.find(t => t.s === "作業型態") || items.find(t => t.s === "作業"); return i ? i.x : null; };
+  const cs = [ctr("項次"), ctr("員工編號"), ctr("姓名"), ctr("部門"), lft()];
   let L = prevLayout || FIT_DEFAULT;
   if(cs.every(v => v !== null)){
     const mid = (a,b) => (a+b)/2;
@@ -1058,7 +1060,14 @@ function fitParsePage(items, prevLayout){
     const r = items.find(t => t.s === "測定結果");
     if(r){ L.rx0 = r.x - 25; L.rx1 = r.x + 62; }
   }
-  const anchors = items.filter(t => t.x < L.b1 && t.y > hb && /^\d{1,3}$/.test(t.s)).sort((a,b)=>a.y-b.y);
+  // 項次欄：數字可能被拆成單字（如「1」「3」→ 13），先把同一行、相鄰的數字文字塊合併再當錨點
+  const numCells = items.filter(t => t.x < L.b1 && t.y > hb && /^\d{1,3}$/.test(t.s)).sort((a,b)=>a.y-b.y || a.x-b.x);
+  const anchors = [];
+  numCells.forEach(t => {
+    const p = anchors[anchors.length-1];
+    if(p && Math.abs(p.y - t.y) < 3 && t.x - p.x - p.w < 4 && t.x >= p.x) { p.s += t.s; p.w = t.x + t.w - p.x; }
+    else anchors.push({s:t.s, x:t.x, y:t.y, w:t.w});
+  });
   if(!anchors.length) return {rows:[], layout:L};
   const rows = anchors.map(a => ({no:a.s, ay:a.y, id:[], name:[], dept:[], res:[]}));
   const gaps = anchors.slice(1).map((a,i) => a.y - anchors[i].y).sort((a,b)=>a-b);
@@ -1073,7 +1082,7 @@ function fitParsePage(items, prevLayout){
     else if(t.x >= L.rx0 && t.x < L.rx1) r.res.push(t.s);
   });
   const out = rows.map(r => {
-    const txt = r.res.join(" "), checked = [];
+    const txt = r.res.join(""), checked = [];   // 不加空白直接串接（「通」「過」可能被拆成兩個文字塊）
     for(const m of txt.matchAll(/([^\s\u4e00-\u9fff])\s*(不通過|通過)/g)) if(!/[□☐◻⬜]/.test(m[1])) checked.push(m[2]);   // 前面的方框有勾（▓）才算
     return {no:r.no, id:r.id.join("").replace(/\s+/g,""), name:r.name.join("").replace(/\s+/g,""), dept:r.dept.join("").replace(/\s+/g,""),
       result: checked.includes("不通過") ? "不通過" : checked.includes("通過") ? "通過" : ""};
