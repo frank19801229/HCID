@@ -86,6 +86,7 @@ details.grp{border-top:1px solid var(--line);background:#fafafa}
 details.grp summary{cursor:pointer;padding:12px 8px;display:flex;align-items:center;gap:10px;list-style:none}
 details.grp summary::-webkit-details-marker{display:none}
 details.grp summary:hover{background:#cfeef4}
+details.grp.nohover summary:hover{background:transparent}
 details.grp summary::before{content:"›";font-weight:700;transition:transform .15s}
 details.grp[open] summary::before{transform:rotate(90deg)}
 details.grp .gname{flex:1;min-width:0}
@@ -976,7 +977,7 @@ const VIEWS = {
           [FIT_COLS[4], r=>esc(r.recs.map(x=>x.id).filter(Boolean).join("、"))],
           [FIT_COLS[5], r=>fitResTag(r.recs)]
         ], sorted, "沒有交集且通過的學員（姓名與工作單位(部門)需同時相同，且測定結果為通過）") + `</div>` +
-      (true ? `<div class="card card-body" style="margin-top:14px;padding:0 8px"><details open class="grp" style="border-top:0;background:#fff"><summary><span class="gname" style="flex:0 1 auto"><b>PDF 內未比對到學員名單的人員</b> <small>(${nMiss})</small></span><button class="btn btn-outline-primary btn-sm" onclick="event.preventDefault();event.stopPropagation();exportFitMiss()" ${nMiss?"":"disabled"}>匯出未比對到名單 CSV</button></summary>
+      (true ? `<div class="card card-body" style="margin-top:14px;padding:0 8px"><details open class="grp nohover" style="border-top:0;background:#fff"><summary><span class="gname" style="flex:0 1 auto"><b>PDF 內未比對到學員名單的人員</b> <small>(${nMiss})</small></span><button class="btn btn-outline-primary btn-sm" onclick="event.preventDefault();event.stopPropagation();exportFitMiss()" ${nMiss?"":"disabled"}>匯出未比對到名單 CSV</button></summary>
         <div class="gbody">` + table([
           ["項次", r=>esc(r.no)],
           ["員工編號", r=>esc(r.id)],
