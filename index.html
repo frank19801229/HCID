@@ -102,18 +102,36 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 .who-item.dis{color:#999;cursor:not-allowed;background:#fafafa}
 .who-item .who-name{font-weight:600}
 .who-item .who-sub{font-size:12px;color:#6c757d;text-align:right;word-break:break-all}
-/* SweetAlert2 */
+/* SweetAlert2：吉卜力風格（草原、雲朵、手繪人物）。Toast 維持原樣 */
 .swal2-popup{font-family:inherit}
-.swal2-popup:not(.swal2-toast){background:#1f2d3d;color:#e6edf5;border-top:4px solid var(--brand,#0f6e7a)}
-.swal2-popup:not(.swal2-toast) .swal2-title{color:#ffffff}
-.swal2-popup:not(.swal2-toast) .swal2-html-container{color:#d3dce6}
+.swal2-popup:not(.swal2-toast){
+  width:30em;max-width:94vw;padding:1.2em 1.4em 5.2em;border-radius:26px;color:#4a5a44;
+  border:3px solid #e3d5ae;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 90' preserveAspectRatio='xMaxYMin slice'%3E%3Cg fill='%23fff' opacity='.9'%3E%3Cellipse cx='320' cy='30' rx='34' ry='11'/%3E%3Cellipse cx='345' cy='22' rx='24' ry='11'/%3E%3Cellipse cx='296' cy='24' rx='20' ry='9'/%3E%3Cellipse cx='70' cy='54' rx='28' ry='8'/%3E%3Cellipse cx='92' cy='48' rx='18' ry='8'/%3E%3C/g%3E%3C/svg%3E") top right/100% 90px no-repeat,
+             url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 80' preserveAspectRatio='none'%3E%3Cpath d='M0 40Q60 6 130 34T260 30T400 20V80H0Z' fill='%23cfe6b4'/%3E%3Cpath d='M0 58Q90 30 180 54T400 44V80H0Z' fill='%23a9d48a'/%3E%3Cpath d='M0 70Q110 52 220 68T400 62V80H0Z' fill='%2386bf65'/%3E%3C/svg%3E") bottom/100% 78px no-repeat,
+             linear-gradient(#dff1f7 0,#f3fafb 22%,#fdf6e3 55%);
+  box-shadow:0 14px 34px rgba(70,90,50,.28),inset 0 0 0 4px #fdf6e3,inset 0 0 0 5px #ecdfba}
+.swal2-popup:not(.swal2-toast) .swal2-title{color:#3b5b45;font-size:1.45em;letter-spacing:.12em;padding-top:.1em}
+.swal2-popup:not(.swal2-toast) .swal2-html-container{color:#5b6b55}
 .swal2-popup:not(.swal2-toast) .swal2-html-container *:not(input):not(select):not(textarea){color:inherit!important}
-.swal2-popup:not(.swal2-toast) .swal2-styled.swal2-cancel{background-color:#64748b!important}
+.swal2-popup:not(.swal2-toast) .swal2-image{margin:.4em auto -.1em;max-width:132px;height:auto;filter:drop-shadow(0 4px 3px rgba(60,80,50,.18));animation:ghFloat 3.4s ease-in-out infinite}
+@keyframes ghFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@media(prefers-reduced-motion:reduce){.swal2-popup:not(.swal2-toast) .swal2-image{animation:none}}
+.swal2-popup:not(.swal2-toast) .swal2-input,.swal2-popup:not(.swal2-toast) .swal2-textarea{background:#fffdf5;color:#3f4d3a;border:2px solid #cfe0b8;border-radius:16px;box-shadow:none}
+.swal2-popup:not(.swal2-toast) .swal2-input:focus,.swal2-popup:not(.swal2-toast) .swal2-textarea:focus{border-color:#6aa84f;box-shadow:0 0 0 4px rgba(106,168,79,.25)}
+.swal2-popup:not(.swal2-toast) .swal2-input::placeholder{color:#9aa68f}
+.swal2-popup:not(.swal2-toast) .swal2-validation-message{background:#fbeadf;color:#9a4a2f;border-radius:12px;margin:.6em 1em 0}
+.swal2-popup:not(.swal2-toast) .swal2-validation-message::before{background:#d0674a}
+.swal2-popup:not(.swal2-toast) .swal2-actions{position:relative;z-index:1}
+.swal2-popup:not(.swal2-toast) .swal2-styled{border-radius:999px;padding:.6em 1.7em;letter-spacing:.1em;transition:transform .12s}
+.swal2-popup:not(.swal2-toast) .swal2-styled:hover{transform:translateY(-1px)}
+.swal2-popup:not(.swal2-toast) .swal2-styled:focus{box-shadow:0 0 0 4px rgba(106,168,79,.35)}
+.swal2-popup:not(.swal2-toast) .swal2-styled.swal2-cancel{background-color:#efe4c4!important;color:#6b5f3e!important;box-shadow:0 3px 0 #d9ca9f}
 .swal2-html-container{white-space:pre-line}
 .swal2-popup.swal2-toast{width:auto;max-width:80vw}
 .swal2-popup.swal2-toast .swal2-title{white-space:pre-line;text-align:left}
-.swal2-styled.swal2-confirm{background-color:var(--brand,#0f6e7a)!important}
-.swal2-styled.swal2-confirm.swal-danger{background-color:#b91c1c!important}
+.swal2-styled.swal2-confirm{background-color:#6aa84f!important;color:#fff!important;box-shadow:0 3px 0 #4f8a3a}
+.swal2-styled.swal2-confirm.swal-danger{background-color:#d0674a!important;box-shadow:0 3px 0 #a8472f}
 /* 頁首 logo（放在 HCID READINESS 上方） */
 .site-logo{background:#fff;border:1px solid var(--line);border-radius:8px;line-height:0;margin-bottom:12px;overflow:hidden;max-width:780px}
 .site-logo img{display:block;width:100%;height:auto}
@@ -299,6 +317,13 @@ async function uploadFile(f){
   return j.url;
 }
 const swalEsc = v => String(v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/* 對話框插圖：原創手繪風 SVG（戴草帽的女孩、葉芽精靈） */
+const GH_SVG = {
+  girl: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 130'><ellipse cx='60' cy='126' rx='34' ry='4' fill='#000' opacity='.08'/><path d='M36 128Q34 92 60 88Q86 92 84 128Z' fill='#5b8fb9'/><path d='M49 128Q49 99 60 97Q71 99 71 128Z' fill='#fdf6e3'/><path d='M41 98Q29 93 25 79' stroke='#fde0c5' stroke-width='7' stroke-linecap='round' fill='none'/><path d='M80 100Q89 108 87 120' stroke='#fde0c5' stroke-width='7' stroke-linecap='round' fill='none'/><rect x='55' y='80' width='10' height='11' fill='#f3cfae'/><path d='M34 52Q31 86 44 88L76 88Q89 86 86 52Z' fill='#7a4a2b'/><ellipse cx='60' cy='61' rx='22' ry='24' fill='#fde0c5'/><path d='M38 57Q44 40 60 40Q76 40 82 57Q71 48 60 50Q49 48 38 57Z' fill='#7a4a2b'/><circle cx='51' cy='63' r='2.8' fill='#3b2a20'/><circle cx='69' cy='63' r='2.8' fill='#3b2a20'/><circle cx='52' cy='62' r='.9' fill='#fff'/><circle cx='70' cy='62' r='.9' fill='#fff'/><ellipse cx='45' cy='70' rx='4.2' ry='2.6' fill='#f4a99a' opacity='.75'/><ellipse cx='75' cy='70' rx='4.2' ry='2.6' fill='#f4a99a' opacity='.75'/><path d='M54 72Q60 78 66 72' stroke='#a8554a' stroke-width='2.2' fill='none' stroke-linecap='round'/><ellipse cx='60' cy='42' rx='39' ry='9' fill='#e9c46a'/><path d='M38 42Q40 14 60 14Q80 14 82 42Z' fill='#f1d683'/><path d='M38 40Q60 49 82 40L82 34Q60 43 38 34Z' fill='#d94f4f'/><circle cx='25' cy='77' r='5.2' fill='#fde0c5'/></svg>`,
+  calm: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><ellipse cx='60' cy='108' rx='34' ry='5' fill='#000' opacity='.08'/><path d='M60 24Q30 30 28 70Q28 104 60 104Q92 104 92 70Q90 30 60 24Z' fill='#cfe8b0'/><ellipse cx='60' cy='86' rx='20' ry='15' fill='#ecf6d8'/><path d='M60 27Q57 12 44 8Q44 23 60 27Z' fill='#5f9f45'/><path d='M60 27Q64 10 79 8Q77 25 60 27Z' fill='#86bf65'/><circle cx='46' cy='63' r='9.5' fill='#fff'/><circle cx='74' cy='63' r='9.5' fill='#fff'/><circle cx='47' cy='64' r='4.8' fill='#2b3a2e'/><circle cx='73' cy='64' r='4.8' fill='#2b3a2e'/><circle cx='48.5' cy='62.5' r='1.5' fill='#fff'/><circle cx='74.5' cy='62.5' r='1.5' fill='#fff'/><ellipse cx='36' cy='76' rx='4' ry='2.5' fill='#f4a99a' opacity='.6'/><ellipse cx='84' cy='76' rx='4' ry='2.5' fill='#f4a99a' opacity='.6'/><path d='M53 79Q60 86 67 79' stroke='#5a7a48' stroke-width='2.6' fill='none' stroke-linecap='round'/></svg>`,
+  worry: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><ellipse cx='60' cy='108' rx='34' ry='5' fill='#000' opacity='.08'/><path d='M60 24Q30 30 28 70Q28 104 60 104Q92 104 92 70Q90 30 60 24Z' fill='#cfe8b0'/><ellipse cx='60' cy='86' rx='20' ry='15' fill='#ecf6d8'/><path d='M60 27Q57 12 44 8Q44 23 60 27Z' fill='#5f9f45'/><path d='M60 27Q64 10 79 8Q77 25 60 27Z' fill='#86bf65'/><circle cx='46' cy='63' r='9.5' fill='#fff'/><circle cx='74' cy='63' r='9.5' fill='#fff'/><circle cx='47' cy='65' r='4.8' fill='#2b3a2e'/><circle cx='73' cy='65' r='4.8' fill='#2b3a2e'/><circle cx='48.5' cy='62.5' r='1.5' fill='#fff'/><circle cx='74.5' cy='62.5' r='1.5' fill='#fff'/><ellipse cx='36' cy='76' rx='4' ry='2.5' fill='#f4a99a' opacity='.6'/><ellipse cx='84' cy='76' rx='4' ry='2.5' fill='#f4a99a' opacity='.6'/><path d='M52 82Q56 78 60 82Q64 86 68 82' stroke='#5a7a48' stroke-width='2.6' fill='none' stroke-linecap='round'/><path d='M38 50Q46 44 54 50' stroke='#3f5a35' stroke-width='2.6' fill='none' stroke-linecap='round'/><path d='M82 50Q74 44 66 50' stroke='#3f5a35' stroke-width='2.6' fill='none' stroke-linecap='round'/><path d='M94 44Q99 52 94 56Q89 52 94 44Z' fill='#8fd0ee'/></svg>`
+};
+const ghImg = n => ({imageUrl:"data:image/svg+xml;charset=utf-8," + encodeURIComponent(GH_SVG[n]), imageWidth:132, imageHeight:132, imageAlt:""});
 const SwalToast = Swal.mixin({toast:true, position:"top-end", showConfirmButton:false, timerProgressBar:true, didOpen:t=>{ t.addEventListener("mouseenter",Swal.stopTimer); t.addEventListener("mouseleave",Swal.resumeTimer); }});
 function toast(m){
   const msg = String(m);
@@ -309,7 +334,7 @@ function toast(m){
 function swalConfirm(text){
   const danger = /刪除|清除/.test(text);
   return Swal.fire({
-    title: danger ? "請再次確認" : "請確認", text: String(text), icon: danger ? "warning" : "question",
+    title: danger ? "請再次確認" : "請確認", text: String(text), ...ghImg(danger ? "worry" : "calm"),
     showCancelButton:true, confirmButtonText: danger ? "確定執行" : "確定", cancelButtonText:"取消",
     reverseButtons:true, focusCancel:danger, customClass:{confirmButton: danger ? "swal-danger" : ""}
   }).then(r => r.isConfirmed);
@@ -324,7 +349,7 @@ async function initUser(){
   if(!(e && eq(e, CONFIG.ADMIN_ACCOUNT)) && (!stored || !isActive(stored))){      // 沒有登入紀錄、帳號已不在名單或已停用 → 重新登入
     localStorage.removeItem("hcid_user");
     const r = await Swal.fire({
-      title:"登入", confirmButtonText:"登入", showCancelButton:true, cancelButtonText:"取消", reverseButtons:true, allowOutsideClick:false, allowEscapeKey:false, focusConfirm:false,
+      title:"登入", ...ghImg("girl"), confirmButtonText:"登入", showCancelButton:true, cancelButtonText:"取消", reverseButtons:true, allowOutsideClick:false, allowEscapeKey:false, focusConfirm:false,
       html:`<div style="font-size:.9em;color:#555;margin-bottom:4px">請輸入學員名單中的帳號（Email）與密碼，預設密碼為 ${CONFIG.DEFAULT_PASSWORD}；管理者請使用 ${CONFIG.ADMIN_ACCOUNT} 帳號</div><input id="lg_email" type="text" class="swal2-input" placeholder="帳號（Email）" autocomplete="username"><input id="lg_pw" type="password" class="swal2-input" placeholder="密碼" autocomplete="current-password">`,
       didOpen:p => { p.querySelectorAll("input").forEach(i => i.addEventListener("keydown", ev => { if(ev.key === "Enter"){ ev.preventDefault(); Swal.clickConfirm(); } })); document.getElementById("lg_email").focus(); },
       preConfirm:() => {
@@ -1421,7 +1446,7 @@ function normMember(o){
 window.setPwd = act0(async email=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   const m = DB.Members.find(x=>eq(x.email,email)); if(!m) return;
-  const r = await Swal.fire({title:"修改密碼", text:`${m.name}（${m.email}）`, input:"text", inputValue:m.password || CONFIG.DEFAULT_PASSWORD, inputPlaceholder:"至少 6 個字元，不含空白",
+  const r = await Swal.fire({title:"修改密碼", ...ghImg("girl"), text:`${m.name}（${m.email}）`, input:"text", inputValue:m.password || CONFIG.DEFAULT_PASSWORD, inputPlaceholder:"至少 6 個字元，不含空白",
     showCancelButton:true, confirmButtonText:"儲存", cancelButtonText:"取消", reverseButtons:true,
     inputValidator:v => (!v || v.length < 6 || /\s/.test(v)) ? "密碼至少 6 個字元，且不可含空白" : undefined});
   if(!r.isConfirmed) return;
@@ -1438,7 +1463,7 @@ window.resetPwd = act0(async email=>{
 window.setMyPwd = act0(async ()=>{
   const m = DB.Members.find(x=>eq(x.email,user.email)); if(!m) return;
   const DP = CONFIG.DEFAULT_PASSWORD, cur = m.password || DP;
-  const r = await Swal.fire({title:"修改密碼", showCancelButton:true, confirmButtonText:"儲存", cancelButtonText:"取消", reverseButtons:true,
+  const r = await Swal.fire({title:"修改密碼", ...ghImg("girl"), showCancelButton:true, confirmButtonText:"儲存", cancelButtonText:"取消", reverseButtons:true,
     html:`<input id="pw0" type="password" class="swal2-input" placeholder="目前密碼" autocomplete="off"><input id="pw1" type="password" class="swal2-input" placeholder="新密碼（至少 6 個字元，不含空白）" autocomplete="off"><input id="pw2" type="password" class="swal2-input" placeholder="再次輸入新密碼" autocomplete="off">`,
     focusConfirm:false,
     preConfirm:()=>{
