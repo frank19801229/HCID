@@ -945,7 +945,7 @@ const VIEWS = {
       ${field("a_date","上課日期","date")}${field("a_count","上課人數","number")}</div><button class="btn btn-primary" onclick="addAtt()">填報</button>
       <div style="height:12px"></div>${table([["日期",r=>esc(r.date)],["課程",r=>esc(r.course_id)],["人數",r=>esc(r.count)],["填報人",r=>esc(r.reporter)]],DB.Attendance,"尚無填報")}`;
     return head("同意書與問卷","依授權範圍管理與查閱資料。") + `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>同意書與簽署紀錄</b></div>` +
-      tabs("ft",[["consent","線上同意書"],...(isAdmin()?[["sq","問卷題目管理"]]:[]),["att","上課人數填報"]],"consent") + `<div class="card card-body">${body}</div>`;
+      tabs("ft",[["consent","線上同意書"],...(isAdmin()?[["sq","問卷題目管理"]]:[]),...(isAdmin()?[]:[["att","上課人數填報"]])],"consent") + `<div class="card card-body">${body}</div>`;
   },
 
   fit(){
