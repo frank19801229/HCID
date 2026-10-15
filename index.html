@@ -966,7 +966,7 @@ const VIEWS = {
         <div class="col"><div class="card card-body kpi"><div class="l">其中 通過 / 不通過</div><div class="n">${pass} / ${fail}</div></div></div>
         <div class="col"><div class="card card-body kpi"><div class="l">PDF 內未比對到的人員</div><div class="n">${nMiss}</div></div></div></div>
       <div class="card card-body">
-        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>交集且通過學員名單（共 ${passRows.length} 位）</b>
+        <div class="d-flex justify-content-start align-items-center gap-3 flex-wrap mb-2"><b>交集且通過學員名單（共 ${passRows.length} 位）</b>
           <span><button class="btn btn-outline-primary btn-sm" onclick="exportFit()" ${passRows.length?"":"disabled"}>匯出交集且通過名單 CSV</button> <button class="btn btn-outline-danger btn-sm" onclick="clearFit()">清除結果</button></span></div>
         <div class="form-text" style="margin:-4px 0 8px">${hasPdf?`來源檔案：${esc(p.name)}（${p.pages} 頁）。`:"尚未上傳 PDF。"}比對規則：姓名與工作單位(部門)皆相同（忽略空白、全半形與英文大小寫）。</div>` +
         table([
