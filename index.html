@@ -976,7 +976,7 @@ const VIEWS = {
           [FIT_COLS[5], r=>fitResTag(r.recs)]
         ], sorted, "PDF 內的人員與學員名單沒有交集（姓名與工作單位(部門)需同時相同）") + `</div>` +
       (true ? `<div class="card card-body" style="margin-top:14px;padding:0 8px"><details open class="grp" style="border-top:0;background:#fff"><summary><span class="gname"><b>PDF 內未比對到學員名單的人員</b> <small>(${nMiss})</small></span></summary>
-        <div class="gbody">` + table([
+        <div class="gbody"><div class="mb-2"><button class="btn btn-outline-primary btn-sm" onclick="exportFitMiss()" ${nMiss?"":"disabled"}>匯出未比對到名單 CSV</button></div>` + table([
           ["項次", r=>esc(r.no)],
           ["員工編號", r=>esc(r.id)],
           ["姓名", r=>esc(r.name)],
@@ -1103,6 +1103,14 @@ window.exportFit = ()=>{
   const lines = [csvLine(FIT_COLS)];
   mt.rows.forEach(x => lines.push(csvLine([x.m.dept, x.m.unit, x.m.job, x.m.name, x.recs.map(r=>r.id).filter(Boolean).join("、"), x.recs.map(r=>r.result||"—").join("、")])));
   downloadText(`密合度測試結果_交集名單_${today()}.csv`, lines.join("\n"));
+};
+
+window.exportFitMiss = ()=>{
+  const mt = fitMatch(); if(!mt) return;
+  const lines = [csvLine(["項次","員工編號","姓名","部門","測定結果","學員名單中的同名者（工作單位）"])];
+  mt.miss.forEach(r => { const u = [...new Set(DB.Members.filter(m=>fitNorm(m.name)===fitNorm(r.name)).map(m=>m.unit||"（未填）"))];
+    lines.push(csvLine([r.no, r.id, r.name, r.dept, r.result||"—", u.length ? u.join("、") : "名單中無此姓名"])); });
+  downloadText(`密合度測試結果_未比對到名單_${today()}.csv`, lines.join("\n"));
 };
 
 /* ---------- 學員名單管理（管理者） ---------- */
