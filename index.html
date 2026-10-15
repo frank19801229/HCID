@@ -378,6 +378,8 @@ window.setPg = (key, p) => { if(PG[key]){
   const keep = {}; ["t_title","t_who","t_due"].forEach(id => { const el = document.getElementById(id); if(el) keep[id] = el.value; });   // 換頁會重畫畫面，先保留「指派任務」已輸入的內容
   route();
   Object.keys(keep).forEach(id => { const el = document.getElementById(id); if(el) el.value = keep[id]; });
+  const nm = document.getElementById("t_who_name"), mm = keep.t_who && (DB.Members||[]).find(x => eq(x.email, keep.t_who.trim()));
+  if(nm) nm.textContent = mm ? mm.name : "";
 } };
 function table(cols, rows, empty="目前沒有資料", opts={}){
   const SIZE = opts.size || PAGE_SIZE, rowAttr = opts.rowAttr || (()=>"");
@@ -889,15 +891,15 @@ const VIEWS = {
     const mine = isAdmin() ? DB.Tasks : DB.Tasks.filter(t=>eq(t.assignee,user.email));
     const tq = (tabState.tq||"").trim().toLowerCase(), tqRows = DB.Courses.filter(c => !tq || String(c.title||"").toLowerCase().includes(tq) || String(c.code||"").toLowerCase().includes(tq));
         return head("任務與通知","依授權範圍管理與查閱資料。")  +
-    `<div class="card card-body">${table([["任務",r=>esc(r.title)],["指派對象",r=>esc(r.assignee)],["期限",r=>esc(r.due)],
-      ["狀態",r=>`<span class="${TAGC(taskStatus(r)==="已完成"?"green":"")}">${esc(taskStatus(r))}</span>`],
+    `<div class="card card-body"><div class="mb-2"><b>任務列表</b></div>${table([["任務",r=>esc(r.title)],["姓名",r=>esc(((DB.Members||[]).find(m=>eq(m.email,r.assignee))||{}).name||"")],["指派對象",r=>esc(r.assignee)],["期限",r=>esc(r.due)],
+      ["狀態",r=>{ const st = taskStatus(r); return `<span class="${TAGC(st==="已完成"?"green":st==="待完成"?"red":"")}">${esc(st==="待完成"?"未完成":st)}</span>`; }],
       ["",r=>{ if(isAdmin()){ const m = taskMissing(r); return m===null ? "" : m.length ? `<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis">待完成：${m.join("、")}</span>` : `<span class="badge rounded-pill bg-success-subtle text-success-emphasis">已完成</span>`; }
         return taskStatus(r)!=="已完成"?`<button class="btn btn-primary btn-sm" onclick="openTask('${esc(r.id)}')">開啟</button>`:""; }]],mine,"目前沒有任務")}</div>` +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課程列表</b><span class="form-text" style="font-size:13px;font-weight:700">共 ${tqRows.length} 堂</span></div>
       <input class="form-control" id="tq" placeholder="輸入課程名稱或課程編號搜尋" value="${esc(tabState.tq||"")}">
       <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程",{size:10,rowAttr:r=>`style="cursor:pointer" title="點選將課程名稱帶入任務名稱" onclick="pickCourseTitle('${esc(r.id)}')"`})}</div>`:"") +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><b>指派任務（管理者）</b><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
-      ${field("t_title","任務名稱","text","點選上方課程自動帶入")}<div class="who-wrap">${field("t_who","指派對象 Email","email","可輸入學員中文姓名搜尋","","autocomplete=\"off\"")}<div id="t_who_list" class="who-list" style="display:none"></div></div>${field("t_due","期限","date")}</div><button class="btn btn-primary" onclick="addTask()">指派</button></div>`:"");
+      ${field("t_title","任務名稱","text","點選上方課程自動帶入")}<div class="who-wrap">${field("t_who","指派對象 Email<span id=\"t_who_name\" class=\"ms-2 text-primary\"></span>","email","可輸入學員中文姓名搜尋","","autocomplete=\"off\"")}<div id="t_who_list" class="who-list" style="display:none"></div></div>${field("t_due","期限","date")}</div><button class="btn btn-primary" onclick="addTask()">指派</button></div>`:"");
   },
 
   profile(){
@@ -1705,6 +1707,10 @@ $("#view").on("input keyup compositionupdate compositionend change search paste 
 /* 指派任務：「指派對象 Email」輸入學員中文姓名 → 下方列出符合的學員全名 → 點選後帶入該學員 Email */
 (function(){
   let whoIdx = -1;
+  const showWhoName = () => {
+    const v = ($("#t_who").val()||"").trim(), m = v && (DB.Members||[]).find(x => eq(x.email, v));
+    $("#t_who_name").text(m ? m.name : "");
+  };
   const $list = () => $("#t_who_list");
   const hideWho = () => { $list().hide().empty(); whoIdx = -1; };
   function showWho(){
@@ -1722,11 +1728,11 @@ $("#view").on("input keyup compositionupdate compositionend change search paste 
     const mail = $(el).attr("data-email");
     if(!mail) return;
     $("#t_who").val(mail);
-    hideWho();
+    hideWho(); showWhoName();
   }
   $("#view").on("input keyup compositionupdate compositionend", "#t_who", function(e){
     if(e.type === "keyup" && ["ArrowUp","ArrowDown","Enter","Escape"].includes(e.key)) return;
-    showWho();
+    showWho(); showWhoName();
   });
   $("#view").on("focus", "#t_who", showWho);
   $("#view").on("keydown", "#t_who", function(e){
