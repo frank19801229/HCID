@@ -950,9 +950,9 @@ const VIEWS = {
 
   fit(){
     if(!isAdmin()) return head("密合度測試結果","僅管理者可使用") + `<div class="card card-body text-center text-secondary p-4">此頁面僅限管理者檢視</div>`;
-    const p = tabState.fitPdf, mt = fitMatch();
+    const p = tabState.fitPdf || {recs:[],name:"",pages:0}, mt = fitMatch() || {rows:[],miss:[]}, hasPdf = !!tabState.fitPdf;   // 未上傳 PDF 時，兩份名單表格也保留顯示（空表）
     let body = "";
-    if(p){
+    {
       const nMiss = mt.miss.length, nHit = p.recs.length - nMiss;
       const pass = mt.rows.reduce((n,x)=>n + (x.recs.some(r=>r.result==="不通過") ? 0 : x.recs.some(r=>r.result==="通過") ? 1 : 0), 0);
       const fail = mt.rows.filter(x=>x.recs.some(r=>r.result==="不通過")).length;
@@ -966,7 +966,7 @@ const VIEWS = {
       <div class="card card-body">
         <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>交集學員名單（共 ${mt.rows.length} 位）</b>
           <span><button class="btn btn-outline-primary btn-sm" onclick="exportFit()" ${mt.rows.length?"":"disabled"}>匯出交集名單 CSV</button> <button class="btn btn-outline-danger btn-sm" onclick="clearFit()">清除結果</button></span></div>
-        <div class="form-text" style="margin:-4px 0 8px">來源檔案：${esc(p.name)}（${p.pages} 頁）。比對規則：姓名與工作單位(部門)皆相同（忽略空白、全半形與英文大小寫）。</div>` +
+        <div class="form-text" style="margin:-4px 0 8px">${hasPdf?`來源檔案：${esc(p.name)}（${p.pages} 頁）。`:"尚未上傳 PDF。"}比對規則：姓名與工作單位(部門)皆相同（忽略空白、全半形與英文大小寫）。</div>` +
         table([
           [FIT_COLS[0], r=>esc(r.m.dept)],
           [FIT_COLS[1], r=>esc(r.m.unit)],
@@ -975,7 +975,7 @@ const VIEWS = {
           [FIT_COLS[4], r=>esc(r.recs.map(x=>x.id).filter(Boolean).join("、"))],
           [FIT_COLS[5], r=>fitResTag(r.recs)]
         ], sorted, "PDF 內的人員與學員名單沒有交集（姓名與工作單位(部門)需同時相同）") + `</div>` +
-      (nMiss ? `<div class="card card-body" style="margin-top:14px;padding:0 8px"><details class="grp" style="border-top:0;background:#fff"><summary><span class="gname"><b>PDF 內未比對到學員名單的人員</b> <small>(${nMiss})</small></span></summary>
+      (true ? `<div class="card card-body" style="margin-top:14px;padding:0 8px"><details open class="grp" style="border-top:0;background:#fff"><summary><span class="gname"><b>PDF 內未比對到學員名單的人員</b> <small>(${nMiss})</small></span></summary>
         <div class="gbody">` + table([
           ["項次", r=>esc(r.no)],
           ["員工編號", r=>esc(r.id)],
@@ -984,7 +984,7 @@ const VIEWS = {
           ["測定結果", r=>fitResTag([r])],
           ["學員名單中的同名者（工作單位）", r=>{ const u = [...new Set(DB.Members.filter(m=>fitNorm(m.name)===fitNorm(r.name)).map(m=>m.unit||"（未填）"))];
             return u.length ? esc(u.join("、")) : `<span class="form-text">名單中無此姓名</span>`; }]
-        ], mt.miss) + `</div></details></div>` : "");
+        ], mt.miss, "沒有未比對到的人員") + `</div></details></div>` : "");
     }
     return head("密合度測試結果","上傳密合度測試結果彙整 PDF，系統會以「姓名」與「工作單位(部門)」比對學員名單，列出兩邊都有的學員。") + `
     <div class="card card-body"><b>上傳密合度測試結果 PDF（管理者）</b>
