@@ -361,7 +361,7 @@ const viewEmail = () => (isAdmin() && tabState.pm) ? tabState.pm : user.email;
 /* ---------- 共用元件 ---------- */
 function head(title, sub){
   return `<h1>${title}</h1><p class="text-secondary mb-3">${sub}</p>` +
-    (DEMO ? `<div class="alert alert-warning py-2 small">建置展示版：示範資料均為虛構，存在本機瀏覽器；尚未串接院內帳號、手機推播與官方疫情來源。 <a href="#" onclick="resetDemo();return false">重設示範資料</a></div>` : "");
+    (DEMO ? `<div class="alert alert-warning py-2 small"><a href="#" onclick="resetDemo();return false">重設示範資料</a></div>` : "");
 }
 /* ---------- 表格分頁：每頁 50 筆（超過 50 筆才顯示換頁列） ---------- */
 const PAGE_SIZE = 50, PG = {}, TBL = {view:"", seq:{}};
