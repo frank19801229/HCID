@@ -137,6 +137,9 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 .site-logo img{display:block;width:100%;height:auto}
 /* 全站字體粗體 */
 *,*::before,*::after{font-weight:700!important}
+@keyframes mainSlideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+main.slide-down{animation:mainSlideDown .45s cubic-bezier(.22,.8,.3,1) both}
+@media(prefers-reduced-motion:reduce){main.slide-down{animation:none}}
 </style>
 </head>
 <body class="d-flex flex-column flex-md-row min-vh-100">
@@ -1800,6 +1803,12 @@ $("#view").on("input keyup compositionupdate compositionend change search paste 
   $("#view").on("mousedown", ".who-item", function(e){ e.preventDefault(); pickWho(this); });
   $(document).on("mousedown", e => { if(!$(e.target).closest(".who-wrap").length) hideWho(); });
 })();
+/* 點選「任務與通知」：main 內容區由上到下滑入 */
+$(document).on("click", 'a.nav-link[href="#tasks"]', function(){
+  const m = document.querySelector("main");
+  m.classList.remove("slide-down"); void m.offsetWidth; m.classList.add("slide-down");
+});
+$(document).on("animationend", "main", function(e){ if(e.target === this) this.classList.remove("slide-down"); });
 $(window).on("hashchange", ()=>route());
 /* 示範模式：資料存在 localStorage，同一瀏覽器的其他分頁（例如一個管理者、一個學員）修改後，這裡自動同步 */
 if(DEMO){
