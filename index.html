@@ -976,8 +976,8 @@ const VIEWS = {
           [FIT_COLS[4], r=>esc(r.recs.map(x=>x.id).filter(Boolean).join("、"))],
           [FIT_COLS[5], r=>fitResTag(r.recs)]
         ], sorted, "沒有交集且通過的學員（姓名與工作單位(部門)需同時相同，且測定結果為通過）") + `</div>` +
-      (true ? `<div class="card card-body" style="margin-top:14px;padding:0 8px"><details open class="grp" style="border-top:0;background:#fff"><summary><span class="gname"><b>PDF 內未比對到學員名單的人員</b> <small>(${nMiss})</small></span></summary>
-        <div class="gbody"><div class="mb-2"><button class="btn btn-outline-primary btn-sm" onclick="exportFitMiss()" ${nMiss?"":"disabled"}>匯出未比對到名單 CSV</button></div>` + table([
+      (true ? `<div class="card card-body" style="margin-top:14px;padding:0 8px"><details open class="grp" style="border-top:0;background:#fff"><summary><span class="gname" style="flex:0 1 auto"><b>PDF 內未比對到學員名單的人員</b> <small>(${nMiss})</small></span><button class="btn btn-outline-primary btn-sm" onclick="event.preventDefault();event.stopPropagation();exportFitMiss()" ${nMiss?"":"disabled"}>匯出未比對到名單 CSV</button></summary>
+        <div class="gbody">` + table([
           ["項次", r=>esc(r.no)],
           ["員工編號", r=>esc(r.id)],
           ["姓名", r=>esc(r.name)],
