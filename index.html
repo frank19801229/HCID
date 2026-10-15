@@ -398,7 +398,6 @@ function tabs(id, items, def){
 function setTab(id,k){ tabState[id]=k; route(); }
 function curTab(id, def){ return tabState[id] || def; }
 function field(id,label,type="text",ph="",value="",extra=""){ return `<div><label class="form-label">${label}</label><input class="form-control" id="${id}" type="${type}" placeholder="${esc(ph)}" value="${esc(value)}" ${extra}></div>`; }
-const COURSE_UNITS = [["感染管制中心","感管中心"],"急診","C049","TICU"];   // 開課單位固定選項（值, 顯示文字）
 const opts = (list,cur) => list.map(x=>{ const [v,l] = Array.isArray(x)?x:[x,x]; return `<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`; }).join("");
 const val = id => $("#"+id).val().trim();
 async function submit(fn){ try{ await fn(); route(); }catch(e){ toast("失敗：" + e.message); } }
@@ -496,12 +495,12 @@ function schedState(c){
   if(e && now > e) return "ended";
   return "open";
 }
-const SCHED = {upcoming:["未開放","yellow"], ended:["已結束","red"], open:["開放中","green"]};
+const SCHED = {upcoming:["未開放","red"], ended:["已結束","red"], open:["開放中","green"]};
 /* 管理者手動覆寫：open=Y 強制開放、N 強制未開放、空白＝依排程（未開始／已結束皆不可開啟） */
 const openFlag = c => String(c.open||"").toUpperCase();
 const isOpenNow = c => openFlag(c)==="Y" ? true : openFlag(c)==="N" ? false : schedState(c)==="open";
 const isClosed = c => !isOpenNow(c);
-const schedTag = c => { const [l,k] = isOpenNow(c) ? SCHED.open : (openFlag(c)==="N" ? ["未開放","yellow"] : SCHED[schedState(c)]); const cls = l==="未開放" ? TAGC(k).replace("text-warning-emphasis","text-danger-emphasis") : TAGC(k); return `<span class="${cls}">${l}</span>`; };
+const schedTag = c => { const [l,k] = isOpenNow(c) ? SCHED.open : (openFlag(c)==="N" ? ["未開放","red"] : SCHED[schedState(c)]); return `<span class="${TAGC(k)}">${l}</span>`; };
 const schedText = c => (c.schedule_start||c.schedule_end) ? `${fmtDT(c.schedule_start)||"即日起"} ～ ${fmtDT(c.schedule_end)||"不限"}` : "不限時間";
 const canOpen = c => isAdmin() || isOpenNow(c);
 
@@ -817,7 +816,7 @@ const VIEWS = {
       ${admin?`<li class="nav-item"><button class="nav-link ${t==="form"?"active":""}" onclick="newCourse()">${tabState.editId?"編輯課程":"新增課程"}</button></li>`:""}</ul>`;
     let body = "";
     if(t==="list"){
-      const cu = tabState.cu||"", cUnits = [...new Set(["感染管制中心","急診","C049","TICU",...DB.Courses.map(c=>String(c.unit||"").trim()).filter(Boolean)])];
+      const cu = tabState.cu||"", cUnits = [...new Set([...DB.Courses.map(c=>String(c.unit||"").trim()).filter(Boolean), "急診", "C049", "TICU"])].sort((a,b)=>a.localeCompare(b,"zh-Hant"));
       const rows = DB.Courses.filter(c => (!q || JSON.stringify(c).toLowerCase().includes(q)) && (!cu || String(c.unit||"").trim()===cu));
       body = `<div class="card card-body"><div class="row g-2"><div class="col-12 col-sm-8"><input class="form-control" id="cq" placeholder="輸入課程名稱搜尋" value="${esc(tabState.cq||"")}"></div><div class="col-12 col-sm-4"><select class="form-select" onchange="tabState.cu=this.value;route()"><option value="">開課單位（全部）</option>${opts(cUnits,cu)}</select></div></div>
       <div style="height:10px"></div>` + table([
@@ -1261,7 +1260,7 @@ function courseForm(){
   const editing = !!e.id;
   return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${editing?"編輯課程":"新增課程"}（管理者）</b>${editing?`<button class="btn btn-outline-primary btn-sm" onclick="tabState.editId=null;setTab('ct','list')">回到課程列表</button>`:""}</div>
   <fieldset class="fieldset"><legend>基本資料</legend><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
-    ${field("c_title","課程名稱","text","",e.title)}${field("c_code","課程編號","text","",e.code)}<div><label class="form-label">開課單位</label><select class="form-select" id="c_unit">${opts((e.unit && !COURSE_UNITS.some(u=>(Array.isArray(u)?u[0]:u)===e.unit)) ? [...COURSE_UNITS,e.unit] : COURSE_UNITS, e.unit||"感染管制中心")}</select></div>
+    ${field("c_title","課程名稱","text","",e.title)}${field("c_code","課程編號","text","",e.code)}<div><label class="form-label">開課單位</label><select class="form-select" id="c_unit">${opts([...["感管中心","急診","C049","TICU"], ...(e.unit && !["感管中心","急診","C049","TICU"].includes(e.unit) ? [e.unit] : [])], e.unit||"感管中心")}</select></div>
     <div><label class="form-label">上課方式</label><select class="form-select" id="c_method">${opts(METHODS, e.method||"線上")}</select></div>
     ${field("c_hours","學分時數（小時）","number","1",e.hours ?? 1)}
     <div><label class="form-label">類別</label><select class="form-select" id="c_req">${opts([["必修","必修"],["進階","進階"]], reqLabel(e.required))}</select></div>
@@ -1281,7 +1280,7 @@ function courseForm(){
     ${editing?"":`<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="c_assign"><label class="form-check-label" for="c_assign">同時指派為全體成員的任務（期限＝截止日期）</label></div>`}</fieldset>
 
   <fieldset class="fieldset"><legend>學分採認</legend><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
-    <div><label class="form-label">採認方式</label><select class="form-select" id="c_cmode">${opts([["auto","自動採認（依學習行為）"]], "auto")}</select></div>
+    <div><label class="form-label">採認方式</label><select class="form-select" id="c_cmode">${opts([["auto","自動採認（依學習行為）"]], e.credit_mode||"auto")}</select></div>
     ${field("c_rule","達標條件","number","影片：80（%）／其他：10（分鐘）",e.credit_rule)}</div>
     <div class="form-text">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。學員第一次開啟課程時會自動記為「已選課」，達標後轉為「合格」。</div></fieldset>
 
