@@ -922,7 +922,7 @@ const VIEWS = {
     } else viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text">${esc(sel.date)}</span></div><p>${esc(sel.body)||"此項目沒有 PDF 檔案"}</p>`;
     const list = table([
       ["日期",r=>esc(r.date)],
-      ["標題",r=>`<b>${esc(r.title)}</b>${r.id===tabState.nsel?` <span class="badge rounded-pill bg-success-subtle text-success-emphasis">檢視中</span>`:""}`],
+      ["標題",r=>`<b>${esc(r.title)}</b>`],
       ["",r=>`<button class="btn btn-sm ${r.id===tabState.nsel?"btn-primary":"btn-outline-primary"}" onclick="selNews('${esc(r.id)}')">檢視</button>`
         + (admin?` <button class="btn btn-outline-danger btn-sm" onclick="deleteNews('${esc(r.id)}')">刪除</button>`:"")]
     ], rows, "目前沒有 PDF");
