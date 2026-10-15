@@ -956,7 +956,8 @@ const VIEWS = {
       const nMiss = mt.miss.length, nHit = p.recs.length - nMiss;
       const pass = mt.rows.reduce((n,x)=>n + (x.recs.some(r=>r.result==="不通過") ? 0 : x.recs.some(r=>r.result==="通過") ? 1 : 0), 0);
       const fail = mt.rows.filter(x=>x.recs.some(r=>r.result==="不通過")).length;
-      const sorted = [...mt.rows].sort((a,b)=>String(a.m.unit||"").localeCompare(String(b.m.unit||""),"zh-Hant") || String(a.m.name||"").localeCompare(String(b.m.name||""),"zh-Hant"));
+      const passRows = mt.rows.filter(fitPassed);   // 交集且通過
+      const sorted = [...passRows].sort((a,b)=>String(a.m.unit||"").localeCompare(String(b.m.unit||""),"zh-Hant") || String(a.m.name||"").localeCompare(String(b.m.name||""),"zh-Hant"));
       body = `
       <div class="row g-3 row-cols-2 row-cols-lg-4 mb-3">
         <div class="col"><div class="card card-body kpi"><div class="l">PDF 解析人數</div><div class="n">${p.recs.length}</div></div></div>
@@ -964,8 +965,8 @@ const VIEWS = {
         <div class="col"><div class="card card-body kpi"><div class="l">其中 通過 / 不通過</div><div class="n">${pass} / ${fail}</div></div></div>
         <div class="col"><div class="card card-body kpi"><div class="l">PDF 內未比對到的人員</div><div class="n">${nMiss}</div></div></div></div>
       <div class="card card-body">
-        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>交集學員名單（共 ${mt.rows.length} 位）</b>
-          <span><button class="btn btn-outline-primary btn-sm" onclick="exportFit()" ${mt.rows.length?"":"disabled"}>匯出交集名單 CSV</button> <button class="btn btn-outline-danger btn-sm" onclick="clearFit()">清除結果</button></span></div>
+        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>交集且通過學員名單（共 ${passRows.length} 位）</b>
+          <span><button class="btn btn-outline-primary btn-sm" onclick="exportFit()" ${passRows.length?"":"disabled"}>匯出交集且通過名單 CSV</button> <button class="btn btn-outline-danger btn-sm" onclick="clearFit()">清除結果</button></span></div>
         <div class="form-text" style="margin:-4px 0 8px">${hasPdf?`來源檔案：${esc(p.name)}（${p.pages} 頁）。`:"尚未上傳 PDF。"}比對規則：姓名與工作單位(部門)皆相同（忽略空白、全半形與英文大小寫）。</div>` +
         table([
           [FIT_COLS[0], r=>esc(r.m.dept)],
@@ -974,7 +975,7 @@ const VIEWS = {
           [FIT_COLS[3], r=>`<b>${esc(r.m.name)}</b>${isActive(r.m)?"":` <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">停用</span>`}`],
           [FIT_COLS[4], r=>esc(r.recs.map(x=>x.id).filter(Boolean).join("、"))],
           [FIT_COLS[5], r=>fitResTag(r.recs)]
-        ], sorted, "PDF 內的人員與學員名單沒有交集（姓名與工作單位(部門)需同時相同）") + `</div>` +
+        ], sorted, "沒有交集且通過的學員（姓名與工作單位(部門)需同時相同，且測定結果為通過）") + `</div>` +
       (true ? `<div class="card card-body" style="margin-top:14px;padding:0 8px"><details open class="grp" style="border-top:0;background:#fff"><summary><span class="gname"><b>PDF 內未比對到學員名單的人員</b> <small>(${nMiss})</small></span></summary>
         <div class="gbody"><div class="mb-2"><button class="btn btn-outline-primary btn-sm" onclick="exportFitMiss()" ${nMiss?"":"disabled"}>匯出未比對到名單 CSV</button></div>` + table([
           ["項次", r=>esc(r.no)],
@@ -1001,6 +1002,7 @@ const FIT_COLS = ["部科","工作單位(部門)","職類別","姓名","員工�
 const FIT_HEADS = ["項次","員工編號","姓名","部門","作業型態","作業別","配戴大約時間","測定結果","備註","測試方法","面體型號/尺寸","密合度","呼吸防護具廠牌/"];
 const FIT_DEFAULT = {b1:68, b2:125, b3:187, b4:249, rx0:648, rx1:735};   // 預設欄位分界（x，單位 pt；A4 橫式彙整表）
 const fitStatus = email => { const rs = (DB.FitTests||[]).filter(x=>eq(x.email,email)); return rs.length && rs[rs.length-1].result === "通過" ? "通過" : "未通過"; };   // 預設未通過
+const fitPassed = x => !x.recs.some(r=>r.result==="不通過") && x.recs.some(r=>r.result==="通過");   // 與統計「通過」口徑相同
 const fitNorm = s => String(s||"").normalize("NFKC").replace(/\s+/g,"").toUpperCase();
 const fitResTag = recs => recs.map(r => r.result==="通過" ? `<span class="badge rounded-pill bg-success-subtle text-success-emphasis">通過</span>` : r.result==="不通過" ? `<span class="badge rounded-pill bg-danger-subtle text-danger-emphasis">不通過</span>` : `<span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">—</span>`).join(" ");
 async function loadPdfJs(){
@@ -1101,8 +1103,8 @@ window.clearFit = act0(async()=>{
 window.exportFit = ()=>{
   const mt = fitMatch(); if(!mt || !mt.rows.length) return;
   const lines = [csvLine(FIT_COLS)];
-  mt.rows.forEach(x => lines.push(csvLine([x.m.dept, x.m.unit, x.m.job, x.m.name, x.recs.map(r=>r.id).filter(Boolean).join("、"), x.recs.map(r=>r.result||"—").join("、")])));
-  downloadText(`密合度測試結果_交集名單_${today()}.csv`, lines.join("\n"));
+  mt.rows.filter(fitPassed).forEach(x => lines.push(csvLine([x.m.dept, x.m.unit, x.m.job, x.m.name, x.recs.map(r=>r.id).filter(Boolean).join("、"), x.recs.map(r=>r.result||"—").join("、")])));
+  downloadText(`密合度測試結果_交集且通過名單_${today()}.csv`, lines.join("\n"));
 };
 
 window.exportFitMiss = ()=>{
