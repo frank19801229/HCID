@@ -135,6 +135,10 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 /* 頁首 logo（放在 HCID READINESS 上方） */
 .site-logo{background:#fff;border:1px solid var(--line);border-radius:8px;line-height:0;margin-bottom:12px;overflow:hidden;max-width:780px}
 .site-logo img{display:block;width:100%;height:auto}
+/* 任務與通知：右側內容由上往下滑入 */
+@keyframes slideDownIn{from{opacity:0;transform:translateY(-48px)}to{opacity:1;transform:translateY(0)}}
+#view.slide-down-in{animation:slideDownIn .45s ease-out backwards}
+@media(prefers-reduced-motion:reduce){#view.slide-down-in{animation:none}}
 /* 全站字體粗體 */
 *,*::before,*::after{font-weight:700!important}
 </style>
@@ -1712,6 +1716,8 @@ window.downloadCSV = ()=>{
 };
 
 /* ---------- 路由 ---------- */
+let _lastRouteKey = null, _tasksNavClick = false;
+$(document).on("click", 'aside a.nav-link[href="#tasks"]', function(){ _tasksNavClick = true; if(location.hash === "#tasks") setTimeout(()=>route(), 0); });
 function route(keepFocus){
   if(!user){ showLoginNeeded(); return; }
   clearInterval(T.timer); clearTimeout(tick.t);
@@ -1723,6 +1729,12 @@ function route(keepFocus){
   const focusId = document.activeElement?.id, pos = document.activeElement?.selectionStart;
   tblReset(k);
   $("#view").html(v());
+  if(k === "tasks" && (_lastRouteKey !== "tasks" || _tasksNavClick)){   // 由其他頁籤（或點選側邊欄）進入「任務與通知」：由上往下滑入
+    const $v = $("#view").removeClass("slide-down-in");
+    void $v[0].offsetWidth;
+    $v.addClass("slide-down-in").one("animationend", function(){ $(this).removeClass("slide-down-in"); });
+  }
+  _tasksNavClick = false; _lastRouteKey = k;
   const active = k === "course" ? "courses" : k;
   $("aside a").each(function(){ $(this).toggleClass("active", $(this).attr("href") === "#"+active); });
   if(keepFocus && focusId){ const $el=$("#"+$.escapeSelector(focusId)); if($el.length){ $el.trigger("focus"); try{$el[0].setSelectionRange(pos,pos)}catch(e){} } }
