@@ -138,74 +138,46 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 /* 全站字體粗體 */
 *,*::before,*::after{font-weight:700!important}
 
-/* ================= 活潑青春版面（僅外觀，不影響功能） ================= */
-:root{--bg:#fff7e6;--brand:#7c5cff;--brand2:#4b2fd0;--g:#2ecc9a;--o:#ff9f1c;--ink:#2b2d42;--mute:#5c5f7a;--line:#ece3ff;
-  --pop-pink:#ff6b9d;--pop-yellow:#ffd166;--pop-blue:#4cc9f0;
-  --bs-primary:#7c5cff;--bs-primary-rgb:124,92,255;--bs-body-bg:#fff7e6;--bs-body-bg-rgb:255,247,230;--bs-body-color:#2b2d42;--bs-body-color-rgb:43,45,66;
-  --bs-link-color-rgb:75,47,208;--bs-border-color:#ece3ff;--bs-body-font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,sans-serif}
-body{background-color:#fff7e6;
-  background-image:radial-gradient(circle at 1px 1px,rgba(124,92,255,.16) 1.6px,transparent 1.8px);background-size:22px 22px}
-main a:not(.btn){color:var(--brand2)}
-main a:not(.btn):hover{color:#2a1a8f;background:#e9e2ff}
-/* 側邊欄（功能選單：僅換色，位置與大小不變） */
-aside{background:linear-gradient(180deg,#7c5cff 0%,#9b5cff 55%,#ff6b9d 130%);color:#fff}
-.logo b{background:#ffd166;color:#2b2d42;border-radius:12px;transform:rotate(-4deg);box-shadow:2px 3px 0 #2b2d42}
-aside .nav-link{border-radius:999px;transition:transform .15s,background .15s}
-aside .nav-link:hover{background:rgba(255,255,255,.28);transform:translateX(3px)}
-aside .nav-link.active{background:#fff;color:var(--brand2);box-shadow:0 3px 0 rgba(43,45,66,.35)}
-/* 標題 */
-.eyebrow{color:var(--pop-pink);letter-spacing:3px}
-h1{color:#2b2d42}
-h1::after{content:"";display:block;width:84px;height:8px;margin-top:6px;border-radius:99px;
-  background:repeating-linear-gradient(135deg,var(--pop-yellow) 0 10px,var(--pop-pink) 10px 20px)}
-h2.sec{color:var(--brand2)}
-.site-logo{border:3px solid #2b2d42;border-radius:18px;box-shadow:5px 5px 0 var(--pop-yellow)}
-/* 按鈕 */
-.btn{--bs-btn-border-radius:999px;transition:transform .12s,box-shadow .12s}
-.btn:not(:disabled):hover{transform:translateY(-2px)}
-.btn-primary{--bs-btn-bg:#7c5cff;--bs-btn-border-color:#2b2d42;--bs-btn-hover-bg:#6a48f0;--bs-btn-hover-border-color:#2b2d42;--bs-btn-active-bg:#4b2fd0;--bs-btn-active-border-color:#2b2d42;--bs-btn-disabled-bg:#b9a8ff;--bs-btn-disabled-border-color:#8f7fd6;box-shadow:0 3px 0 #2b2d42}
-.btn-outline-primary{--bs-btn-color:#4b2fd0;--bs-btn-border-color:#7c5cff;--bs-btn-hover-bg:#efeaff;--bs-btn-hover-color:#2a1a8f;--bs-btn-hover-border-color:#4b2fd0;--bs-btn-active-bg:#efeaff;--bs-btn-active-border-color:#4b2fd0;--bs-btn-disabled-color:#8f7fd6;--bs-btn-disabled-border-color:#b9a8ff;box-shadow:0 3px 0 rgba(124,92,255,.35)}
-.btn-outline-danger{box-shadow:0 3px 0 rgba(127,29,29,.3)}
-/* 卡片 */
-.card{--bs-card-border-color:#2b2d42;--bs-card-border-radius:20px;border-width:2px;box-shadow:5px 5px 0 rgba(124,92,255,.22)}
-main #view>.card:nth-of-type(3n+2){box-shadow:5px 5px 0 rgba(255,107,157,.28)}
-main #view>.card:nth-of-type(3n){box-shadow:5px 5px 0 rgba(255,209,102,.55)}
-.kpi .n{color:var(--pop-pink)}
-.progress,.progress-stacked{--bs-progress-bar-bg:#7c5cff}
-.progress-stacked{--bs-progress-border-radius:99px}
-.fieldset{border:2px dashed #c9b8ff;border-radius:16px;background:rgba(255,255,255,.55)}
-.fieldset legend{color:var(--brand2);background:#ffe8f1;border-radius:99px;padding:1px 12px}
-.form-control,.form-select{border:2px solid #ddd2ff;border-radius:14px}
-.form-control:focus,.form-select:focus{border-color:#7c5cff;box-shadow:0 0 0 .22rem rgba(124,92,255,.22)}
-.form-check-input:checked{background-color:#7c5cff;border-color:#7c5cff}
-/* 分頁標籤 */
-.nav-pills .nav-link{border:2px solid #2b2d42;border-radius:999px;box-shadow:0 3px 0 #2b2d42;margin-bottom:3px}
-.nav-pills .nav-link:not(.active):hover{background:#ffe8f1;color:#2b2d42}
-.nav-pills .nav-link.active{background:#7c5cff;border-color:#2b2d42}
-/* 表格 */
-.table-hover{--bs-table-hover-bg:#ffe8f1;--bs-table-hover-color:#2b2d42}
-.table-hover>tbody>tr:hover>*{background-color:#ffe8f1;color:#2b2d42}
-.table-hover>tbody>tr:hover>td:first-child,.table-hover>tbody>tr:hover>th:first-child{box-shadow:inset 6px 0 0 #ff6b9d}
-.table thead th{background:#efeaff;color:#4b2fd0;border-bottom:3px solid #7c5cff}
-.table-responsive{border:2px solid #2b2d42;border-radius:18px;background:#fff;box-shadow:5px 5px 0 rgba(255,107,157,.25)}
-.badge{border:1.5px solid rgba(43,45,66,.25)}
-details.grp summary:hover{background:#efeaff}
-.who-item:hover,.who-item.on{background:#efeaff}
-/* ===== 小插圖：全部放在「表格 / 文字框」外框上緣的空白處，pointer-events:none，不遮擋任何按鈕與左側選單 ===== */
-main .card:has(textarea),main .fieldset:has(textarea),main .table-responsive{position:relative}
-main .card:has(textarea)::after,main .fieldset:has(textarea)::after{content:"";position:absolute;right:18px;top:-30px;width:46px;height:46px;
-  background-repeat:no-repeat;background-size:contain;pointer-events:none;z-index:1;transform:rotate(6deg)}
-/* 表格：在表格正上方預留一條裝飾帶，插圖畫在帶內，完全不蓋住表頭 */
-main .table-responsive{padding-top:40px;background-repeat:no-repeat;background-size:44px 44px;background-position:right 16px top -2px;background-color:#fff;
-  background-image:linear-gradient(90deg,#efeaff,#efeaff);background-size:100% 40px;background-origin:border-box}
-main .table-responsive::before{content:"";position:absolute;right:16px;top:-2px;width:42px;height:42px;background-repeat:no-repeat;background-size:contain;pointer-events:none;z-index:1}
-main .table-responsive::after{content:"";position:absolute;left:16px;top:8px;width:92px;height:22px;pointer-events:none;
-  background:radial-gradient(circle,#ff6b9d 0 5px,transparent 6px) 0 50%/26px 22px repeat-x}
-main .table-responsive:nth-of-type(12n+1)::before,main #view>*:nth-child(12n+1) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 6c9 7 12 19 8 32H24C20 25 23 13 32 6Z' fill='%23fff' stroke='%232b2d42' stroke-width='3'/%3E%3Ccircle cx='32' cy='23' r='5' fill='%234cc9f0' stroke='%232b2d42' stroke-width='3'/%3E%3Cpath d='M24 38l-9 8 3-14zM40 38l9 8-3-14z' fill='%23ff6b6b' stroke='%232b2d42' stroke-width='3'/%3E%3Cpath d='M28 42q4 14 8 0' fill='%23ffd166' stroke='%232b2d42' stroke-width='3'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+2)::before,main #view>*:nth-child(12n+2) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M8 14q12-4 24 4 12-8 24-4v34q-12-4-24 4-12-8-24-4z' fill='%23fff' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M32 18v34' stroke='%232b2d42' stroke-width='3'/%3E%3Cpath d='M14 24q8-2 12 2M14 32q8-2 12 2M38 26q4-4 12-2M38 34q4-4 12-2' stroke='%23ff6b6b' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+3)::before,main #view>*:nth-child(12n+3) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 6l7 16 17 2-13 11 4 17-15-9-15 9 4-17L8 24l17-2z' fill='%23ffd166' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='30' r='2' fill='%232b2d42'/%3E%3Ccircle cx='38' cy='30' r='2' fill='%232b2d42'/%3E%3Cpath d='M28 37q4 3 8 0' fill='none' stroke='%232b2d42' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+4)::before,main #view>*:nth-child(12n+4) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 6a17 17 0 0 0-8 32v6h16v-6a17 17 0 0 0-8-32Z' fill='%23ffe66d' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M25 50h14M27 56h10' stroke='%232b2d42' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M27 22q5 6 10 0' fill='none' stroke='%232b2d42' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+5)::before,main #view>*:nth-child(12n+5) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M10 28l2-18 12 8q8-2 16 0l12-8 2 18q4 22-22 22T10 28Z' fill='%23ffb703' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='24' cy='32' r='3' fill='%232b2d42'/%3E%3Ccircle cx='40' cy='32' r='3' fill='%232b2d42'/%3E%3Cpath d='M28 40q4 4 8 0M32 36v3' fill='none' stroke='%232b2d42' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+6)::before,main #view>*:nth-child(12n+6) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 44a10 10 0 0 1 2-20 14 14 0 0 1 27-2 11 11 0 0 1 3 22Z' fill='%23fff' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='34' r='2' fill='%232b2d42'/%3E%3Ccircle cx='38' cy='34' r='2' fill='%232b2d42'/%3E%3Cpath d='M29 39q3 3 6 0' fill='none' stroke='%232b2d42' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='38' r='3' fill='%23ff9eb5'/%3E%3Ccircle cx='42' cy='38' r='3' fill='%23ff9eb5'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+7)::before,main #view>*:nth-child(12n+7) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M10 54l4-14L42 12l10 10-28 28z' fill='%23ffd166' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M38 16l10 10M10 54l4-14 10 10z' stroke='%232b2d42' stroke-width='3' fill='%23ffe8cc'/%3E%3Cpath d='M44 10l4-4 10 10-4 4z' fill='%23ff6b6b' stroke='%232b2d42' stroke-width='3'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+8)::before,main #view>*:nth-child(12n+8) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 54C8 38 8 16 22 14q8 0 10 8 2-8 10-8c14 2 14 24-10 40Z' fill='%23ff6b9d' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M20 22q2-4 6-3' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+9)::before,main #view>*:nth-child(12n+9) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M22 40h20l-3 16H25z' fill='%23ff8c42' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M32 40V22' stroke='%232b2d42' stroke-width='3'/%3E%3Cpath d='M32 28Q16 28 14 12q16 0 18 16ZM32 22q0-14 18-14 0 14-18 14Z' fill='%237bd88f' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+10)::before,main #view>*:nth-child(12n+10) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M8 24q24-10 48 0v10q0 14-24 20Q8 48 8 34Z' fill='%23bde0fe' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M14 28h36M14 36h36M14 44q18 6 36 0' stroke='%232b2d42' stroke-width='2.5' fill='none'/%3E%3Cpath d='M8 28Q2 30 4 38M56 28q6 2 4 10' stroke='%232b2d42' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+11)::before,main #view>*:nth-child(12n+11) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 8q-14 2-14 20v10l-6 8h40l-6-8V28Q46 10 32 8Z' fill='%23ffd166' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M26 52q6 8 12 0' fill='%23ff6b6b' stroke='%232b2d42' stroke-width='3'/%3E%3Cpath d='M50 14q6 4 6 10M14 14q-6 4-6 10' stroke='%232b2d42' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}main .table-responsive:nth-of-type(12n+12)::before,main #view>*:nth-child(12n+12) .table-responsive::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M14 58V8' stroke='%232b2d42' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M14 10q14-8 28 0t12-2v26q-12 4-12 0t-28 0Z' fill='%234cc9f0' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='30' cy='22' r='3' fill='%23fff'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+1)::after,main .fieldset:has(textarea):nth-of-type(12n+1)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M10 54l4-14L42 12l10 10-28 28z' fill='%23ffd166' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M38 16l10 10M10 54l4-14 10 10z' stroke='%232b2d42' stroke-width='3' fill='%23ffe8cc'/%3E%3Cpath d='M44 10l4-4 10 10-4 4z' fill='%23ff6b6b' stroke='%232b2d42' stroke-width='3'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+2)::after,main .fieldset:has(textarea):nth-of-type(12n+2)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 6a17 17 0 0 0-8 32v6h16v-6a17 17 0 0 0-8-32Z' fill='%23ffe66d' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M25 50h14M27 56h10' stroke='%232b2d42' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M27 22q5 6 10 0' fill='none' stroke='%232b2d42' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+3)::after,main .fieldset:has(textarea):nth-of-type(12n+3)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 54C8 38 8 16 22 14q8 0 10 8 2-8 10-8c14 2 14 24-10 40Z' fill='%23ff6b9d' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M20 22q2-4 6-3' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+4)::after,main .fieldset:has(textarea):nth-of-type(12n+4)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 6l7 16 17 2-13 11 4 17-15-9-15 9 4-17L8 24l17-2z' fill='%23ffd166' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='30' r='2' fill='%232b2d42'/%3E%3Ccircle cx='38' cy='30' r='2' fill='%232b2d42'/%3E%3Cpath d='M28 37q4 3 8 0' fill='none' stroke='%232b2d42' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+5)::after,main .fieldset:has(textarea):nth-of-type(12n+5)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 44a10 10 0 0 1 2-20 14 14 0 0 1 27-2 11 11 0 0 1 3 22Z' fill='%23fff' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='26' cy='34' r='2' fill='%232b2d42'/%3E%3Ccircle cx='38' cy='34' r='2' fill='%232b2d42'/%3E%3Cpath d='M29 39q3 3 6 0' fill='none' stroke='%232b2d42' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='38' r='3' fill='%23ff9eb5'/%3E%3Ccircle cx='42' cy='38' r='3' fill='%23ff9eb5'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+6)::after,main .fieldset:has(textarea):nth-of-type(12n+6)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M22 40h20l-3 16H25z' fill='%23ff8c42' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M32 40V22' stroke='%232b2d42' stroke-width='3'/%3E%3Cpath d='M32 28Q16 28 14 12q16 0 18 16ZM32 22q0-14 18-14 0 14-18 14Z' fill='%237bd88f' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+7)::after,main .fieldset:has(textarea):nth-of-type(12n+7)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 8q-14 2-14 20v10l-6 8h40l-6-8V28Q46 10 32 8Z' fill='%23ffd166' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M26 52q6 8 12 0' fill='%23ff6b6b' stroke='%232b2d42' stroke-width='3'/%3E%3Cpath d='M50 14q6 4 6 10M14 14q-6 4-6 10' stroke='%232b2d42' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+8)::after,main .fieldset:has(textarea):nth-of-type(12n+8)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 6c9 7 12 19 8 32H24C20 25 23 13 32 6Z' fill='%23fff' stroke='%232b2d42' stroke-width='3'/%3E%3Ccircle cx='32' cy='23' r='5' fill='%234cc9f0' stroke='%232b2d42' stroke-width='3'/%3E%3Cpath d='M24 38l-9 8 3-14zM40 38l9 8-3-14z' fill='%23ff6b6b' stroke='%232b2d42' stroke-width='3'/%3E%3Cpath d='M28 42q4 14 8 0' fill='%23ffd166' stroke='%232b2d42' stroke-width='3'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+9)::after,main .fieldset:has(textarea):nth-of-type(12n+9)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M14 58V8' stroke='%232b2d42' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M14 10q14-8 28 0t12-2v26q-12 4-12 0t-28 0Z' fill='%234cc9f0' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='30' cy='22' r='3' fill='%23fff'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+10)::after,main .fieldset:has(textarea):nth-of-type(12n+10)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M10 28l2-18 12 8q8-2 16 0l12-8 2 18q4 22-22 22T10 28Z' fill='%23ffb703' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='24' cy='32' r='3' fill='%232b2d42'/%3E%3Ccircle cx='40' cy='32' r='3' fill='%232b2d42'/%3E%3Cpath d='M28 40q4 4 8 0M32 36v3' fill='none' stroke='%232b2d42' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+11)::after,main .fieldset:has(textarea):nth-of-type(12n+11)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M8 14q12-4 24 4 12-8 24-4v34q-12-4-24 4-12-8-24-4z' fill='%23fff' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M32 18v34' stroke='%232b2d42' stroke-width='3'/%3E%3Cpath d='M14 24q8-2 12 2M14 32q8-2 12 2M38 26q4-4 12-2M38 34q4-4 12-2' stroke='%23ff6b6b' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}main .card:has(textarea):nth-of-type(12n+12)::after,main .fieldset:has(textarea):nth-of-type(12n+12)::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M8 24q24-10 48 0v10q0 14-24 20Q8 48 8 34Z' fill='%23bde0fe' stroke='%232b2d42' stroke-width='3' stroke-linejoin='round'/%3E%3Cpath d='M14 28h36M14 36h36M14 44q18 6 36 0' stroke='%232b2d42' stroke-width='2.5' fill='none'/%3E%3Cpath d='M8 28Q2 30 4 38M56 28q6 2 4 10' stroke='%232b2d42' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")}
-@media(max-width:767px){main .card:has(textarea)::after,main .fieldset:has(textarea)::after{width:34px;height:34px;top:-22px}main .table-responsive::before{width:32px;height:32px}}
-@media(prefers-reduced-motion:no-preference){main .table-responsive::before,main .card:has(textarea)::after,main .fieldset:has(textarea)::after{animation:popBob 3.6s ease-in-out infinite}
-@keyframes popBob{0%,100%{translate:0 0}50%{translate:0 -4px}}}
+/* ===== 蘿莉風主題（只覆蓋顏色與裝飾，不改版面功能） ===== */
+:root{--bg:#fff3f7;--ink:#4a2c3d;--mute:#8a6578;--line:#f5cddd;--brand:#e0709a;--brand2:#b84c78;
+  --bs-primary:#e0709a;--bs-primary-rgb:224,112,154;--bs-body-bg:#fff3f7;--bs-body-bg-rgb:255,243,247;--bs-body-color:#4a2c3d;--bs-body-color-rgb:74,44,61;
+  --bs-secondary-rgb:138,101,120;--bs-secondary-color:#8a6578;--bs-border-color:#f5cddd;--bs-link-color-rgb:184,76,120;--bs-link-hover-color-rgb:150,50,96}
+body{background-color:#fff3f7;background-image:radial-gradient(#ffdbe8 1.6px,transparent 1.7px);background-size:22px 22px}
+main a:not(.btn):hover{color:#962f60;background:#ffe3ee}
+aside{background:linear-gradient(#d86a96,#b84c78);color:#fff0f6;border-right:4px dotted #ffd3e3}
+.logo b{color:#b84c78}
+aside .nav-link.active{color:#b84c78}
+.btn-primary{--bs-btn-hover-bg:#b84c78;--bs-btn-hover-border-color:#b84c78;--bs-btn-active-bg:#b84c78;--bs-btn-active-border-color:#b84c78}
+.btn-outline-primary{--bs-btn-hover-bg:#ffe3ee;--bs-btn-hover-border-color:#b84c78;--bs-btn-hover-color:#962f60;--bs-btn-active-bg:#ffe3ee}
+.btn{--bs-btn-border-radius:999px}
+.card{--bs-card-border-radius:20px;--bs-card-border-color:#f5cddd;box-shadow:0 3px 0 #f9d7e5}
+.form-control,.form-select{border:2px solid #f5cddd;border-radius:14px;background-color:#fffafc}
+.form-control:focus,.form-select:focus{border-color:#e0709a;box-shadow:0 0 0 4px rgba(224,112,154,.2)}
+.fieldset{border:2px dashed #f2b8cf;border-radius:16px}
+.nav-pills .nav-link{border-radius:999px}
+.nav-pills .nav-link:not(.active):hover{background:#ffe3ee;color:#962f60}
+.progress{--bs-progress-bar-bg:#e0709a}
+.table-hover{--bs-table-hover-bg:#ffd6e6;--bs-table-hover-color:#6e2347}
+.table-hover>tbody>tr:hover>*{background-color:#ffd6e6;color:#6e2347}
+.table-hover>tbody>tr:hover>td:first-child,.table-hover>tbody>tr:hover>th:first-child{box-shadow:inset 5px 0 0 #e0709a}
+.table thead th{background:#ffe0ec;color:#a13a67;border-bottom:2px solid #f08fb4}
+.who-item:hover,.who-item.on{background:#ffe3ee}
+.eyebrow{color:#b84c78}
 
+/* ===== 小插圖：只放在表格 / 文字框自己的邊框範圍與外圍空白帶，不碰側邊選單與按鈕 ===== */
+.table-responsive.lo-t{padding:26px 6px 22px;border:2px dotted #f2b8cf;border-radius:20px;background:#fffafc;position:relative}
+.table-responsive.lo-t .table{background:transparent}
+.lo-deco{position:absolute;pointer-events:none;z-index:1;line-height:0}
+.lo-deco svg{width:100%;height:100%;display:block;filter:drop-shadow(0 1px 0 rgba(255,255,255,.9))}
+.lo-tpos{display:block;position:relative;height:0;pointer-events:none}
+.lo-tpos .lo-deco{right:4px;bottom:3px;width:30px;height:30px}
+.lo-tw{position:relative}
+.lo-tw>.lo-deco{width:34px;height:34px}
+.lo-tw>.lo-deco.a{top:-1px;right:12px}
+.lo-tw>.lo-deco.b{top:-1px;left:12px}
+.lo-tw>.lo-deco.c{bottom:-1px;right:12px}
+.lo-tw>.lo-deco.d{bottom:-1px;left:12px}
+@media(max-width:575px){.lo-tw>.lo-deco,.lo-tpos .lo-deco{transform:scale(.8)}}
 </style>
 </head>
 <body class="d-flex flex-column flex-md-row min-vh-100">
@@ -1890,6 +1862,88 @@ $(async function(){
   if(!(await initUser())){ showLoginNeeded(); return; }
   route();
 });
+</script>
+
+<script>
+/* 蘿莉風小插圖：每個表格 / 文字框各配不同圖案，用完一輪才會重新洗牌，且不碰任何功能元件 */
+(function(){
+  const S=(b)=>`<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">${b}</svg>`;
+  const P=[
+   S(`<path d="M20 20 6 11v18zM20 20l14-9v18z" fill="#ff8fb7" stroke="#d6578a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="20" cy="20" r="4.2" fill="#ffc2d8" stroke="#d6578a" stroke-width="1.5"/>`), /* 蝴蝶結 */
+   S(`<path d="M20 36C9 29 6 19 9 14c3-5 9-3 11 0 2-3 8-5 11 0 3 5 0 15-11 22z" fill="#ff6f9f" stroke="#c63d70" stroke-width="1.5"/><g fill="#fff" opacity=".8"><circle cx="15" cy="19" r="1.1"/><circle cx="22" cy="23" r="1.1"/><circle cx="26" cy="17" r="1.1"/><circle cx="18" cy="28" r="1.1"/></g><path d="M12 11l4 3 4-4 4 4 4-3-3-3-5 1-5-1z" fill="#7bc47f" stroke="#4f9a56" stroke-width="1"/>`), /* 草莓 */
+   S(`<path d="M13 22Q15 8 24 4M27 24Q26 11 24 4" fill="none" stroke="#6aa84f" stroke-width="1.8"/><circle cx="13" cy="28" r="7" fill="#e5365f" stroke="#a81f43" stroke-width="1.4"/><circle cx="27" cy="29" r="7" fill="#f0507a" stroke="#a81f43" stroke-width="1.4"/><circle cx="11" cy="26" r="1.6" fill="#fff" opacity=".7"/><circle cx="25" cy="27" r="1.6" fill="#fff" opacity=".7"/>`), /* 櫻桃 */
+   S(`<path d="M20 35C8 27 5 18 9 13c3-4 9-3 11 1 2-4 8-5 11-1 4 5 1 14-11 22z" fill="#ffadc9" stroke="#e0709a" stroke-width="1.6"/><path d="M13 16q2-3 5-2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>`), /* 愛心 */
+   S(`<path d="M20 4l4.6 10.2 11 1.2-8.3 7.4 2.4 10.9L20 27.8 10.3 33.7l2.4-10.9L4.4 15.4l11-1.2z" fill="#ffe27a" stroke="#e0a82e" stroke-width="1.5" stroke-linejoin="round"/>`), /* 星星 */
+   S(`<path d="M7 31 5 13l9 8 6-12 6 12 9-8-2 18z" fill="#ffd96b" stroke="#d99b1e" stroke-width="1.6" stroke-linejoin="round"/><rect x="7" y="31" width="26" height="4" rx="1.5" fill="#f4b73f" stroke="#d99b1e" stroke-width="1.4"/><circle cx="20" cy="9" r="2" fill="#ff6f9f"/><circle cx="5" cy="13" r="2" fill="#ff6f9f"/><circle cx="35" cy="13" r="2" fill="#ff6f9f"/>`), /* 皇冠 */
+   S(`<path d="M7 17h22v6a11 11 0 0 1-22 0z" fill="#fff" stroke="#d6578a" stroke-width="1.6"/><path d="M29 19h3a4 4 0 0 1 0 8h-4" fill="none" stroke="#d6578a" stroke-width="1.6"/><path d="M7 21h22" stroke="#ffb3cd" stroke-width="3"/><path d="M13 12q-2-3 1-5M19 12q-2-3 1-5" stroke="#e8a2bd" stroke-width="1.5" fill="none" stroke-linecap="round"/><ellipse cx="18" cy="35" rx="13" ry="2.4" fill="#ffd6e6" stroke="#d6578a" stroke-width="1.2"/>`), /* 茶杯 */
+   S(`<path d="M8 21h24l-3 14H11z" fill="#ffd3e3" stroke="#d6578a" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 21q1-9 10-9t10 9z" fill="#fff" stroke="#d6578a" stroke-width="1.5"/><circle cx="20" cy="9" r="3.2" fill="#e5365f" stroke="#a81f43" stroke-width="1.2"/><path d="M14 24l1 9M20 24v9M26 24l-1 9" stroke="#f08fb4" stroke-width="1.3"/>`), /* 杯子蛋糕 */
+   S(`<ellipse cx="20" cy="15" rx="14" ry="8" fill="#ffc7a8" stroke="#d98a64" stroke-width="1.5"/><ellipse cx="20" cy="28" rx="14" ry="8" fill="#ffb3d1" stroke="#d6578a" stroke-width="1.5"/><path d="M6 21q14 7 28 0" fill="#fff6e0" stroke="#d9b98a" stroke-width="2"/>`), /* 馬卡龍 */
+   S(`<circle cx="20" cy="16" r="10" fill="#ff8fb7" stroke="#c63d70" stroke-width="1.5"/><path d="M20 16q-5-3-3-7M20 16q6-1 6-6M20 16q4 5 9 3M20 16q-6 4-10 0" stroke="#c63d70" stroke-width="1.4" fill="none"/><path d="M20 26v10" stroke="#5aa05a" stroke-width="2"/><path d="M20 31q7-5 10-1-4 4-10 1z" fill="#8fd18f" stroke="#4f9a56" stroke-width="1.2"/>`), /* 玫瑰 */
+   S(`<path d="M20 20 6 8c-3 5-1 12 4 14 4 2 8 0 10-2zM20 20 34 8c3 5 1 12-4 14-4 2-8 0-10-2z" fill="#c7a6ff" stroke="#8a62d6" stroke-width="1.5"/><path d="M20 20 9 32c4 3 9 2 11-4zM20 20l11 12c-4 3-9 2-11-4z" fill="#ffb3e0" stroke="#d6578a" stroke-width="1.5"/><path d="M20 16v14" stroke="#6a4a8a" stroke-width="2"/>`), /* 蝴蝶 */
+   S(`<ellipse cx="14" cy="11" rx="3.6" ry="9" fill="#fff" stroke="#c9a3b6" stroke-width="1.5"/><ellipse cx="26" cy="11" rx="3.6" ry="9" fill="#fff" stroke="#c9a3b6" stroke-width="1.5"/><ellipse cx="14" cy="12" rx="1.5" ry="5.5" fill="#ffc2d8"/><ellipse cx="26" cy="12" rx="1.5" ry="5.5" fill="#ffc2d8"/><circle cx="20" cy="26" r="11" fill="#fff" stroke="#c9a3b6" stroke-width="1.5"/><circle cx="16" cy="25" r="1.5" fill="#4a2c3d"/><circle cx="24" cy="25" r="1.5" fill="#4a2c3d"/><ellipse cx="20" cy="29" rx="1.6" ry="1.1" fill="#ff8fb7"/><circle cx="12.5" cy="29" r="2" fill="#ffc2d8" opacity=".8"/><circle cx="27.5" cy="29" r="2" fill="#ffc2d8" opacity=".8"/>`), /* 小兔 */
+   S(`<circle cx="12" cy="13" r="7" fill="#fff6bf" stroke="#d9b94a" stroke-width="1.6"/><circle cx="12" cy="13" r="2.6" fill="none" stroke="#d9b94a" stroke-width="1.5"/><path d="M17 17l16 16M28 28l4-3M31 31l3-3" stroke="#d9b94a" stroke-width="2.4" stroke-linecap="round" fill="none"/>`), /* 鑰匙 */
+   S(`<path d="M4 22Q4 6 20 6t16 16q-4-4-8 0-4-4-8 0-4-4-8 0-4-4-8 0z" fill="#ffc2e0" stroke="#d6578a" stroke-width="1.6" stroke-linejoin="round"/><path d="M20 22v11a3 3 0 0 1-6 0" fill="none" stroke="#a8527a" stroke-width="1.8" stroke-linecap="round"/><circle cx="20" cy="5" r="1.6" fill="#a8527a"/>`), /* 洋傘 */
+   S(`<path d="M10 28a7 7 0 0 1 1-13 9 9 0 0 1 17 2 6 6 0 0 1 1 11z" fill="#e9f4ff" stroke="#8fb6e0" stroke-width="1.6" stroke-linejoin="round"/><path d="M15 22q1.4 1.6 3 0M23 22q1.4 1.6 3 0" stroke="#6a8ab0" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="13" cy="25" r="1.8" fill="#ffc2d8"/><circle cx="28" cy="25" r="1.8" fill="#ffc2d8"/>`), /* 雲朵 */
+   S(`<path d="M27 6a14 14 0 1 0 8 22A12 12 0 0 1 27 6z" fill="#ffe9a3" stroke="#d9b94a" stroke-width="1.6" stroke-linejoin="round"/><circle cx="30" cy="12" r="1.4" fill="#ffd96b"/><circle cx="34" cy="19" r="1" fill="#ffd96b"/>`), /* 月亮 */
+   S(`<path d="M4 20l7-7v14zM36 20l-7-7v14z" fill="#ffadc9" stroke="#d6578a" stroke-width="1.4" stroke-linejoin="round"/><rect x="11" y="13" width="18" height="14" rx="7" fill="#ffd6e6" stroke="#d6578a" stroke-width="1.5"/><path d="M15 13v14M20 13v14M25 13v14" stroke="#fff" stroke-width="1.6"/>`), /* 糖果 */
+   S(`<path d="M20 36c-8-2-14-8-14-16 0-7 6-11 11-9 2 1 3 3 3 3s1-2 3-3c5-2 11 2 11 9 0 8-6 14-14 16z" fill="#fff" stroke="#e8a2bd" stroke-width="1.5"/><path d="M12 27c3 3 5 4 8 5M28 27c-3 3-5 4-8 5M9 20q2-3 5-2" fill="none" stroke="#f2b8cf" stroke-width="1.4"/><path d="M15 14l5 5 5-5" fill="none" stroke="#ff8fb7" stroke-width="1.6" stroke-linecap="round"/>`), /* 蕾絲愛心 */
+   S(`<path d="M12 32V16q8-6 16 0v16z" fill="#fff0f6" stroke="#d6578a" stroke-width="1.5"/><path d="M12 16q8-10 16 0" fill="#ffadc9" stroke="#d6578a" stroke-width="1.5"/><rect x="17" y="22" width="6" height="10" rx="3" fill="#ffd6e6" stroke="#d6578a" stroke-width="1.2"/><path d="M20 6v5M17.5 8.5h5" stroke="#e0a82e" stroke-width="1.6" stroke-linecap="round"/>`), /* 小城堡門 */
+   S(`<circle cx="20" cy="20" r="4" fill="#ffe27a" stroke="#d9a82e" stroke-width="1.2"/><g fill="#ffc2d8" stroke="#e0709a" stroke-width="1.3"><ellipse cx="20" cy="9" rx="4" ry="5.5"/><ellipse cx="20" cy="31" rx="4" ry="5.5"/><ellipse cx="9" cy="20" rx="5.5" ry="4"/><ellipse cx="31" cy="20" rx="5.5" ry="4"/></g><circle cx="20" cy="20" r="3.4" fill="#ffe27a" stroke="#d9a82e" stroke-width="1.2"/>`), /* 小花 */
+   S(`<path d="M20 36c-1-8-7-9-7-17a7 7 0 0 1 14 0c0 8-6 9-7 17z" fill="#e8d6ff" stroke="#9a72d6" stroke-width="1.5"/><path d="M20 12v21" stroke="#fff" stroke-width="1.5"/><circle cx="20" cy="9" r="3" fill="#ff8fb7" stroke="#d6578a" stroke-width="1.2"/>`), /* 香水瓶 */
+   S(`<rect x="7" y="9" width="26" height="22" rx="3" fill="#fffdf2" stroke="#c9a3b6" stroke-width="1.5"/><path d="M7 9l13 11L33 9" fill="none" stroke="#c9a3b6" stroke-width="1.5"/><path d="M20 22c-3-2-4-5-2-6 1-.6 2 .4 2 .4s1-1 2-.4c2 1 1 4-2 6z" fill="#ff6f9f"/>`), /* 情書 */
+   S(`<path d="M20 5c3 6 11 8 11 17a11 11 0 0 1-22 0c0-9 8-11 11-17z" fill="#d9f0ff" stroke="#6aa6d6" stroke-width="1.5"/><path d="M14 23q1 5 6 6" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>`), /* 水滴 */
+   S(`<path d="M6 31 20 5l14 26z" fill="#ffe9c9" stroke="#d9a064" stroke-width="1.5" stroke-linejoin="round"/><path d="M11 31q2-5 4 0t4 0 4 0 4 0 4 0" fill="none" stroke="#d9a064" stroke-width="1.3"/><circle cx="20" cy="5" r="3" fill="#ff6f9f"/>`), /* 小帽子 */
+  ];
+  const N=P.length, used=new Map();           // key -> 已分配的圖案索引（同一個表格重繪後維持同圖）
+  let order=[], ptr=0;
+  function next(){                             // 洗牌輪發：用完一輪才重來，且相鄰不重複
+    if(ptr>=order.length){
+      const last=order[order.length-1];
+      order=[...Array(N).keys()].sort(()=>Math.random()-.5);
+      if(order[0]===last)order.push(order.shift());
+      ptr=0;
+    }
+    return order[ptr++];
+  }
+  function art(key){
+    if(!used.has(key))used.set(key,next());
+    return used.get(key);
+  }
+  function mk(i,cls){
+    const d=document.createElement('span');d.className='lo-deco '+cls;d.setAttribute('aria-hidden','true');d.innerHTML=P[i];return d;
+  }
+  let seq=0;
+  function decorate(){
+    const view=document.getElementById('view');if(!view)return;
+    const page=location.hash||'#';
+    seq=0;
+    /* 表格：上方空白帶兩個、下方空白帶一個（都在表格外框內的留白處） */
+    view.querySelectorAll('.table-responsive').forEach((box,idx)=>{
+      if(box.dataset.lo)return;box.dataset.lo=1;
+      box.classList.add('lo-t');
+      const k=page+'|t'+idx;
+      /* 不同表格取到不同組合：以輪發圖案為準，三張互不相同 */
+      const a=art(k+'a'),b=art(k+'b'),c=art(k+'c');
+      const wrap=document.createElement('div');wrap.className='lo-tw';
+      box.parentNode.insertBefore(wrap,box);wrap.appendChild(box);
+      wrap.appendChild(mk(a,'a'));wrap.appendChild(mk(b,'b'));wrap.appendChild(mk(c,'c'));
+      seq++;
+    });
+    /* 文字框：在標籤列右側的空白處放一張，不佔版面、不擋輸入 */
+    view.querySelectorAll('textarea.form-control').forEach((ta,idx)=>{
+      if(ta.dataset.lo)return;ta.dataset.lo=1;
+      const anchor=document.createElement('span');anchor.className='lo-tpos';
+      anchor.appendChild(mk(art(page+'|x'+idx+(ta.id||'')),''));
+      ta.parentNode.insertBefore(anchor,ta);
+    });
+  }
+  const v=document.getElementById('view');
+  if(v){
+    let t=0;
+    new MutationObserver(()=>{clearTimeout(t);t=setTimeout(decorate,30);}).observe(v,{childList:true,subtree:true});
+    decorate();
+  }
+})();
 </script>
 </body> 
 </html>
