@@ -137,20 +137,38 @@ details.grp .gbody{padding:0 8px 12px;background:#fff}
 .site-logo img{display:block;width:100%;height:auto}
 /* 全站字體粗體 */
 *,*::before,*::after{font-weight:700!important}
-
-/* ===== 動漫風格裝飾（只加外觀，不影響功能） ===== */
-body{background-image:radial-gradient(circle at 12% 18%,rgba(255,182,213,.28) 0 90px,transparent 91px),radial-gradient(circle at 88% 12%,rgba(168,218,255,.30) 0 110px,transparent 111px),radial-gradient(circle at 80% 88%,rgba(255,236,170,.30) 0 100px,transparent 101px);background-attachment:fixed}
-main .card{border:2px solid #ffc8de;box-shadow:4px 4px 0 #ffe3ef;border-radius:16px}
-main .table-responsive{border:2px solid #ffc8de;border-radius:14px;background:#fff;box-shadow:4px 4px 0 #cfe8ff}
-main h2.sec::before{content:"✦";color:#ff7eb6;margin-right:2px}
-main textarea.form-control,main #aq,main #cq,main #jq,main #tq,main #rq{border:2px solid #ffc8de}
-main textarea.form-control:focus,main #aq:focus,main #cq:focus,main #jq:focus,main #tq:focus,main #rq:focus{border-color:#ff7eb6;box-shadow:0 0 0 .25rem rgba(255,126,182,.25)}
-.ani-peek{position:relative;height:40px;margin-bottom:-2px;overflow:hidden;pointer-events:none;user-select:none;z-index:0}
-.ani-peek svg{position:absolute;bottom:-2px;width:64px;height:42px;animation:aniBob 3.2s ease-in-out infinite}
-.ani-peek .spk{position:absolute;font-size:14px;color:#ff9ccc;animation:aniTw 2.4s ease-in-out infinite}
-@keyframes aniBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-@keyframes aniTw{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
-@media(prefers-reduced-motion:reduce){.ani-peek svg,.ani-peek .spk{animation:none}}
+/* ===== MCU 英雄風主題（只覆寫外觀，不動功能） ===== */
+:root{--brand:#c8102e;--brand2:#0b1d4a;--gold:#f5b800;--g:#2e9e5b;--bs-primary:#c8102e;--bs-primary-rgb:200,16,46;--bs-link-color-rgb:11,29,74;--bs-link-hover-color-rgb:200,16,46;--bs-body-bg:#e6e9f2;--bs-body-bg-rgb:230,233,242}
+body{background:radial-gradient(circle,rgba(200,16,46,.10) 1.3px,transparent 1.7px) 0 0/16px 16px,linear-gradient(#e9ecf5,#dde2ef)!important}
+aside{background:linear-gradient(180deg,#0b1d4a,#050d26)!important;border-right:4px solid var(--gold)}
+.logo b{background:linear-gradient(135deg,#e62429,#9b0c1d)!important;color:#fff!important;border:2px solid var(--gold)}
+aside .nav-link:hover{background:rgba(245,184,0,.25)!important}
+aside .nav-link.active{background:linear-gradient(90deg,#f5b800,#ffd84d)!important;color:#0b1d4a!important}
+main a:not(.btn):hover{background:#ffe9a3!important;color:#0b1d4a!important}
+.eyebrow{color:var(--brand)!important}
+h1{border-left:6px solid var(--brand);padding-left:10px;color:var(--brand2)}
+h2.sec{border-bottom:3px solid var(--gold);padding-bottom:4px;color:var(--brand2)}
+.card{--bs-card-border-color:#c3cbe2;border-top:4px solid var(--brand)!important;box-shadow:4px 4px 0 rgba(11,29,74,.16)}
+.btn-primary{--bs-btn-hover-bg:#8f0b21;--bs-btn-hover-border-color:#8f0b21;--bs-btn-active-bg:#8f0b21;--bs-btn-active-border-color:#8f0b21}
+.btn-outline-primary{--bs-btn-color:#0b1d4a;--bs-btn-hover-bg:#ffe9a3;--bs-btn-hover-color:#0b1d4a;--bs-btn-hover-border-color:#c8102e;--bs-btn-active-bg:#ffe9a3}
+.nav-pills .nav-link:not(.active):hover{background:#ffe9a3;color:#0b1d4a}
+.table thead th{background:linear-gradient(#0b1d4a,#16307a)!important;color:#ffd84d!important;border-bottom:3px solid var(--gold)!important}
+.table-hover{--bs-table-hover-bg:#ffe9a3;--bs-table-hover-color:#0b1d4a}
+.table-hover>tbody>tr:hover>*{background-color:#ffe9a3!important;color:#0b1d4a!important}
+.table-hover>tbody>tr:hover>td:first-child,.table-hover>tbody>tr:hover>th:first-child{box-shadow:inset 5px 0 0 #c8102e}
+details.grp summary:hover,.who-item:hover,.who-item.on{background:#ffe9a3}
+.form-control,.form-select{border-color:#8b97bd}
+.form-control:focus,.form-select:focus{border-color:#c8102e;box-shadow:0 0 0 .2rem rgba(200,16,46,.2)}
+.fieldset{border-color:rgba(200,16,46,.45)}
+.form-check-input:checked{background-color:var(--brand);border-color:var(--brand)}
+/* 插圖層：只在右側留白，不接收滑鼠、不蓋住側邊功能選單 */
+#mcu-fx{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+#mcu-fx i{position:absolute;width:76px;height:94px;animation:mcuB 3.6s ease-in-out infinite;filter:drop-shadow(2px 3px 0 rgba(11,29,74,.25))}
+#mcu-fx svg{width:100%;height:100%;display:block}
+@keyframes mcuB{50%{transform:translateY(-5px)}}
+@media(prefers-reduced-motion:reduce){#mcu-fx i{animation:none}}
+@media(min-width:768px){main{position:relative;padding-right:112px!important}}
+@media(max-width:767px){#mcu-fx{display:none}}
 </style>
 </head>
 <body class="d-flex flex-column flex-md-row min-vh-100">
@@ -1836,72 +1854,50 @@ $(async function(){
   route();
 });
 </script>
-
 <script>
-/* ===== 動漫風格裝飾：在 table / textbox 上方放「不重複」的探頭小人物 ===== */
+/* ===== MCU 風格插圖（原創英雄造型，每張不重複，疊在 #view 之外，不影響原有功能） ===== */
 (function(){
-  var SK='#ffe0cc',OUT='#5a3a4a';
-  function face(eye,blush){return '<ellipse cx="22" cy="30" rx="3" ry="3.6" fill="#fff"/><ellipse cx="42" cy="30" rx="3" ry="3.6" fill="#fff"/><circle cx="22" cy="30.5" r="2.4" fill="'+eye+'"/><circle cx="42" cy="30.5" r="2.4" fill="'+eye+'"/><circle cx="21" cy="29.5" r=".9" fill="#fff"/><circle cx="41" cy="29.5" r=".9" fill="#fff"/><ellipse cx="15" cy="36" rx="3.2" ry="1.8" fill="'+blush+'" opacity=".6"/><ellipse cx="49" cy="36" rx="3.2" ry="1.8" fill="'+blush+'" opacity=".6"/><path d="M29 37q3 3 6 0" stroke="'+OUT+'" stroke-width="1.4" fill="none" stroke-linecap="round"/>';}
-  function hands(){return '<ellipse cx="12" cy="46" rx="5" ry="3.5" fill="'+SK+'" stroke="'+OUT+'" stroke-width="1.2"/><ellipse cx="52" cy="46" rx="5" ry="3.5" fill="'+SK+'" stroke="'+OUT+'" stroke-width="1.2"/>';}
-  function head(h,bang,extra,eye,blush){return '<svg viewBox="0 0 64 48" xmlns="http://www.w3.org/2000/svg">'+extra.back+'<circle cx="32" cy="34" r="19" fill="'+h+'" stroke="'+OUT+'" stroke-width="1.4"/><ellipse cx="32" cy="36" rx="16" ry="14.5" fill="'+SK+'"/>'+bang+face(eye,blush)+(extra.front||'')+hands()+'</svg>';}
-  function bangs(h,t){var m={a:'<path d="M15 30Q18 14 32 14Q46 14 49 30Q42 22 34 24Q26 20 15 30Z"/>',b:'<path d="M15 32Q16 14 32 14Q48 14 49 32L44 24L38 29L32 22L26 29L20 24Z"/>',c:'<path d="M16 31Q20 13 34 14Q47 15 48 31Q40 20 30 26Q24 22 16 31Z"/>'};return '<g fill="'+h+'" stroke="'+OUT+'" stroke-width="1.2">'+m[t]+'</g>';}
-  var NONE={back:''};
-  var P=[];
-  // 人物（髮色/髮型/配件各不相同）
-  P.push(function(){return head('#ff8fc2',bangs('#ff8fc2','a'),{back:'<circle cx="10" cy="26" r="7" fill="#ff8fc2" stroke="'+OUT+'" stroke-width="1.2"/><circle cx="54" cy="26" r="7" fill="#ff8fc2" stroke="'+OUT+'" stroke-width="1.2"/>',front:'<path d="M28 13l4 4 4-4-2-4h-4z" fill="#fff" stroke="'+OUT+'" stroke-width="1"/>'},'#d6336c','#ff6b9d');}); // 雙馬尾粉髮
-  P.push(function(){return head('#5ab0ff',bangs('#5ab0ff','b'),{back:'',front:'<path d="M24 12l-4-8 8 5zM40 12l4-8-8 5z" fill="#5ab0ff" stroke="'+OUT+'" stroke-width="1"/>'},'#1c7ed6','#ff9bb0');}); // 藍髮尖髮
-  P.push(function(){return head('#ffd24d',bangs('#ffd24d','c'),{back:'<path d="M12 28Q8 44 14 52L20 40Z" fill="#ffd24d" stroke="'+OUT+'" stroke-width="1.2"/><path d="M52 28Q56 44 50 52L44 40Z" fill="#ffd24d" stroke="'+OUT+'" stroke-width="1.2"/>',front:'<path d="M43 14l5-3-1 6z M47 12l-2 6" fill="#ff5c8a" stroke="'+OUT+'" stroke-width=".8"/>'},'#e8590c','#ff8fa3');}); // 金長髮蝴蝶結
-  P.push(function(){return head('#6b4bd8',bangs('#6b4bd8','a'),{back:'',front:'<circle cx="46" cy="16" r="3.2" fill="#ffd43b" stroke="'+OUT+'" stroke-width="1"/>'},'#7048e8','#ff9bb0');}); // 紫髮星星髮飾
-  P.push(function(){return head('#3fbf8a',bangs('#3fbf8a','b'),{back:'<circle cx="32" cy="12" r="6" fill="#3fbf8a" stroke="'+OUT+'" stroke-width="1.2"/>'},'#0ca678','#ff9bb0');}); // 綠髮丸子頭
-  P.push(function(){return head('#3b3b4f',bangs('#3b3b4f','c'),{back:'',front:'<rect x="14" y="19" width="36" height="4" rx="2" fill="#ff6b6b" stroke="'+OUT+'" stroke-width=".9"/>'},'#364fc7','#ff9bb0');}); // 黑髮頭帶少年
-  P.push(function(){return head('#ff9a52',bangs('#ff9a52','a'),{back:'<path d="M14 24L6 8L24 16Z M50 24L58 8L40 16Z" fill="#ff9a52" stroke="'+OUT+'" stroke-width="1.2"/>',front:''},'#2b8a3e','#ff8fa3');}); // 橘髮貓耳
-  P.push(function(){return head('#ffffff',bangs('#fafbff','b'),{back:'<ellipse cx="22" cy="6" rx="4" ry="10" fill="#fff" stroke="'+OUT+'" stroke-width="1.2"/><ellipse cx="42" cy="6" rx="4" ry="10" fill="#fff" stroke="'+OUT+'" stroke-width="1.2"/><ellipse cx="22" cy="7" rx="1.8" ry="6" fill="#ffc2d9"/><ellipse cx="42" cy="7" rx="1.8" ry="6" fill="#ffc2d9"/>',front:''},'#e03131','#ff8fa3');}); // 白髮兔耳
-  P.push(function(){return head('#c0a0ff',bangs('#c0a0ff','c'),{back:'',front:'<path d="M18 17q14-10 28 0" stroke="#ff8ad1" stroke-width="3" fill="none"/><circle cx="16" cy="19" r="3" fill="#ff8ad1"/><circle cx="48" cy="19" r="3" fill="#ff8ad1"/>'},'#9c36b5','#ff9bb0');}); // 淡紫耳機
-  P.push(function(){return head('#7a4a2b',bangs('#7a4a2b','b'),{back:'',front:'<path d="M18 22h28" stroke="#fff" stroke-width="3"/><circle cx="32" cy="21" r="2" fill="#fa5252"/>'},'#5c940d','#ff9bb0');}); // 棕髮護士帽風
-  // 小插圖（非人物）
-  function mini(body){return '<svg viewBox="0 0 64 48" xmlns="http://www.w3.org/2000/svg">'+body+hands()+'</svg>';}
-  P.push(function(){return mini('<path d="M10 40L16 12L28 26L36 8L44 26L54 12L56 40Z" fill="#ffd8a8" stroke="'+OUT+'" stroke-width="1.4"/><ellipse cx="32" cy="38" rx="22" ry="12" fill="#ffd8a8" stroke="'+OUT+'" stroke-width="1.4"/><circle cx="23" cy="34" r="2.4" fill="'+OUT+'"/><circle cx="41" cy="34" r="2.4" fill="'+OUT+'"/><path d="M29 38q3 3 6 0" stroke="'+OUT+'" stroke-width="1.4" fill="none"/><path d="M14 36h-8M14 39l-7 3M50 36h8M50 39l7 3" stroke="'+OUT+'" stroke-width="1"/>');}); // 貓咪
-  P.push(function(){return mini('<path d="M12 46V22Q12 6 32 6Q52 6 52 22V46L44 40L38 46L32 40L26 46L20 40Z" fill="#fff" stroke="'+OUT+'" stroke-width="1.4"/><circle cx="25" cy="24" r="3" fill="'+OUT+'"/><circle cx="39" cy="24" r="3" fill="'+OUT+'"/><circle cx="24" cy="23" r="1" fill="#fff"/><circle cx="38" cy="23" r="1" fill="#fff"/><ellipse cx="32" cy="32" rx="3" ry="2.4" fill="#ff8fa3"/><ellipse cx="18" cy="30" rx="3" ry="1.8" fill="#ffb3c8"/><ellipse cx="46" cy="30" rx="3" ry="1.8" fill="#ffb3c8"/>');}); // 小幽靈
-  P.push(function(){return mini('<path d="M8 44Q8 14 32 12Q56 14 56 44Z" fill="#ff6b6b" stroke="'+OUT+'" stroke-width="1.4"/><circle cx="20" cy="26" r="5" fill="#fff"/><circle cx="36" cy="20" r="4" fill="#fff"/><circle cx="47" cy="31" r="4.5" fill="#fff"/><rect x="22" y="38" width="20" height="10" rx="4" fill="#ffe3cc" stroke="'+OUT+'" stroke-width="1.4"/><circle cx="28" cy="43" r="1.6" fill="'+OUT+'"/><circle cx="36" cy="43" r="1.6" fill="'+OUT+'"/>');}); // 蘑菇精靈
-  P.push(function(){return mini('<path d="M32 4l6 14 15 1.5-11.5 10 3.5 15L32 36l-13 8.5 3.5-15L11 19.5 26 18Z" fill="#ffe066" stroke="'+OUT+'" stroke-width="1.4"/><circle cx="26" cy="26" r="2" fill="'+OUT+'"/><circle cx="38" cy="26" r="2" fill="'+OUT+'"/><path d="M29 31q3 3 6 0" stroke="'+OUT+'" stroke-width="1.4" fill="none"/><ellipse cx="22" cy="30" rx="2.6" ry="1.5" fill="#ff9bb0"/><ellipse cx="42" cy="30" rx="2.6" ry="1.5" fill="#ff9bb0"/>');}); // 星星寶寶
-  P.push(function(){return mini('<path d="M32 44C8 30 10 8 24 8C28 8 31 11 32 14C33 11 36 8 40 8C54 8 56 30 32 44Z" fill="#ff7eb6" stroke="'+OUT+'" stroke-width="1.4"/><circle cx="25" cy="22" r="2.2" fill="'+OUT+'"/><circle cx="39" cy="22" r="2.2" fill="'+OUT+'"/><path d="M29 28q3 3 6 0" stroke="'+OUT+'" stroke-width="1.4" fill="none"/><path d="M18 14q3-3 6-2" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>');}); // 愛心
-  P.push(function(){return mini('<ellipse cx="32" cy="30" rx="22" ry="17" fill="#e3f2ff" stroke="'+OUT+'" stroke-width="1.4"/><path d="M12 24Q8 8 20 12M52 24Q56 8 44 12" fill="#e3f2ff" stroke="'+OUT+'" stroke-width="1.4"/><circle cx="24" cy="28" r="2.4" fill="'+OUT+'"/><circle cx="40" cy="28" r="2.4" fill="'+OUT+'"/><path d="M28 34q4 4 8 0" stroke="'+OUT+'" stroke-width="1.4" fill="none"/><path d="M32 20v-6M29 17h6" stroke="#ff7eb6" stroke-width="2.2"/>');}); // 醫護小雲朵（紅十字風）
-  P.push(function(){return mini('<ellipse cx="32" cy="32" rx="20" ry="17" fill="#fff" stroke="'+OUT+'" stroke-width="1.4"/><path d="M14 34Q32 52 50 34L50 44L14 44Z" fill="#2b3a42" stroke="'+OUT+'" stroke-width="1.2"/><circle cx="25" cy="26" r="2.4" fill="'+OUT+'"/><circle cx="39" cy="26" r="2.4" fill="'+OUT+'"/><path d="M29 31q3 3 6 0" stroke="'+OUT+'" stroke-width="1.4" fill="none"/><ellipse cx="20" cy="30" rx="2.6" ry="1.5" fill="#ff9bb0"/><ellipse cx="44" cy="30" rx="2.6" ry="1.5" fill="#ff9bb0"/>');}); // 飯糰
-  P.push(function(){return mini('<circle cx="32" cy="30" r="17" fill="#fff6c9" stroke="'+OUT+'" stroke-width="1.4"/><path d="M32 6v7M10 18l6 4M54 18l-6 4M6 34h8M50 34h8" stroke="#ffb703" stroke-width="3" stroke-linecap="round"/><circle cx="26" cy="29" r="2.3" fill="'+OUT+'"/><circle cx="38" cy="29" r="2.3" fill="'+OUT+'"/><path d="M28 35q4 4 8 0" stroke="'+OUT+'" stroke-width="1.4" fill="none"/><ellipse cx="21" cy="34" rx="2.6" ry="1.5" fill="#ff9bb0"/><ellipse cx="43" cy="34" rx="2.6" ry="1.5" fill="#ff9bb0"/>');}); // 太陽
-  var used=0, order=[];
-  (function shuffle(){for(var i=0;i<P.length;i++)order.push(i);for(i=order.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=order[i];order[i]=order[j];order[j]=t;}})();
-  var POS=['right:6%','left:5%','right:30%','left:38%','right:14%','left:18%','right:48%','left:62%'];
-  var SPK=['✦','✧','★','♡','✿'];
-  function make(){
-    var k=used++;
-    var fn=P[order[k%P.length]];
-    var d=document.createElement('div'); d.className='ani-peek'; d.setAttribute('aria-hidden','true');
-    var pos=POS[k%POS.length];
-    var sv=fn().replace('<svg ','<svg style="'+pos+';animation-delay:'+((k%5)*0.4)+'s" ');
-    var sp=SPK[k%SPK.length];
-    var side=pos.indexOf('left')===0?'left:calc('+pos.split(':')[1]+' + 72px)':'right:calc('+pos.split(':')[1]+' + 72px)';
-    d.innerHTML=sv+'<span class="spk" style="'+side+';top:8px">'+sp+'</span><span class="spk" style="'+side+';top:22px;margin-left:12px;margin-right:12px;animation-delay:.8s;font-size:10px">'+SPK[(k+2)%SPK.length]+'</span>';
-    return d;
-  }
-  var TB='main #view .table-responsive, main #view textarea.form-control, main #view #aq, main #view #cq, main #view #jq, main #view #tq, main #view #rq';
-  function decorate(){
-    var v=document.getElementById('view'); if(!v) return;
-    var els=v.querySelectorAll('.table-responsive, textarea.form-control, #aq, #cq, #jq, #tq, #rq');
-    for(var i=0;i<els.length;i++){
-      var e=els[i];
-      if(e.getAttribute('data-ani')) continue;
-      e.setAttribute('data-ani','1');
-      // 若 textarea 在隱藏容器內，仍可安全插入（隨容器顯示）
-      if(e.parentNode) e.parentNode.insertBefore(make(),e);
+const main=document.querySelector('main'),view=document.getElementById('view');if(!main||!view)return;
+const ST='<path d="M32 36l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" fill="#',E=(a,b)=>`<circle cx="${a}" cy="21" r="1.4" fill="#10142a" stroke="none"/><circle cx="${b}" cy="21" r="1.4" fill="#10142a" stroke="none"/>`;
+const P=o=>{const s=o.s,a=o.a;return `<svg viewBox="0 0 64 84" xmlns="http://www.w3.org/2000/svg"><g stroke="#10142a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">`+(o.c?`<path d="M19 30L6 80H58L45 30Z" fill="${o.c}"/>`:'')+`<rect x="22" y="56" width="8" height="24" rx="3" fill="${o.l||s}"/><rect x="34" y="56" width="8" height="24" rx="3" fill="${o.l||s}"/><rect x="9" y="31" width="9" height="24" rx="4" fill="${s}"/><rect x="46" y="31" width="9" height="24" rx="4" fill="${s}"/><circle cx="13.5" cy="57" r="4.5" fill="${a}"/><circle cx="50.5" cy="57" r="4.5" fill="${a}"/><rect x="18" y="29" width="28" height="30" rx="8" fill="${s}"/><rect x="18" y="51" width="28" height="5" fill="${a}"/><circle cx="32" cy="20" r="11" fill="${o.k||'#f1c9a0'}"/>${o.m||''}${o.e||''}${o.p||''}</g></svg>`};
+const G=b=>`<svg viewBox="0 0 64 84" xmlns="http://www.w3.org/2000/svg"><g stroke="#10142a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">${b}</g></svg>`;
+const L=[
+P({s:'#c8102e',a:'#f5b800',k:'#f5b800',m:'<path d="M21 19a11 11 0 0 1 22 0z" fill="#c8102e"/><path d="M24 17h16v10l-4 3h-8l-4-3z" fill="#f5b800"/><path d="M26 20h5v2h-5zM33 20h5v2h-5z" fill="#bff3ff" stroke="none"/>',e:'<circle cx="32" cy="41" r="5" fill="#bff3ff"/>',p:'<circle cx="50.5" cy="57" r="3" fill="#bff3ff" stroke="none"/>'}),
+P({s:'#1d3f9e',a:'#e62429',m:'<path d="M21 21a11 11 0 0 1 22 0z" fill="#1d3f9e"/>'+E(28,36),e:ST+'fff"/>',p:'<path d="M1 40l9-4 9 4v14l-9 6-9-6z" fill="#e8ecf5"/><path d="M4 43l6-3 6 3v9l-6 4-6-4z" fill="#e62429"/>'}),
+P({s:'#2b3a67',a:'#9aa5c8',c:'#c8102e',m:'<path d="M20 21a12 12 0 0 1 24 0v6l-3-5H23l-3 5z" fill="#f4d36b"/>'+E(28,36),e:'<path d="M34 34l-6 9h4l-2 8 7-10h-4z" fill="#ffd84d"/>',p:'<rect x="55" y="44" width="3" height="26" fill="#8a5a2b"/><rect x="49" y="35" width="14" height="10" rx="2" fill="#c0c8d8"/>'}),
+P({s:'#5b2a86',a:'#d9b8ff',m:'<path d="M19 25a13 14 0 0 1 26 0l-3 4v-8a10 8 0 0 0-20 0v8z" fill="#5b2a86"/>'+E(28,36),e:'<path d="M32 36l4 5-4 5-4-5z" fill="#d9b8ff"/>',p:'<path d="M54 32Q65 56 54 80M54 32V80" fill="none" stroke="#8a5a2b" stroke-width="2.5"/>'}),
+P({s:'#1b1b2f',a:'#c8102e',m:'<path d="M20 20a12 12 0 0 1 24 0v10c-3-3-3-8-6-9-5 2-9 2-12 0-3 1-3 6-6 9z" fill="#d1401f"/>'+E(28,36),e:'<path d="M28 36h8l-4 6 4 6h-8l4-6z" fill="#c8102e"/>',p:'<rect x="1" y="55" width="15" height="4" rx="2" fill="#7a86a8"/><rect x="48" y="55" width="15" height="4" rx="2" fill="#7a86a8"/>'}),
+P({s:'#8c2f1b',a:'#f5b800',c:'#1d3f9e',m:'<path d="M21 21a11 10 0 0 1 22 0c-2-5-16-5-18 0z" fill="#4a3a38"/>'+E(28,36),e:'<circle cx="32" cy="41" r="5" fill="#f5b800"/><circle cx="32" cy="41" r="2" fill="#fff"/>',p:'<circle cx="9" cy="44" r="8" fill="none" stroke="#ff9a1f" stroke-width="3"/><circle cx="9" cy="44" r="3.5" fill="none" stroke="#ffd84d" stroke-width="2"/>'}),
+P({s:'#14141c',a:'#b8c4ff',m:'<path d="M21 22v-8l5 4h12l5-4v8a11 11 0 0 1-22 0z" fill="#14141c"/><path d="M26 20l4 2-4 2zM38 20l-4 2 4 2z" fill="#fff" stroke="none"/>',e:'<path d="M24 36l8 6 8-6" fill="none" stroke="#b8c4ff" stroke-width="2.5"/>'}),
+P({s:'#c8102e',l:'#1d3f9e',a:'#1d3f9e',m:'<circle cx="32" cy="20" r="11" fill="#c8102e"/><path d="M32 9v22M22 14l20 12M22 26l20-12" stroke-width="1" fill="none"/><path d="M24 17q3-3 7 0-1 4-7 0zM40 17q-3-3-7 0 1 4 7 0z" fill="#fff"/>',e:'<path d="M32 36v10M26 39l12 4M26 44l12-4"/>',p:'<path d="M50 56Q60 40 62 22" fill="none" stroke="#9aa5c8" stroke-width="1.5"/>'}),
+P({s:'#7a1f1f',a:'#c0c8d8',m:'<path d="M21 20a11 11 0 0 1 22 0v5H21z" fill="#c0c8d8"/><path d="M26 10l-3-7M38 10l3-7"/><circle cx="23" cy="3" r="2" fill="#c8102e"/><circle cx="41" cy="3" r="2" fill="#c8102e"/><path d="M25 19h14v4H25z" fill="#10142a"/>',e:'<circle cx="32" cy="41" r="4" fill="#c0c8d8"/>',p:'<circle cx="57" cy="44" r="2.5" fill="#ffd84d"/>'}),
+P({s:'#8b2a2a',a:'#f5b800',m:'<path d="M21 20a11 11 0 0 1 22 0v6a11 9 0 0 1-22 0z" fill="#8b2a2a"/><path d="M24 19h16v5H24z" fill="#7ff0ff"/>',e:ST+'ffd84d"/>',p:'<path d="M50 54h13v5H50z" fill="#c0c8d8"/>'}),
+G('<path d="M18 74V46l-6-14 6-4 6 12V20a4 4 0 0 1 8 0v14V16a4 4 0 0 1 8 0v18V20a4 4 0 0 1 8 0v26l-4 28z" fill="#f5b800"/><rect x="16" y="64" width="32" height="12" rx="3" fill="#c8102e"/><circle cx="26" cy="46" r="3" fill="#8e44ff"/><circle cx="34" cy="46" r="3" fill="#2f80ff"/><circle cx="42" cy="46" r="3" fill="#ff3b3b"/><circle cx="26" cy="55" r="3" fill="#ffd84d"/><circle cx="34" cy="55" r="3" fill="#2ecc71"/><circle cx="42" cy="55" r="3" fill="#ff9a1f"/>'),
+G('<path d="M32 4l7 16 17-8-8 17 18 6-18 7 8 17-17-8-7 16-7-16-17 8 8-17-18-7 18-6-8-17 17 8z" fill="#ffd84d"/><text x="32" y="48" text-anchor="middle" font-size="15" font-family="Impact,sans-serif" fill="#c8102e" stroke="none">ZAP!</text>'),
+G('<path d="M32 3v8M24 6l4 6M40 6l-4 6"/><rect x="14" y="13" width="36" height="26" rx="7" fill="#9aa5c8"/><rect x="19" y="21" width="26" height="8" rx="4" fill="#10142a"/><circle cx="26" cy="25" r="2.5" fill="#ff3b3b" stroke="none"/><circle cx="38" cy="25" r="2.5" fill="#ff3b3b" stroke="none"/><rect x="18" y="42" width="28" height="26" rx="6" fill="#7a86a8"/><circle cx="32" cy="55" r="5" fill="#7ff0ff"/><rect x="7" y="44" width="9" height="20" rx="4" fill="#9aa5c8"/><rect x="48" y="44" width="9" height="20" rx="4" fill="#9aa5c8"/><rect x="21" y="70" width="8" height="10" fill="#9aa5c8"/><rect x="35" y="70" width="8" height="10" fill="#9aa5c8"/>'),
+G('<path d="M32 6l10 22-10 48-10-48z" fill="#2f80ff"/><path d="M14 30l8-6 6 20-10 28z" fill="#8e44ff"/><path d="M50 30l-8-6-6 20 10 28z" fill="#2ecc71"/><path d="M32 6l-4 22h8z" fill="#bff3ff" stroke="none"/>')
+];
+const fx=document.createElement('div');fx.id='mcu-fx';main.appendChild(fx);
+const hash=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h};
+function layout(){
+  fx.textContent='';if(innerWidth<768)return;
+  const mr=main.getBoundingClientRect(),vr=view.getBoundingClientRect(),H=94,x=vr.right-mr.left+14,off=hash(location.hash||'#')%L.length;
+  const seen=new Set();let n=0,last=-99;
+  const ts=[...view.querySelectorAll('table,textarea,input.form-control')].filter(e=>e.tagName!=='INPUT'||(!e.closest('table')&&/^(text|search|email|url|)$/.test(e.type))).map(e=>e.tagName==='TABLE'?(e.closest('.table-responsive')||e):e);
+  for(const e of ts){
+    if(seen.has(e))continue;seen.add(e);
+    const r=e.getBoundingClientRect();if(r.width<120||r.height<20)continue;
+    const t=r.top-mr.top,ys=[t];if(r.height>380)ys.push(r.bottom-mr.top-H-8);if(r.height>900)ys.splice(1,0,t+r.height/2-H/2);
+    for(const y of ys){
+      if(n>=L.length||y<last+8||y+H>mr.height-6)continue;
+      const i=document.createElement('i');i.style.cssText=`left:${x}px;top:${y}px;animation-delay:${-n*.7}s`;i.innerHTML=L[(off+n)%L.length];fx.appendChild(i);n++;last=y+H;
     }
   }
-  function start(){
-    var v=document.getElementById('view'); if(!v) return;
-    var busy=false;
-    new MutationObserver(function(){ if(busy) return; busy=true; setTimeout(function(){busy=false;decorate();},0); }).observe(v,{childList:true,subtree:true});
-    decorate();
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
+}
+let tm;const sch=()=>{clearTimeout(tm);tm=setTimeout(layout,150)};
+new MutationObserver(sch).observe(view,{childList:true,subtree:true,attributes:true,attributeFilter:['open','style','class','hidden']});
+if(window.ResizeObserver)new ResizeObserver(sch).observe(view);
+addEventListener('resize',sch);addEventListener('load',sch);addEventListener('hashchange',sch);sch();
 })();
 </script>
 </body> 
