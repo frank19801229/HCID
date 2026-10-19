@@ -186,7 +186,7 @@ aside .nav-link.active{color:#b84c78}
 .table-responsive>.table>thead>tr>th{position:sticky;top:0;z-index:2}
 /* main 內容切換時以 slide-down 顯示 */
 @keyframes slideDownIn{from{opacity:0;transform:translateY(-45px)}to{opacity:1;transform:translateY(0)}}
-#view.slide-down{animation:slideDownIn .6s ease-out both}
+#view.slide-down,main .eyebrow.slide-down{animation:slideDownIn .6s ease-out both}
 </style>
 </head>
 <body class="d-flex flex-column flex-md-row min-vh-100">
@@ -1773,7 +1773,7 @@ function route(keepFocus){
   const focusId = document.activeElement?.id, pos = document.activeElement?.selectionStart;
   tblReset(k);
   $("#view").html(v());
-  { const hk = k+"/"+(arg||""); if(!keepFocus){ const ve = document.getElementById("view"); ve.classList.remove("slide-down"); void ve.offsetWidth; ve.classList.add("slide-down"); } route._h = hk; }   // 換頁時 slide-down 顯示
+  { const hk = k+"/"+(arg||""); if(!keepFocus){ document.querySelectorAll("#view, main .eyebrow").forEach(ve=>{ ve.classList.remove("slide-down"); void ve.offsetWidth; ve.classList.add("slide-down"); }); } route._h = hk; }   // 換頁時 slide-down 顯示
   const active = k === "course" ? "courses" : k;
   $("aside a").each(function(){ $(this).toggleClass("active", $(this).attr("href") === "#"+active); });
   if(keepFocus && focusId){ const $el=$("#"+$.escapeSelector(focusId)); if($el.length){ $el.trigger("focus"); try{$el[0].setSelectionRange(pos,pos)}catch(e){} } }
