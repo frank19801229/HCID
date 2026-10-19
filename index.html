@@ -1286,7 +1286,7 @@ function rosterList(){
 function memberForm(){
   const e = tabState.em ? (DB.Members.find(m=>eq(m.email,tabState.em)) || {}) : {};
   const editing = !!e.email, noMail = editing && isNoEmail(e.email);
-  return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${editing?"編輯學員":"新增學員"}</b>${editing?`<button class="btn btn-outline-primary btn-sm" onclick="cancelEditMember()">放棄修改</button>`:""}</div>
+  return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${editing?"編輯學員":"新增學員"}</b></div>
   <div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
     ${field("m_dept","部科","text","例：護理部",e.dept)}
     ${field("m_unit","工作單位(部門)","text","例：急診",e.unit)}
@@ -1301,7 +1301,7 @@ function memberForm(){
     : editing ? "Email 是登入帳號與資料關聯的依據，已填寫後無法修改。"
     : "Email 可先留空：留空時系統以「身分證字號＋姓名」建立內部代號，之後再編輯補上 Email。"}</div>
   <button class="btn btn-primary" onclick="saveMember()">${editing?"儲存變更":"新增學員"}</button>
-  ${editing?` <button class="btn btn-outline-danger" onclick="deleteMember('${esc(e.email)}')">刪除學員</button>`:""}</div>`;
+  ${editing?` <button class="btn btn-outline-danger" onclick="deleteMember('${esc(e.email)}')">刪除學員</button> <button class="btn btn-outline-primary btn-sm" onclick="cancelEditMember()">放棄修改</button>`:""}</div>`;
 }
 
 function importForm(){
