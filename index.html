@@ -178,6 +178,12 @@ aside .nav-link.active{color:#b84c78}
 .lo-tw>.lo-deco.c{bottom:-1px;right:12px}
 .lo-tw>.lo-deco.d{bottom:-1px;left:12px}
 @media(max-width:575px){.lo-tw>.lo-deco,.lo-tpos .lo-deco{transform:scale(.8)}}
+/* 所有表格：加上上下捲動軸，表頭固定 */
+.table-responsive{max-height:70vh;overflow-y:auto;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#818cf8 transparent}
+.table-responsive::-webkit-scrollbar{width:10px;height:10px}
+.table-responsive::-webkit-scrollbar-thumb{background:#818cf8;border-radius:8px}
+.table-responsive::-webkit-scrollbar-track{background:transparent}
+.table-responsive>.table>thead>tr>th{position:sticky;top:0;z-index:2}
 </style>
 </head>
 <body class="d-flex flex-column flex-md-row min-vh-100">
