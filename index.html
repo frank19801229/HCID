@@ -1301,7 +1301,7 @@ function memberForm(){
     : editing ? "Email 是登入帳號與資料關聯的依據，已填寫後無法修改。"
     : "Email 可先留空：留空時系統以「身分證字號＋姓名」建立內部代號，之後再編輯補上 Email。"}</div>
   <button class="btn btn-primary" onclick="saveMember()">${editing?"儲存變更":"新增學員"}</button>
-  ${editing?` <button class="btn btn-outline-danger" onclick="deleteMember('${esc(e.email)}')">刪除學員</button> <button class="btn btn-outline-primary btn-sm" onclick="cancelEditMember()">放棄修改</button>`:""}</div>`;
+  ${editing?` <button class="btn btn-outline-danger" onclick="deleteMember('${esc(e.email)}')">刪除學員</button> <button class="btn btn-outline-primary" onclick="cancelEditMember()">放棄修改</button>`:""}</div>`;
 }
 
 function importForm(){
