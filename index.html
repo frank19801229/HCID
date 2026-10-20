@@ -37,7 +37,7 @@ h2.sec{font-size:21px;margin:22px 0 10px;display:flex;align-items:center;gap:8px
 .card{--bs-card-border-color:var(--line);--bs-card-border-radius:12px;--bs-card-spacer-y:16px;--bs-card-spacer-x:16px;--bs-card-bg:#fff}
 .card.card-body{display:block}
 .kpi .n{font-size:31px;font-weight:700;color:var(--brand2)}
-.kpi .l{color:var(--mute);font-size:14px}
+.kpi .l{color:var(--ink);font-size:16px}
 /* 進度條 */
 .progress,.progress-stacked{--bs-progress-bg:#e3edf1;--bs-progress-bar-bg:var(--brand);--bs-progress-border-radius:99px}
 .progress-stacked{--bs-progress-bg:#d9dcdd;--bs-progress-border-radius:4px}
@@ -187,8 +187,8 @@ aside .nav-link.active{color:#b84c78}
 /* main 內容切換時以 slide-down 顯示 */
 @keyframes slideDownIn{from{opacity:0;transform:translateY(-45px)}to{opacity:1;transform:translateY(0)}}
 #view.slide-down,main>.d-flex.mb-1.slide-down,main>.form-text.slide-down{animation:slideDownIn .6s ease-out both}
-/* KPI 卡片內部上下留白各縮小 5px */
-.card.card-body.kpi{padding-top:calc(var(--bs-card-spacer-y) - 5px);padding-bottom:calc(var(--bs-card-spacer-y) - 5px)}
+/* KPI 卡片內部上下留白各縮小 7px */
+.card.card-body.kpi{padding-top:calc(var(--bs-card-spacer-y) - 7px);padding-bottom:calc(var(--bs-card-spacer-y) - 7px)}
 </style>
 </head>
 <body class="d-flex flex-column flex-md-row min-vh-100">
