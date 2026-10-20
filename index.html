@@ -187,8 +187,8 @@ aside .nav-link.active{color:#b84c78}
 /* main 內容切換時以 slide-down 顯示 */
 @keyframes slideDownIn{from{opacity:0;transform:translateY(-45px)}to{opacity:1;transform:translateY(0)}}
 #view.slide-down,main>.d-flex.mb-1.slide-down,main>.form-text.slide-down{animation:slideDownIn .6s ease-out both}
-/* KPI 欄位（.col）上下間距縮小 5px */
-.row.row-cols-2.row-cols-lg-4>.col{margin-top:calc(var(--bs-gutter-y) - 5px)}
+/* KPI 卡片內部上下留白各縮小 5px */
+.card.card-body.kpi{padding-top:calc(var(--bs-card-spacer-y) - 5px);padding-bottom:calc(var(--bs-card-spacer-y) - 5px)}
 </style>
 </head>
 <body class="d-flex flex-column flex-md-row min-vh-100">
