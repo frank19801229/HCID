@@ -186,7 +186,7 @@ aside .nav-link.active{color:#b84c78}
 .table-responsive>.table>thead>tr>th{position:sticky;top:0;z-index:2}
 /* main 內容切換時以 slide-down 顯示 */
 @keyframes slideDownIn{from{opacity:0;transform:translateY(-45px)}to{opacity:1;transform:translateY(0)}}
-#view.slide-down,main>.d-flex.mb-1.slide-down,main>.form-text.slide-down{animation:slideDownIn .6s ease-out both}
+#view.slide-down,main>.site-logo.slide-down,main>.d-flex.mb-1.slide-down,main>.form-text.slide-down{animation:slideDownIn .6s ease-out both}
 /* KPI 卡片內部上下留白各縮小 7px */
 .card.card-body.kpi{padding-top:calc(var(--bs-card-spacer-y) - 7px);padding-bottom:calc(var(--bs-card-spacer-y) - 7px)}
 </style>
@@ -1775,7 +1775,7 @@ function route(keepFocus){
   const focusId = document.activeElement?.id, pos = document.activeElement?.selectionStart;
   tblReset(k);
   $("#view").html(v());
-  { const hk = k+"/"+(arg||""); if(!keepFocus){ document.querySelectorAll("#view, main>.d-flex.mb-1, main>.form-text").forEach(ve=>{ ve.classList.remove("slide-down"); void ve.offsetWidth; ve.classList.add("slide-down"); }); } route._h = hk; }   // 換頁時 slide-down 顯示
+  { const hk = k+"/"+(arg||""); if(!keepFocus){ document.querySelectorAll("#view, main>.site-logo, main>.d-flex.mb-1, main>.form-text").forEach(ve=>{ ve.classList.remove("slide-down"); void ve.offsetWidth; ve.classList.add("slide-down"); }); } route._h = hk; }   // 換頁時 slide-down 顯示
   const active = k === "course" ? "courses" : k;
   $("aside a").each(function(){ $(this).toggleClass("active", $(this).attr("href") === "#"+active); });
   if(keepFocus && focusId){ const $el=$("#"+$.escapeSelector(focusId)); if($el.length){ $el.trigger("focus"); try{$el[0].setSelectionRange(pos,pos)}catch(e){} } }
