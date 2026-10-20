@@ -10,7 +10,7 @@
 :root{--bg:#e9f0ec;--card:#fff;--ink:#0a1a22;--mute:#3a4b55;--line:#dde6ec;--brand:#0f6e7a;--brand2:#0b4f58;--warn:#c2410c;--ok:#14532d;--red:#7f1d1d;--yellow:#713f12;--g:#6aa621;--o:#e8900c;
   --bs-primary:#0f6e7a;--bs-primary-rgb:15,110,122;--bs-body-bg:#e9f0ec;--bs-body-bg-rgb:233,240,236;--bs-body-color:#0a1a22;--bs-body-color-rgb:10,26,34;
   --bs-secondary-rgb:58,75,85;--bs-secondary-color:#3a4b55;--bs-border-color:#dde6ec;--bs-link-color-rgb:11,79,88;--bs-link-hover-color-rgb:6,50,58;
-  --bs-body-font-size:17px;--bs-body-font-weight:700;--bs-body-font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+  --bs-body-font-size:17px;--bs-body-font-weight:700;--bs-body-font-family:"華康海報體W12(P)","華康海報體W12","華康海報體","DFPHaiBaoW12-B5","DFHaiBaoW12-B5","DFPHaiBao-W12","DFPHaiBaoW12","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
 main{min-width:0}
 main a:not(.btn){color:var(--brand2)}
 main a:not(.btn):hover{color:#06323a;background:#cfeef4}
@@ -189,6 +189,48 @@ aside .nav-link.active{color:#b84c78}
 #view.slide-down,main>.site-logo.slide-down,main>.d-flex.mb-1.slide-down,main>.form-text.slide-down{animation:slideDownIn .6s ease-out both}
 /* KPI 卡片內部上下留白各縮小 7px */
 .card.card-body.kpi{padding-top:calc(var(--bs-card-spacer-y) - 7px);padding-bottom:calc(var(--bs-card-spacer-y) - 7px)}
+/* SweetAlert2 蘿莉風：粉嫩配色＋彈跳動畫（覆蓋上方原本的森林風） */
+.swal2-container.swal2-backdrop-show,.swal2-container.swal2-noanimation{background:rgba(255,170,205,.34)!important;backdrop-filter:blur(2px)}
+.swal2-popup:not(.swal2-toast){
+  position:relative;color:#7a4a5e;border:3px dotted #f2a9c6;border-radius:30px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 80' preserveAspectRatio='none'%3E%3Cpath d='M0 40Q60 6 130 34T260 30T400 20V80H0Z' fill='%23ffd9e8'/%3E%3Cpath d='M0 58Q90 30 180 54T400 44V80H0Z' fill='%23ffc0da'/%3E%3Cpath d='M0 70Q110 52 220 68T400 62V80H0Z' fill='%23ffa6c9'/%3E%3C/svg%3E") bottom/100% 78px no-repeat,
+    radial-gradient(circle at 12% 18%,rgba(255,255,255,.95) 0 3px,transparent 4px),
+    radial-gradient(circle at 88% 12%,rgba(255,255,255,.95) 0 4px,transparent 5px),
+    radial-gradient(circle at 76% 40%,rgba(255,255,255,.8) 0 2.5px,transparent 3.5px),
+    linear-gradient(#ffe3f0 0,#fff0f7 30%,#fffafc 65%);
+  box-shadow:0 16px 38px rgba(214,87,138,.32),inset 0 0 0 4px #fff7fb,inset 0 0 0 5px #ffd0e3}
+.swal2-popup:not(.swal2-toast)::before,.swal2-popup:not(.swal2-toast)::after{position:absolute;pointer-events:none;line-height:1;animation:loliTwinkle 2.2s ease-in-out infinite}
+.swal2-popup:not(.swal2-toast)::before{content:"✿";top:12px;left:18px;font-size:22px;color:#ff8fb7}
+.swal2-popup:not(.swal2-toast)::after{content:"♡";top:10px;right:20px;font-size:24px;color:#ff6f9f;animation-delay:1.1s}
+@keyframes loliTwinkle{0%,100%{transform:scale(1) rotate(0);opacity:.95}50%{transform:scale(1.3) rotate(18deg);opacity:.55}}
+.swal2-popup:not(.swal2-toast) .swal2-title{color:#d6578a;text-shadow:0 2px 0 #fff,0 0 8px rgba(255,255,255,.9)}
+.swal2-popup:not(.swal2-toast) .swal2-html-container{color:#8a5a6e}
+.swal2-popup:not(.swal2-toast) .swal2-image{filter:drop-shadow(0 4px 3px rgba(214,87,138,.25))}
+.swal2-popup:not(.swal2-toast) .swal2-input,.swal2-popup:not(.swal2-toast) .swal2-textarea{background:#fffafc;color:#7a4a5e;border:2px solid #f7c6d9;border-radius:18px;box-shadow:none}
+.swal2-popup:not(.swal2-toast) .swal2-input:focus,.swal2-popup:not(.swal2-toast) .swal2-textarea:focus{border-color:#ff8fb7;box-shadow:0 0 0 4px rgba(255,143,183,.3)}
+.swal2-popup:not(.swal2-toast) .swal2-input::placeholder{color:#c79bb0}
+.swal2-popup:not(.swal2-toast) .swal2-validation-message{background:#ffe3ec;color:#b0305a;border-radius:14px;margin:.6em 1em 0}
+.swal2-popup:not(.swal2-toast) .swal2-validation-message::before{background:#e5365f}
+.swal2-popup:not(.swal2-toast) .swal2-styled{transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s}
+.swal2-popup:not(.swal2-toast) .swal2-styled:hover{transform:translateY(-3px) scale(1.06)}
+.swal2-popup:not(.swal2-toast) .swal2-styled:active{transform:translateY(1px) scale(.97)}
+.swal2-popup:not(.swal2-toast) .swal2-styled:focus{box-shadow:0 0 0 4px rgba(255,143,183,.4)}
+.swal2-styled.swal2-confirm{background:linear-gradient(#ff9cc2,#ff6f9f)!important;color:#fff!important;box-shadow:0 3px 0 #d6578a}
+.swal2-styled.swal2-confirm.swal-danger{background:linear-gradient(#ff8a9d,#e5365f)!important;box-shadow:0 3px 0 #b02a47}
+.swal2-popup:not(.swal2-toast) .swal2-styled.swal2-cancel{background:#ffe3ee!important;color:#b0557a!important;box-shadow:0 3px 0 #f2b8cf}
+.swal2-timer-progress-bar{background:rgba(255,111,159,.65)!important}
+.swal2-popup.swal2-toast{background:#fff0f6;color:#8a3a5c;border:2px dotted #f2a9c6;border-radius:20px;box-shadow:0 8px 20px rgba(214,87,138,.28)}
+.swal2-popup.swal2-toast .swal2-title{color:#b0305a}
+/* 動畫：彈出（帶旋轉的彈跳）與收起 */
+.swal2-popup.swal2-show:not(.swal2-toast){animation:loliPop .6s cubic-bezier(.34,1.56,.64,1)!important}
+.swal2-popup.swal2-hide:not(.swal2-toast){animation:loliOut .25s ease-in forwards!important}
+@keyframes loliPop{0%{transform:scale(.4) rotate(-6deg) translateY(30px);opacity:0}60%{transform:scale(1.06) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0) translateY(0);opacity:1}}
+@keyframes loliOut{0%{transform:scale(1);opacity:1}100%{transform:scale(.6) rotate(4deg) translateY(20px);opacity:0}}
+.swal2-popup.swal2-toast.swal2-show{animation:loliToastIn .55s cubic-bezier(.34,1.56,.64,1)!important}
+.swal2-popup.swal2-toast.swal2-hide{animation:loliToastOut .25s ease-in forwards!important}
+@keyframes loliToastIn{0%{transform:translateX(60%) scale(.7);opacity:0}100%{transform:translateX(0) scale(1);opacity:1}}
+@keyframes loliToastOut{0%{transform:scale(1);opacity:1}100%{transform:translateX(40%) scale(.7);opacity:0}}
 </style>
 </head>
 <body class="d-flex flex-column flex-md-row min-vh-100">
