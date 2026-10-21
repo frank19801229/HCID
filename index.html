@@ -1045,7 +1045,7 @@ const VIEWS = {
     let viewer;
     if(!sel) viewer = `<div class="text-center text-secondary p-4">目前沒有 PDF，${admin?"請由下方上傳":"請稍後再查看"}</div>`;
     else if(newsSrc(sel)){
-      viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text">${esc(sel.date)}</span></div>
+      viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text">${esc(sel.date)}　<a href="${esc(safeUrl(sel.url)||newsSrc(sel))}" target="_blank" rel="noopener noreferrer">新分頁開啟</a>（若下方無法顯示，請用此連結）</span></div>
         <iframe class="w-100 border rounded bg-white" style="height:68vh" src="${esc(newsSrc(sel))}" allow="fullscreen" allowfullscreen loading="lazy"></iframe>`;
     } else viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text">${esc(sel.date)}</span></div><p>${esc(sel.body)||"此項目沒有 PDF 檔案"}</p>`;
     const list = table([
