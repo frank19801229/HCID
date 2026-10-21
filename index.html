@@ -56,6 +56,11 @@ textarea.form-control{min-height:70px}
 .form-switch .form-check-input:checked{background-color:var(--g);border-color:var(--g)}
 .form-check-label{font-size:15px}
 .form-text{font-size:13px}
+.news-marq{font-size:15px;flex:1 1 260px;min-width:0;overflow:hidden;white-space:nowrap;color:#d9480f;font-weight:700}
+.news-marq-in{display:inline-block;padding-left:100%;animation:newsMarq 14s linear infinite}
+.news-marq:hover .news-marq-in{animation-play-state:paused}
+.news-marq a{color:#0b5ed7;font-weight:800;text-decoration:underline}
+@keyframes newsMarq{from{transform:translateX(0)}to{transform:translateX(-100%)}}
 .fieldset{border:1px dashed var(--line);border-radius:10px;padding:12px;margin:12px 0}
 .fieldset legend{float:none;width:auto;font-size:13px;color:var(--brand2);padding:0 6px;font-weight:700;margin-bottom:0}
 .opt{font-size:15px;color:var(--ink);cursor:pointer}
@@ -1045,7 +1050,7 @@ const VIEWS = {
     let viewer;
     if(!sel) viewer = `<div class="text-center text-secondary p-4">目前沒有 PDF，${admin?"請由下方上傳":"請稍後再查看"}</div>`;
     else if(newsSrc(sel)){
-      viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text" style="font-size:15px;color:#d63384;font-weight:600">${esc(sel.date)}　<a href="${esc(safeUrl(sel.url)||newsSrc(sel))}" target="_blank" rel="noopener noreferrer" style="color:#0d6efd;font-weight:700">新分頁開啟</a>（若下方無法顯示，請用此連結）</span></div>
+      viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text news-marq"><span class="news-marq-in">${esc(sel.date)}　<a href="${esc(safeUrl(sel.url)||newsSrc(sel))}" target="_blank" rel="noopener noreferrer">新分頁開啟</a>（若下方無法顯示，請用此連結）</span></span></div>
         <iframe class="w-100 border rounded bg-white" style="height:68vh" src="${esc(newsSrc(sel))}" allow="fullscreen" allowfullscreen loading="lazy"></iframe>`;
     } else viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text">${esc(sel.date)}</span></div><p>${esc(sel.body)||"此項目沒有 PDF 檔案"}</p>`;
     const list = table([
