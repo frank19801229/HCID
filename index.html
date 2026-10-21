@@ -56,6 +56,9 @@ textarea.form-control{min-height:70px}
 .form-switch .form-check-input:checked{background-color:var(--g);border-color:var(--g)}
 .form-check-label{font-size:15px}
 .form-text{font-size:13px}
+.sort-th{cursor:pointer;user-select:none;white-space:nowrap}
+.sort-th .sort-ar{font-size:11px;margin-left:4px;opacity:.45}
+.sort-th.on .sort-ar{opacity:1}
 .pdf-marquee{font-size:15px;flex:1 1 220px;min-width:0;overflow:hidden;white-space:nowrap}
 .pdf-marquee-in{display:inline-block;padding-left:100%;animation:pdfMarquee 15s linear infinite}
 .pdf-marquee:hover .pdf-marquee-in{animation-play-state:paused}
@@ -764,6 +767,7 @@ function newsSrc(n){
   const d = driveId(u); return d ? `https://drive.google.com/file/d/${d}/preview` : u;
 }
 window.selNews = id => { tabState.nsel = id; route(); };
+window.sortNews = k => { const s = tabState.nsort || {k:"date", d:-1}; tabState.nsort = s.k===k ? {k, d:-s.d} : {k, d:1}; route(); };
 window.addNewsPdf = act0(async type=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   if(!val("n_title")) throw new Error("請輸入標題");
@@ -1053,12 +1057,15 @@ const VIEWS = {
       viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text pdf-marquee"><span class="pdf-marquee-in">${esc(sel.date)}　<a href="${esc(safeUrl(sel.url)||newsSrc(sel))}" target="_blank" rel="noopener noreferrer">新分頁開啟</a>（若下方無法顯示，請用此連結）</span></span></div>
         <iframe class="w-100 border rounded bg-white" style="height:68vh" src="${esc(newsSrc(sel))}" allow="fullscreen" allowfullscreen loading="lazy"></iframe>`;
     } else viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text">${esc(sel.date)}</span></div><p>${esc(sel.body)||"此項目沒有 PDF 檔案"}</p>`;
+    const ns = tabState.nsort || {k:"date", d:-1};
+    const sortedRows = rows.slice().sort((a,b)=> ns.d * String(a[ns.k]||"").localeCompare(String(b[ns.k]||""), "zh-Hant", {numeric:true}));
+    const sh = (k,label) => `<span class="sort-th ${ns.k===k?"on":""}" onclick="sortNews('${k}')" title="點擊排序">${label}<span class="sort-ar">${ns.k===k?(ns.d>0?"▲":"▼"):"⇅"}</span></span>`;
     const list = table([
-      ["日期",r=>esc(r.date)],
-      ["標題",r=>`<b>${esc(r.title)}</b>`],
+      [sh("date","日期"),r=>esc(r.date)],
+      [sh("title","標題"),r=>`<b>${esc(r.title)}</b>`],
       ["",r=>`<button class="btn btn-sm ${r.id===tabState.nsel?"btn-primary":"btn-outline-primary"}" onclick="selNews('${esc(r.id)}')">檢視</button>`
         + (admin?` <button class="btn btn-outline-danger btn-sm" onclick="deleteNews('${esc(r.id)}')">刪除</button>`:"")]
-    ], rows, "目前沒有 PDF");
+    ], sortedRows, "目前沒有 PDF");
     return head("疫情與公告","點選下方檢視按鈕即可在上方檢視公告內容。") + tabs("nt",[["alert","傳染病訊息及公告"]],"alert") +
     `<div class="card card-body">${viewer}</div>
     <div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>公告列表（共 ${rows.length} 份）</b></div>${list}</div>` +
