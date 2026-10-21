@@ -56,6 +56,12 @@ textarea.form-control{min-height:70px}
 .form-switch .form-check-input:checked{background-color:var(--g);border-color:var(--g)}
 .form-check-label{font-size:15px}
 .form-text{font-size:13px}
+.qrow .ck-editor__editable.ck-editor__editable_inline,#sq_text_wrap .ck-editor__editable.ck-editor__editable_inline{min-height:70px}
+.ck-editor__editable{min-height:180px}
+.ck-editor__editable_inline{color:#212529}
+.rich-content table{border-collapse:collapse;margin:.5rem 0}
+.rich-content th,.rich-content td{border:1px solid #adb5bd;padding:4px 8px}
+.rich-content figure.table{margin:0}
 .sort-th{cursor:pointer;user-select:none;white-space:nowrap}
 .sort-th .sort-ar{font-size:11px;margin-left:4px;opacity:.45}
 .sort-th.on .sort-ar{opacity:1}
@@ -270,6 +276,8 @@ aside .nav-link.active{color:#b84c78}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/translations/zh.js"></script>
 <script>
 /* ============ 設定區：部署 GAS 後，把網址貼在這裡 ============ */ 
 const CONFIG = { 
@@ -811,7 +819,7 @@ function courseSurvey(c){
   if(done) return `<div class="card card-body">${title}<div class="form-text my-2">感謝您的回饋，此課程的問卷已送出。</div></div>`;
   if(!qs.length) return isAdmin() ? `<div class="card card-body">${title}<div class="text-center text-secondary p-4">目前沒有問卷題目，請至「同意書與問卷 → 問卷題目管理」新增或載入預設題目</div></div>` : "";
   return `<div class="card card-body">${title}` + qs.map(q=>`<div class="card card-body" style="margin-bottom:10px">
-    <b>${esc(q.text)}</b>${isReqQ(q)?` <span class="req">*</span>`:""}
+    <b>${richI(q.text)}</b>${isReqQ(q)?` <span class="req">*</span>`:""}
     ${q.type==="text"
       ? `<div style="height:8px"></div><input class="form-control" id="sa_${esc(q.id)}" placeholder="您的回答">`
       : qOptions(q).map(o=>`<label class="opt d-flex align-items-center gap-2 my-2"><input class="form-check-input" type="radio" name="sa_${esc(q.id)}" value="${esc(o)}"> ${esc(o)}</label>`).join("")}
@@ -850,13 +858,13 @@ function courseQuizLearner(c){
     return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課後測驗</b><span class="badge rounded-pill bg-success-subtle text-success-emphasis">最近成績：${esc(last.score)} / ${esc(last.total)}</span></div>
       <div class="form-text my-2">已作答 ${tries} 次，最近一次：${esc(fmtDT(last.time).slice(0,16))}</div>` +
       qs.map((q,i)=>{ const a = ans[i]; const ok = a && qzCorrect(q, a.a);
-        return `<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}）</span>
+        return `<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}）</span>
           <div class="opt d-flex align-items-center gap-2 my-2" style="cursor:default;color:${ok?"var(--ok)":"var(--red)"}">${ok?"✓":"✗"} 您的答案：${a?esc(qzAnsText(q,a.a)):"未作答"}</div>
           ${ok?"":`<div class="opt d-flex align-items-center gap-2 my-2" style="cursor:default">正確答案：${esc(qzRightText(q))}</div>`}</div>`; }).join("") +
       `<button class="btn btn-primary" onclick="retakeQuiz('${cid}')">重新作答</button></div>`;
   }
   return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課後測驗（共 ${qs.length} 題）</b>${last?`<span class="form-text">上次成績：${esc(last.score)} / ${esc(last.total)}</span>`:""}</div>` +
-    qs.map((q,i)=>`<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b> <span class="req">*</span> <span class="form-text">（${QZ_TYPES[q.t]}${q.t==="multi"?"，可複選":""}）</span>
+    qs.map((q,i)=>`<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${richI(q.q)}</b> <span class="req">*</span> <span class="form-text">（${QZ_TYPES[q.t]}${q.t==="multi"?"，可複選":""}）</span>
       ${qzOpts(q).map((o,k)=>`<label class="opt d-flex align-items-center gap-2 my-2"><input class="form-check-input" type="${q.t==="multi"?"checkbox":"radio"}" name="qz_${i}" value="${k}"> ${qzLetter(k)}. ${esc(o)}</label>`).join("")}</div>`).join("") +
     `<button class="btn btn-primary" onclick="addQuiz('${cid}')">提交測驗</button></div>`;
 }
@@ -865,7 +873,7 @@ function courseQuizAdmin(c){
   const head = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課後測驗（共 ${qs.length} 題）</b><button class="btn btn-outline-primary btn-sm" onclick="editCourse('${esc(c.id)}',true)">編輯測驗</button></div>`;
   if(!qs.length) return `<div class="card card-body">${head}<div class="text-center text-secondary p-4">此課程尚未設定測驗題目</div></div>`;
   return `<div class="card card-body">${head}` + qs.map((q,i)=>{ const right = k => q.t==="multi" ? q.a.includes(k) : q.a===k;
-    return `<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${esc(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}）</span>` +
+    return `<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}）</span>` +
     qzOpts(q).map((o,k)=>`<div class="opt d-flex align-items-center gap-2 my-2" style="cursor:default;${right(k)?"color:var(--ok);font-weight:700":""}">${right(k)?"✓":"○"} ${qzLetter(k)}. ${esc(o)}${right(k)?"（正解）":""}</div>`).join("") + `</div>`; }).join("") + `</div>`;
 }
 function sqAdminView(){
@@ -875,7 +883,7 @@ function sqAdminView(){
   const optText = e ? qOptions(e).join("\n") : SCALE5.join("\n");
   const list = table([
     ["#", r=>qs.indexOf(r)+1],
-    ["題目", r=>esc(r.text)],
+    ["題目", r=>richI(r.text)],
     ["題型", r=>r.type==="text" ? `<span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">簡答</span>` : `<span class="badge rounded-pill bg-info-subtle text-info-emphasis">單選：${esc(qOptions(r).join("／"))}</span>`],
     ["必填", r=>isReqQ(r) ? `<span class="badge rounded-pill bg-success-subtle text-success-emphasis">必填</span>` : `<span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">選填</span>`],
     ["", r=>{ const i = qs.indexOf(r);
@@ -885,7 +893,7 @@ function sqAdminView(){
       <button class="btn btn-outline-primary btn-sm" onclick="loadDefaultSQ()">載入預設題目（滿意度問卷）</button></div>
     ${list}
     <div class="fieldset" style="margin-top:16px"><legend>${e?"編輯題目":"新增題目"}</legend>
-      <div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">${field("sq_text","題目","text","例如：課程內容實用性",e?.text||"")}
+      <div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2"><div id="sq_text_wrap" style="width:100%"><label class="form-label">題目</label><textarea class="form-control" id="sq_text" rows="2" placeholder="例如：課程內容實用性">${esc(e?.text||"")}</textarea></div>
         <div><label class="form-label">題型</label><select class="form-select" id="sq_type" onchange="$('#sq_opts_wrap').toggle(this.value!=='text')">${opts([["choice","單選題"],["text","簡答題"]], e?.type||"choice")}</select></div></div>
       <div id="sq_opts_wrap" style="display:${isText?"none":""}"><label class="form-label">選項（每行一個，至少 2 個）</label><textarea class="form-control" id="sq_opts">${esc(optText)}</textarea></div>
       <label class="opt d-flex align-items-center gap-2 my-2"><input class="form-check-input" type="checkbox" id="sq_req" ${(!e||isReqQ(e))?"checked":""}> 必填</label>
@@ -994,7 +1002,7 @@ const VIEWS = {
     return head(esc(c.title), `${esc([c.pathogen,c.topic,reqLabel(c.required),c.hours+" 小時"].filter(Boolean).join(" · "))}`) + back + `
     <div class="card card-body">
       <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><div>${schedTag(c)} <span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span> <span class="form-text">${esc(schedText(c))}</span></div></div>
-      ${c.content?`<p>${esc(c.content)}</p>`:""}
+      ${c.content?richP(c.content):""}
       ${media}
     </div>
     <ul class="nav nav-pills gap-1 mb-3" id="ctabs" style="margin-top:12px">
@@ -1022,7 +1030,7 @@ const VIEWS = {
     <div class="card card-body"><input class="form-control" id="jq" value="${esc(tabState.jq||"")}">
     <div class="form-text my-2">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>
     ${rows.length? rows.map(c=>`<div class="card card-body" style="margin-top:10px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><div><b>${esc(c.title)}</b> ${c.topic?`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(c.topic)}</span> `:""}${c.pathogen?`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(c.pathogen)}</span> `:""}<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span></div>
-      ${canOpen(c)?`<a class="btn btn-primary btn-sm" href="#course/${esc(c.id)}">開啟教材</a>`:`<button class="btn btn-primary btn-sm" disabled>未開放</button>`}</div><p>${esc(c.content)}</p></div>`).join("") : `<div class="text-center text-secondary p-4">沒有符合的課程或教材</div>`}</div>`;
+      ${canOpen(c)?`<a class="btn btn-primary btn-sm" href="#course/${esc(c.id)}">開啟教材</a>`:`<button class="btn btn-primary btn-sm" disabled>未開放</button>`}</div>${richP(c.content)}</div>`).join("") : `<div class="text-center text-secondary p-4">沒有符合的課程或教材</div>`}</div>`;
   },
 
   tasks(){
@@ -1465,6 +1473,51 @@ const MEDIA_HINT = {
   ppt:"公開可存取的 .ppt / .pptx 網址（以 Office Online 檢視）或 Google Drive 分享連結。",
   iframe:"貼上網址或整段 <iframe …> 嵌入碼（YouTube、Google 簡報等）。"
 };
+/* ---------- CKEditor：課程「說明 / 文字教材」 ---------- */
+const RICH_OK = new Set("p br strong b em i u s ul ol li blockquote h1 h2 h3 h4 h5 h6 a table thead tbody tr th td figure span div hr code pre sub sup".split(" "));
+function richClean(html){
+  const doc = new DOMParser().parseFromString("<body>"+html+"</body>", "text/html");
+  (function walk(node){
+    [...node.childNodes].forEach(ch=>{
+      if(ch.nodeType===3) return;
+      if(ch.nodeType!==1){ ch.remove(); return; }
+      const tag = ch.tagName.toLowerCase();
+      if(["script","style","iframe","object","embed","link","meta","form","input","textarea","button","svg","math"].includes(tag)){ ch.remove(); return; }
+      walk(ch);
+      if(!RICH_OK.has(tag)){ ch.replaceWith(...ch.childNodes); return; }
+      [...ch.attributes].forEach(a=>{ if(!(tag==="a" && a.name==="href")) ch.removeAttribute(a.name); });
+      if(tag==="a"){ const h = ch.getAttribute("href")||""; if(/^(https?:|mailto:|#)/i.test(h.trim())){ ch.setAttribute("target","_blank"); ch.setAttribute("rel","noopener noreferrer"); } else ch.removeAttribute("href"); }
+    });
+  })(doc.body);
+  return doc.body.innerHTML;
+}
+const isRich = t => /<\/?[a-z][\s\S]*>/i.test(String(t||""));
+function richP(t){ return isRich(t) ? `<div class="rich-content mb-2">${richClean(String(t))}</div>` : `<p>${esc(t)}</p>`; }   // 舊的純文字說明照舊顯示
+const plainText = t => isRich(t) ? new DOMParser().parseFromString("<body>"+String(t)+"</body>","text/html").body.textContent.trim() : String(t||"");   // 富文字轉純文字（提示訊息、問卷回覆存檔用）
+const richI = t => isRich(t) ? richClean(String(t)).replace(/<\/p>\s*<p>/gi,"<br>").replace(/^\s*<p>|<\/p>\s*$/gi,"") : esc(t);   // 行內顯示：富文字（已淨化）或舊的純文字
+window.CK_LIST = [];
+function ckAttach(ta, compact){
+  if(!ta || !window.ClassicEditor) return Promise.resolve();   // CDN 載入失敗時維持原本的文字框
+  if(ta.value && !isRich(ta.value)) ta.value = "<p>" + esc(ta.value).replace(/\n/g,"<br>") + "</p>";   // 舊的純文字保留換行
+  const cfg = {toolbar: compact ? ["bold","italic","link","bulletedList","numberedList","|","undo","redo"]
+    : ["heading","|","bold","italic","link","bulletedList","numberedList","|","outdent","indent","|","blockQuote","insertTable","undo","redo"]};
+  if(window.CKEDITOR_TRANSLATIONS && window.CKEDITOR_TRANSLATIONS.zh) cfg.language = "zh";
+  return ClassicEditor.create(ta, cfg).then(ed=>{
+    if(!document.body.contains(ta)){ ed.destroy().catch(()=>{}); return; }
+    window.CK_LIST.push(ed);
+    const sync = () => { ta.value = ed.getData(); };
+    ed.model.document.on("change:data", sync); sync();
+    return ed;
+  }).catch(e=>console.error("CKEditor 載入失敗", e));
+}
+function initCKEditor(){
+  (window.CK_LIST||[]).forEach(ed=>{ try{ Promise.resolve(ed.destroy()).catch(()=>{}); }catch(e){} }); window.CK_LIST = [];
+  if(window.CK_ED){ try{ window.CK_ED.destroy(); }catch(e){} window.CK_ED = null; }
+  const ta = document.getElementById("c_content");
+  if(ta) ckAttach(ta, false).then(ed=>{ if(ed) window.CK_ED = ed; });
+  document.querySelectorAll("#quiz_list .qz_text").forEach(t=>ckAttach(t, true));   // 課後測驗題目
+  ckAttach(document.getElementById("sq_text"), true);                                 // 問卷題目
+}
 window.syncMedia = ()=>{
   const t = $("#c_type"); if(!t.length) return;
   const map = {mp4:"video/mp4", pdf:".pdf,application/pdf", ppt:".ppt,.pptx"}, tv = t.val();
@@ -1478,7 +1531,7 @@ window.editCourse = (id, toQuiz) => {
   if(location.hash === "#courses") route(); else location.hash = "courses";
   if(toQuiz) setTimeout(()=>$("#quiz_block")[0]?.scrollIntoView({behavior:"smooth",block:"start"}), 150);
 };
-window.addQuizRow = (t="tf") => { $("#quiz_list").append(quizRow({q:"",t,a:t==="multi"?[]:t==="single"?-1:0})); };
+window.addQuizRow = (t="tf") => { $("#quiz_list").append(quizRow({q:"",t,a:t==="multi"?[]:t==="single"?-1:0})); ckAttach($("#quiz_list .qz_text").last()[0], true); };
 window.addQzOpt = (btn, id, multi) => { $(btn).prev().append(qzOptRow(id, multi, "", false)); };
 window.qzType = sel => {
   const $r = $(sel).closest(".qrow"), t = sel.value, prev = $r.find(".qz_otext").map(function(){ return this.value; }).get();
@@ -1743,8 +1796,8 @@ window.addSurvey = act(async cid=>{
     let a = "";
     if(q.type==="text") a = ($("#"+$.escapeSelector("sa_"+q.id)).val() || "").trim();
     else a = $(`input[name="${$.escapeSelector("sa_"+q.id)}"]:checked`).val() || "";
-    if(isReqQ(q) && !a) throw new Error("請回答：" + q.text);
-    ans.push({q:q.text, a});
+    if(isReqQ(q) && !a) throw new Error("請回答：" + plainText(q.text));
+    ans.push({q:plainText(q.text), a});
   }
   tabState.cst = "survey";
   await addRow("Surveys",{email:user.email,course_id:c.id,course_title:c.title,survey:"課後滿意度",answer:JSON.stringify(ans),time:new Date().toISOString()});
@@ -1794,7 +1847,7 @@ window.editSQ = id => { tabState.sqEdit = id; route(); };
 window.cancelSQ = () => { tabState.sqEdit = null; route(); };
 window.deleteSQ = act0(async id=>{
   const q = DB.SurveyQuestions.find(x=>x.id===id); if(!q) return;
-  if(!await swalConfirm(`確定要刪除題目「${q.text}」嗎？\n\n已送出的回覆會保留，此動作無法復原。`)) return;
+  if(!await swalConfirm(`確定要刪除題目「${plainText(q.text)}」嗎？\n\n已送出的回覆會保留，此動作無法復原。`)) return;
   await deleteRow("SurveyQuestions","id",id);
   if(tabState.sqEdit === id) tabState.sqEdit = null;
   toast("已刪除題目");
@@ -1839,7 +1892,8 @@ function route(keepFocus){
   $("aside a").each(function(){ $(this).toggleClass("active", $(this).attr("href") === "#"+active); });
   if(keepFocus && focusId){ const $el=$("#"+$.escapeSelector(focusId)); if($el.length){ $el.trigger("focus"); try{$el[0].setSelectionRange(pos,pos)}catch(e){} } }
   if(k === "course") initCourse();
-  if(k === "courses") syncMedia();
+  if(k === "courses"){ syncMedia(); initCKEditor(); }
+  if(k === "forms") initCKEditor();
 }
 /* 搜尋框：只更新搜尋框以外的內容、保留輸入框本身，因此輸入法組字（注音／拼音）期間也能即時搜尋 */
 function patchDom(oldEl,newEl,keepId){
