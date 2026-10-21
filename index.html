@@ -770,7 +770,11 @@ window.addNewsPdf = act0(async type=>{
       url = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=()=>rej(new Error("讀取檔案失敗")); r.readAsDataURL(f); });
     } else url = await uploadFile(f);
   }
-  if(!url) throw new Error("請選擇 PDF 檔案");
+  if(!url){
+    const link = val("n_url");
+    if(link){ url = safeUrl(link); if(!url) throw new Error("文件網址格式不正確，請以 http:// 或 https:// 開頭"); }
+  }
+  if(!url) throw new Error("請選擇 PDF 檔案或輸入文件網址");
   const id = "N"+uid();
   try{ await addRow("News",{id,type,title:val("n_title"),level:"",date:today(),body:"",url}); }
   catch(e){ if(DEMO) throw new Error("儲存失敗，檔案可能太大"); throw e; }
@@ -1055,7 +1059,8 @@ const VIEWS = {
     <div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>PDF 列表（共 ${rows.length} 份）</b></div>${list}</div>` +
     (admin?`<div class="card card-body" style="margin-top:14px"><b>上傳 PDF（管理者）</b><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
       ${field("n_title","標題")}
-      <div><label class="form-label">PDF 檔案（上限 ${CONFIG.MAX_UPLOAD_MB}MB${DEMO?"；示範模式限 3MB":""}）</label><input class="form-control" id="n_file" type="file" accept=".pdf,application/pdf"></div></div>
+      <div><label class="form-label">PDF 檔案（上限 ${CONFIG.MAX_UPLOAD_MB}MB${DEMO?"；示範模式限 3MB":""}）</label><input class="form-control" id="n_file" type="file" accept=".pdf,application/pdf"></div>
+      ${field("n_url","文件網址","text","https://（選填；未選擇 PDF 檔案時使用，可貼 Google Drive 分享連結）")}</div>
       <br><button class="btn btn-primary" onclick="addNewsPdf('${t}')">上傳</button></div>`:"");
   },
 
