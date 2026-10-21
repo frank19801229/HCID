@@ -1045,15 +1045,14 @@ const VIEWS = {
     let viewer;
     if(!sel) viewer = `<div class="text-center text-secondary p-4">目前沒有 PDF，${admin?"請由下方上傳":"請稍後再查看"}</div>`;
     else if(newsSrc(sel)){
-      viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text">${esc(sel.date)}</span></div>
+      viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text">${esc(sel.date)}　<a href="${esc(safeUrl(sel.url)||newsSrc(sel))}" target="_blank" rel="noopener noreferrer">新分頁開啟</a>（若下方無法顯示，請用此連結）</span></div>
         <iframe class="w-100 border rounded bg-white" style="height:68vh" src="${esc(newsSrc(sel))}" allow="fullscreen" allowfullscreen loading="lazy"></iframe>`;
     } else viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text">${esc(sel.date)}</span></div><p>${esc(sel.body)||"此項目沒有 PDF 檔案"}</p>`;
     const list = table([
       ["日期",r=>esc(r.date)],
       ["標題",r=>`<b>${esc(r.title)}</b>`],
       ["",r=>`<button class="btn btn-sm ${r.id===tabState.nsel?"btn-primary":"btn-outline-primary"}" onclick="selNews('${esc(r.id)}')">檢視</button>`
-        + (admin?` <button class="btn btn-outline-danger btn-sm" onclick="deleteNews('${esc(r.id)}')">刪除</button>`:"")
-        + (newsSrc(r)?` <span class="form-text" style="font-size:15px;background:#d9480f;color:#fff;padding:3px 10px;border-radius:6px;display:inline-block"><a href="${esc(safeUrl(r.url)||newsSrc(r))}" target="_blank" rel="noopener noreferrer" style="color:#ffec99;font-weight:700;text-decoration:underline">新分頁開啟</a>（若下方無法顯示，請用此連結）</span>`:"")]
+        + (admin?` <button class="btn btn-outline-danger btn-sm" onclick="deleteNews('${esc(r.id)}')">刪除</button>`:"")]
     ], rows, "目前沒有 PDF");
     return head("疫情與公告","點選下方 PDF 即可在上方檢視內容。") + tabs("nt",[["alert","傳染病訊息及公告"]],"alert") +
     `<div class="card card-body">${viewer}</div>
