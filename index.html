@@ -1062,7 +1062,7 @@ const VIEWS = {
     return head("疫情與公告","點選下方檢視按鈕即可在上方檢視公告內容。") + tabs("nt",[["alert","傳染病訊息及公告"]],"alert") +
     `<div class="card card-body">${viewer}</div>
     <div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>公告列表（共 ${rows.length} 份）</b></div>${list}</div>` +
-    (admin?`<div class="card card-body" style="margin-top:14px"><b>上傳 PDF（管理者）</b><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
+    (admin?`<div class="card card-body" style="margin-top:14px"><b>單次上傳作業（管理者）</b><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
       ${field("n_title","標題")}
       <div><label class="form-label">PDF 檔案（上限 ${CONFIG.MAX_UPLOAD_MB}MB${DEMO?"；示範模式限 3MB":""}）</label><input class="form-control" id="n_file" type="file" accept=".pdf,application/pdf"></div>
       ${field("n_url","文件網址","text","https://（選填；未選擇 PDF 檔案時使用，可貼 Google Drive 分享連結）")}</div>
