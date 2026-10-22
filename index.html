@@ -1470,7 +1470,7 @@ function courseForm(){
     ${editing?"":`<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="c_assign"><label class="form-check-label" for="c_assign">同時指派為全體成員的任務（期限＝截止日期）</label></div>`}</fieldset>
 
   <fieldset class="fieldset"><legend>學分採認</legend><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
-    <div><label class="form-label">採認方式（可複選，全部達成才採認）</label>${(()=>{ const sel = e.id ? creditOpts(e) : ["video"]; return CREDIT_OPTS.map(([k,l])=>`<label class="opt d-flex align-items-center gap-2 my-1"><input class="form-check-input c_copt" type="checkbox" value="${k}" ${sel.includes(k)?"checked":""}> ${l}</label>`).join(""); })()}<div class="form-text">都不勾選＝由學員自行標記完成後採認。後測及格標準為答對 ${CONFIG.QUIZ_PASS_PCT}%。</div></div>
+    <div><label class="form-label">採認方式（可複選，全部達成才採認）</label>${(()=>{ const sel = e.id ? creditOpts(e) : ["video"]; return CREDIT_OPTS.map(([k,l])=>`<label class="opt d-flex align-items-center gap-2 my-1"><input class="form-check-input c_copt" type="checkbox" value="${k}" ${sel.includes(k)?"checked":""}> ${l}</label>`).join(""); })()}<div class="form-text">都不勾選＝由學員自行標記完成後採認。<br>後測及格標準為答對&nbsp;<span style="white-space:nowrap">${CONFIG.QUIZ_PASS_PCT}%。</span></div></div>
     ${field("c_rule","達標條件","number","非影片教材停留分鐘，例：10（影片固定 95%）",e.credit_rule)}</div>
     <div class="form-text">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。學員第一次開啟課程時會自動記為「已選課」，達標後轉為「合格」。</div></fieldset>
 
