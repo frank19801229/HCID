@@ -523,15 +523,29 @@ window.setPg = (key, p) => { if(PG[key]){
   const nm = document.getElementById("t_who_name"), mm = keep.t_who && (DB.Members||[]).find(x => eq(x.email, keep.t_who.trim()));
   if(nm) nm.textContent = mm ? mm.name : "";
 } };
+/* 所有表格欄位皆可點表頭排序（依儲存格顯示的文字；數字、日期、中英文自然排序，空白永遠排最後） */
+const SORTS = {}, COLL = new Intl.Collator("zh-Hant", {numeric:true, sensitivity:"base"});
+const cellText = h => String(h==null ? "" : h).replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,"&").replace(/\s+/g," ").trim();
+window.tblSort = (sig, i) => {
+  const s = SORTS[sig];
+  SORTS[sig] = (s && s.i === i) ? {i, d:-s.d} : {i, d:1};
+  Object.keys(PG).forEach(k => { if(k.includes("_" + sig + "_")) delete PG[k]; });   // 排序後回到第 1 頁
+  route();
+};
 function table(cols, rows, empty="目前沒有資料", opts={}){
   const SIZE = opts.size || PAGE_SIZE, rowAttr = opts.rowAttr || (()=>"");
   const sig = hashStr(cols.map(c=>c[0]).join("|")), n = TBL.seq[sig] = (TBL.seq[sig]||0) + 1, key = `${TBL.view}_${sig}_${n}`;
   if(!rows.length) return `<div class="text-center text-secondary p-4">${empty}</div>`;
+  const so = SORTS[sig];
+  if(so && cols[so.i] && cols[so.i][0] !== ""){
+    const f = cols[so.i][1];
+    rows = rows.map(r => ({r, v:cellText(f(r))})).sort((a,b)=> a.v==="" ? (b.v==="" ? 0 : 1) : b.v==="" ? -1 : so.d * COLL.compare(a.v, b.v)).map(x=>x.r);
+  }
   const total = rows.length, pages = Math.ceil(total/SIZE), st = PG[key];
   const p = (st && st.n === total) ? Math.min(Math.max(1, st.p), pages) : 1;   // 筆數變動（篩選、搜尋、新增刪除）時回到第 1 頁
   PG[key] = {p, n:total};
   const shown = total > SIZE ? rows.slice((p-1)*SIZE, p*SIZE) : rows;
-  return `<div class="table-responsive"><table class="table table-hover align-top mb-0"><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>` +
+  return `<div class="table-responsive"><table class="table table-hover align-top mb-0"><thead><tr>${cols.map((c,i)=>`<th>${c[0]==="" ? "" : `<span class="sort-th ${so&&so.i===i?"on":""}" onclick="tblSort('${sig}',${i})" title="點擊排序">${c[0]}<span class="sort-ar">${so&&so.i===i?(so.d>0?"▲":"▼"):"⇅"}</span></span>`}</th>`).join("")}</tr></thead><tbody>` +
     shown.map(r=>`<tr ${rowAttr(r)}>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("") + `</tbody></table></div>` +
     (total > SIZE ? pager(key, p, pages, total, SIZE) : "");
 }
@@ -794,7 +808,6 @@ function newsSrc(n){
   const d = driveId(u); return d ? `https://drive.google.com/file/d/${d}/preview` : u;
 }
 window.selNews = id => { tabState.nsel = id; route(); };
-window.sortNews = k => { const s = tabState.nsort || {k:"date", d:-1}; tabState.nsort = s.k===k ? {k, d:-s.d} : {k, d:1}; route(); };
 window.addNewsPdf = act0(async type=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   if(!val("n_title")) throw new Error("請輸入標題");
@@ -1119,15 +1132,12 @@ const VIEWS = {
       viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text pdf-marquee"><span class="pdf-marquee-in">${esc(sel.date)}　<a href="${esc(safeUrl(sel.url)||newsSrc(sel))}" target="_blank" rel="noopener noreferrer">新分頁開啟</a>（若下方無法顯示，請用此連結）</span></span></div>
         <iframe class="w-100 border rounded bg-white" style="height:68vh" src="${esc(newsSrc(sel))}" allow="fullscreen" allowfullscreen loading="lazy"></iframe>`;
     } else viewer = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${esc(sel.title)}</b><span class="form-text">${esc(sel.date)}</span></div><p>${esc(sel.body)||"此項目沒有 PDF 檔案"}</p>`;
-    const ns = tabState.nsort || {k:"date", d:-1};
-    const sortedRows = rows.slice().sort((a,b)=> ns.d * String(a[ns.k]||"").localeCompare(String(b[ns.k]||""), "zh-Hant", {numeric:true}));
-    const sh = (k,label) => `<span class="sort-th ${ns.k===k?"on":""}" onclick="sortNews('${k}')" title="點擊排序">${label}<span class="sort-ar">${ns.k===k?(ns.d>0?"▲":"▼"):"⇅"}</span></span>`;
     const list = table([
-      [sh("date","日期"),r=>esc(r.date)],
-      [sh("title","標題"),r=>`<b>${esc(r.title)}</b>`],
+      ["日期",r=>esc(r.date)],
+      ["標題",r=>`<b>${esc(r.title)}</b>`],
       ["",r=>`<button class="btn btn-sm ${r.id===tabState.nsel?"btn-primary":"btn-outline-primary"}" onclick="selNews('${esc(r.id)}')">檢視</button>`
         + (admin?` <button class="btn btn-outline-danger btn-sm" onclick="deleteNews('${esc(r.id)}')">刪除</button>`:"")]
-    ], sortedRows, "目前沒有 PDF");
+    ], rows, "目前沒有 PDF");
     return head("疫情與公告","點選下方檢視按鈕即可在上方檢視公告內容。") + tabs("nt",[["alert","傳染病訊息及公告"]],"alert") +
     `<div class="card card-body">${viewer}</div>
     <div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>公告列表（共 ${rows.length} 份）</b></div>${list}</div>` +
