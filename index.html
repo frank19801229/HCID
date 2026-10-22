@@ -62,6 +62,7 @@ textarea.form-control{min-height:70px}
 .rich-content table{border-collapse:collapse;margin:.5rem 0}
 .rich-content th,.rich-content td{border:1px solid #adb5bd;padding:4px 8px}
 .rich-content figure.table{margin:0}
+.tbl-count{font-size:11px;color:#0a1a22;margin:0 0 4px}
 .sort-th{cursor:pointer;user-select:none;white-space:nowrap}
 .sort-th .sort-ar{font-size:17px;margin-left:4px;color:#6d28d9;font-weight:700;opacity:1}
 .sort-th.on .sort-ar{color:#6d28d9;font-weight:700}
@@ -535,7 +536,7 @@ window.tblSort = (sig, i) => {
 function table(cols, rows, empty="目前沒有資料", opts={}){
   const SIZE = opts.size || PAGE_SIZE, rowAttr = opts.rowAttr || (()=>"");
   const sig = hashStr(cols.map(c=>c[0]).join("|")), n = TBL.seq[sig] = (TBL.seq[sig]||0) + 1, key = `${TBL.view}_${sig}_${n}`;
-  if(!rows.length) return `<div class="text-center text-secondary p-4">${empty}</div>`;
+  if(!rows.length) return `<div class="tbl-count">共 0 筆</div><div class="text-center text-secondary p-4">${empty}</div>`;
   const so = SORTS[sig];
   if(so && cols[so.i] && cols[so.i][0] !== ""){
     const f = cols[so.i][1];
@@ -545,7 +546,7 @@ function table(cols, rows, empty="目前沒有資料", opts={}){
   const p = (st && st.n === total) ? Math.min(Math.max(1, st.p), pages) : 1;   // 筆數變動（篩選、搜尋、新增刪除）時回到第 1 頁
   PG[key] = {p, n:total};
   const shown = total > SIZE ? rows.slice((p-1)*SIZE, p*SIZE) : rows;
-  return `<div class="table-responsive"><table class="table table-hover align-top mb-0"><thead><tr>${cols.map((c,i)=>`<th>${c[0]==="" ? "" : `<span class="sort-th ${so&&so.i===i?"on":""}" onclick="tblSort('${sig}',${i})" title="點擊排序">${c[0]}<span class="sort-ar">${so&&so.i===i?(so.d>0?"▲":"▼"):"⇅"}</span></span>`}</th>`).join("")}</tr></thead><tbody>` +
+  return `<div class="tbl-count">共 ${total} 筆</div><div class="table-responsive"><table class="table table-hover align-top mb-0"><thead><tr>${cols.map((c,i)=>`<th>${c[0]==="" ? "" : `<span class="sort-th ${so&&so.i===i?"on":""}" onclick="tblSort('${sig}',${i})" title="點擊排序">${c[0]}<span class="sort-ar">${so&&so.i===i?(so.d>0?"▲":"▼"):"⇅"}</span></span>`}</th>`).join("")}</tr></thead><tbody>` +
     shown.map(r=>`<tr ${rowAttr(r)}>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("") + `</tbody></table></div>` +
     (total > SIZE ? pager(key, p, pages, total, SIZE) : "");
 }
