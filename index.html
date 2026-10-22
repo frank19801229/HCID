@@ -281,7 +281,7 @@ aside .nav-link.active{color:#b84c78}
 <script>
 /* ============ 設定區：部署 GAS 後，把網址貼在這裡 ============ */ 
 const CONFIG = { 
-  GAS_URL: "https://script.google.com/macros/s/AKfycbz-oKhrUiHksBJUUHGp-cyoWt9s7KUfm6QjWiNGxfkVykYXZD7YzLpUhKRvND48db9zFw/exec",         // 例如 "https://script.google.com/macros/s/XXXXXXXX/exec"；留空 = 示範資料模式（存在瀏覽器）
+  GAS_URL: "https://script.google.com/macros/s/AKfycbz-oKhrUiHksBJUUHGp-cyoWt9s7KUfm6QjWiNGxfkVykYXZD7YzLpUhKRvND48db9zFw/exec",          // 例如 "https://script.google.com/macros/s/XXXXXXXX/exec"；留空 = 示範資料模式（存在瀏覽器）
   ANNUAL_TARGET: 8,     // 年度採認時數目標
   ADMIN_ROLES: ["管理者", "管理員", ""],
   MAX_UPLOAD_MB: 20,    // 單檔上傳上限（經 GAS 轉存 Google Drive）
@@ -296,7 +296,7 @@ const CONFIG = {
 
 const TABLES = {
   Members:   ["email","name","role","unit","emp_id","job","active","dept","pid","phone","password"],   // password＝登入密碼（空白＝預設密碼）；dept＝部科、unit＝工作單位(部門)、job＝職類別、pid＝身分證字號、phone＝連絡電話；emp_id 已停用（保留欄位）
-  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule","code","unit","method","quiz","open"],
+  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule","code","unit","method","quiz","open","credits"],
   Tasks:     ["id","title","assignee","due","status"],
   Records:   ["id","email","course_id","code","course_title","unit","topic","method","hours","date","status","category"],
   FitTests:  ["email","date","model","result"],
@@ -1452,6 +1452,7 @@ function courseForm(){
     ${field("c_title","課程名稱","text","",e.title)}${field("c_code","課程編號","text","",e.code)}<div><label class="form-label">開課單位</label><select class="form-select" id="c_unit">${opts([...["感管中心","急診","C049","TICU"], ...(e.unit && !["感管中心","急診","C049","TICU"].includes(e.unit) ? [e.unit] : [])], e.unit||"感管中心")}</select></div>
     <div><label class="form-label">上課方式</label><select class="form-select" id="c_method">${opts(METHODS, e.method||"線上")}</select></div>
     ${field("c_hours","學分時數（小時）","number","1",e.hours ?? 1)}
+    <div><label class="form-label">學分數</label><div class="d-flex flex-wrap gap-3">${[1,2,3,4,5].map(n=>`<label class="opt d-flex align-items-center gap-2 my-1"><input class="form-check-input" type="radio" name="c_credits" value="${n}" ${Number(e.credits||1)===n?"checked":""}> ${n}</label>`).join("")}</div></div>
     <div><label class="form-label">類別</label><select class="form-select" id="c_req">${opts([["必修","必修"],["進階","進階"]], reqLabel(e.required))}</select></div>
     <div><label class="form-label">列入即時訓練</label><select class="form-select" id="c_jit">${opts([["Y","是"],["N","否"]], e.jit||"N")}</select></div></div>
     <label class="form-label">說明 / 文字教材</label><textarea class="form-control" id="c_content">${esc(e.content)}</textarea></fieldset>
@@ -1588,7 +1589,7 @@ window.saveCourse = act0(async()=>{
   } else url = "";
   const s = val("c_start"), e = val("c_end");
   if(s && e && new Date(e) <= new Date(s)) throw new Error("截止時間必須晚於開放時間");
-  const data = {title:val("c_title"),hours:val("c_hours")||0,jit:val("c_jit"),content:val("c_content"),
+  const data = {title:val("c_title"),hours:val("c_hours")||0,credits:$("input[name=c_credits]:checked").val()||"1",jit:val("c_jit"),content:val("c_content"),
     required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:$(".c_copt:checked").map(function(){ return this.value; }).get().join(",") || "manual",credit_rule:val("c_rule"),
     code:val("c_code"),unit:val("c_unit"),method:val("c_method")};
   const quiz = $("#quiz_list .qrow").map(function(i){
