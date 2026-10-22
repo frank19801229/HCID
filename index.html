@@ -1405,7 +1405,7 @@ function rosterList(){
       ["Email",r=>showEmail(r.email) ? esc(showEmail(r.email)) : `<span class="form-text">未填</span>`],
       ["角色",r=>`<span class="${TAGC(roleTagCls(r.role))}">${esc(roleLabel(r.role))}</span>`],
       [`${yr} 年度時數`,r=>`<div style="min-width:130px"><b>${r.h}</b> / ${tgt} 小時<div class="progress my-2" style="height:10px"><div class="progress-bar" style="width:${Math.min(100,r.h/tgt*100)}%"></div></div></div>`],
-      ["密合度測試",r=>fitStatus(r.email)==="通過" ? `<span class="badge rounded-pill bg-success-subtle text-success-emphasis">通過</span>` : `<span class="badge rounded-pill bg-danger-subtle text-danger-emphasis">未通過</span>`],
+      ["密合度測試",r=>{ const ok = fitStatus(r.email)==="通過"; return `<label class="form-check form-switch d-inline-block mb-0 align-middle ${ok?"text-success-emphasis":"text-danger-emphasis"}" title="${ok?"目前通過，滑動以設為未通過":"目前未通過，滑動以設為通過"}" style="white-space:nowrap"><input class="form-check-input" type="checkbox" role="switch" ${ok?"checked":""} onchange="toggleFit('${esc(r.email)}')">${ok?"通過":"未通過"}</label>`; }],
       ["",r=>`<button class="btn btn-primary btn-sm" onclick="viewMember('${esc(r.email)}')">檢視履歷</button> <button class="btn btn-outline-primary btn-sm" onclick="editMember('${esc(r.email)}')">編輯</button>`]
     ], rows, "沒有符合的學員") + `</div>`;
 }
@@ -1595,6 +1595,13 @@ window.qzType = sel => {
   $r.find(".qz_area").html(qzArea(t, {o:prev, a:t==="multi"?[]:t==="single"?-1:0}));
 };
 window.cancelEditCourse = () => { tabState.editId = null; tabState.ct = "list"; route(); };
+window.toggleFit = act0(async email=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const next = fitStatus(email)==="通過" ? "未通過" : "通過";   // 依目前實際狀態反向切換
+  if(DB.FitTests.some(t=>eq(t.email,email))) await updateRow("FitTests","email",email,{date:today(),result:next});
+  else await addRow("FitTests",{email,date:today(),model:"",result:next});
+  toast(`密合度測試已設為「${next}」`);
+});
 window.toggleOpen = act0(async id=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   const c = DB.Courses.find(x=>x.id===id); if(!c) return;
