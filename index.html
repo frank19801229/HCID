@@ -287,6 +287,7 @@ const CONFIG = {
   MAX_UPLOAD_MB: 20,    // 單檔上傳上限（經 GAS 轉存 Google Drive）
   DEFAULT_VIDEO_PCT: 80,   // 影片類：有效觀看比例達標（%）
   DEFAULT_DWELL_MIN: 10,   // PDF / PPT / iframe：頁面停留達標（分鐘）
+  QUIZ_PASS_PCT: 60,       // 後測及格：答對比例（%）
   DEFAULT_PASSWORD: "ab123456",  // 學員預設密碼（Members.password 空白＝使用預設）
   ADMIN_ACCOUNT: "admin",        // 系統管理者帳號（不在學員名單中）
   ADMIN_PASSWORD: ""       // 系統管理者密碼
@@ -625,8 +626,15 @@ function playKind(c){
   if((c.media_type==="mp4" || c.media_type==="hls") && u && !driveId(u) && !ytId(u)) return "video";
   return u ? "dwell" : "none";
 }
+/* 採認方式（複選）：credit_mode 以逗號存 video / quiz / survey；舊資料 auto＝影片／停留達標、manual＝自行標記完成。勾選項目全部達成才採認 */
+const CREDIT_OPTS = [["video","影片觀看達95%"],["quiz","後測及格"],["survey","完成滿意度問卷"]];
+const VIDEO_PCT_OPT = 95;
+const isOptMode = c => !["","auto","manual"].includes(String(c.credit_mode||""));
+const creditOpts = c => { const m = String(c.credit_mode||"auto"); return m==="manual" ? [] : m==="auto" ? ["video"] : m.split(",").filter(k=>CREDIT_OPTS.some(o=>o[0]===k)); };
+const creditLabel = c => { if(!isOptMode(c)) return c.credit_mode==="manual" ? "自行標記完成" : "自動採認"; const o = creditOpts(c); return o.length ? "自動採認：" + o.map(k=>CREDIT_OPTS.find(x=>x[0]===k)[1]).join("、") : "自行標記完成"; };
 function ruleOf(c){
   const n = Number(c.credit_rule);
+  if(isOptMode(c) && playKind(c)==="video") return VIDEO_PCT_OPT;
   if(n > 0) return n;
   return playKind(c)==="video" ? CONFIG.DEFAULT_VIDEO_PCT : CONFIG.DEFAULT_DWELL_MIN;
 }
@@ -638,12 +646,12 @@ function schedState(c){
   if(e && now > e) return "ended";
   return "open";
 }
-const SCHED = {upcoming:["未開放","red"], ended:["已結束","red"], open:["開放中","green"]};
-/* 管理者手動覆寫：open=Y 強制開放、N 強制未開放、空白＝依排程（未開始／已結束皆不可開啟） */
+const SCHED = {upcoming:["關閉","red"], ended:["關閉","red"], open:["開放中","green"]};
+/* 管理者手動覆寫：open=Y 強制開放、N 強制關閉、空白＝依排程（未開始／已結束皆不可開啟）；超過截止時間一律自動關閉 */
 const openFlag = c => String(c.open||"").toUpperCase();
-const isOpenNow = c => openFlag(c)==="Y" ? true : openFlag(c)==="N" ? false : schedState(c)==="open";
+const isOpenNow = c => schedState(c)==="ended" ? false : openFlag(c)==="Y" ? true : openFlag(c)==="N" ? false : schedState(c)==="open";
 const isClosed = c => !isOpenNow(c);
-const schedTag = c => { const [l,k] = isOpenNow(c) ? SCHED.open : (openFlag(c)==="N" ? ["未開放","red"] : SCHED[schedState(c)]); return `<span class="${TAGC(k)}">${l}</span>`; };
+const schedTag = c => { const [l,k] = isOpenNow(c) ? SCHED.open : (openFlag(c)==="N" ? ["關閉","red"] : SCHED[schedState(c)]); return `<span class="${TAGC(k)}">${l}</span>`; };
 const schedText = c => (c.schedule_start||c.schedule_end) ? `${fmtDT(c.schedule_start)||"即日起"} ～ ${fmtDT(c.schedule_end)||"不限"}` : "不限時間";
 const canOpen = c => isAdmin() || isOpenNow(c);
 
@@ -657,6 +665,11 @@ const creditOk = (email,c) => DB.Records.some(r => eq(r.email,email) && r.course
 const quizOk   = (email,c) => !parseQuiz(c).length || (DB.QuizResults||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id));
 const surveyOk = (email,c) => !sortedQs().length || (DB.Surveys||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id));
 const courseDone = (email,c) => creditOk(email,c) && quizOk(email,c) && surveyOk(email,c);
+/* 後測及格：任一次作答的答對比例達 CONFIG.QUIZ_PASS_PCT（課程沒有測驗題則視為達成） */
+const quizPassed = (email,c) => !parseQuiz(c).length || (DB.QuizResults||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id) && Number(x.total) > 0 && Number(x.score)/Number(x.total)*100 >= CONFIG.QUIZ_PASS_PCT);
+const creditStatus = (c, k) => k==="video" ? (playKind(c)==="none" ? true : reached(c)) : k==="quiz" ? quizPassed(user.email,c) : surveyOk(user.email,c);
+const creditReady = c => { const o = creditOpts(c); return o.length > 0 && o.every(k => creditStatus(c,k)); };
+async function tryCredit(c){ if(c.credit_mode==="manual" || hasCredit(c.id) || !creditReady(c)) return; await awardCredit(c); }
 /* 任務對應的課程：任務名稱為「完成課程：課程名稱」或課程名稱 */
 function taskCourse(t){
   const name = String(t.title||"").replace(/^完成課程[：:]\s*/, "").trim();
@@ -711,6 +724,11 @@ function updateProgressUI(c){
   let txt = "";
   if(done) txt = `已採認 ${c.hours} 小時，紀錄已寫入個人學習履歷。`;
   else if(c.credit_mode==="manual") txt = "此課程由學員自行標記完成後採認學分。";
+  else if(isOptMode(c) && creditOpts(c).length){
+    const st = k => creditStatus(c,k) ? "✓" : "✗";
+    const parts = creditOpts(c).map(k => k==="video" ? (kind==="video" ? `影片觀看 ${progPct(c)}%／${rule}% ${st(k)}` : kind==="dwell" ? `教材停留 ${Math.floor(p.sec/60)}／${rule} 分鐘 ${st(k)}` : `教材 ${st(k)}`) : k==="quiz" ? `後測及格（${CONFIG.QUIZ_PASS_PCT}%）${st(k)}` : `滿意度問卷 ${st(k)}`);
+    txt = `採認條件：${parts.join("、")}；全部達成自動採認 ${c.hours} 小時。`;
+  }
   else if(kind==="video") txt = `有效觀看 ${progPct(c)}%（${mm(p.sec)} / ${p.dur?mm(p.dur):"--:--"}），達 ${rule}% 自動採認 ${c.hours} 小時。快轉跳過的片段不計入。`;
   else if(kind==="dwell") txt = `已停留 ${mm(p.sec)} / ${rule} 分鐘，達標自動採認 ${c.hours} 小時（頁籤需保持在前景）。`;
   else txt = "此課程無教材檔案，請由管理者設定採認方式。";
@@ -733,7 +751,7 @@ function tick(c, seconds, dur){
   if(Date.now() - (tick.last||0) > 3000){ saveProg(c.id,p); tick.last = Date.now(); }
   else { clearTimeout(tick.t); tick.t = setTimeout(()=>saveProg(c.id,p), 3000); }
   updateProgressUI(c);
-  if(c.credit_mode !== "manual" && !hasCredit(c.id) && reached(c)){ saveProg(c.id,p); awardCredit(c); }
+  if(c.credit_mode !== "manual" && !hasCredit(c.id) && reached(c) && creditReady(c)){ saveProg(c.id,p); awardCredit(c); }
 }
 function initCourse(){
   const c = DB.Courses.find(x => x.id === tabState.cid);
@@ -817,7 +835,7 @@ function courseSurvey(c){
   const qs = sortedQs();
   const title = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課後滿意度問卷</b>${done?`<span class="badge rounded-pill bg-success-subtle text-success-emphasis">已填寫 ${esc(fmtDT(done.time).slice(0,16))}</span>`:""}</div>`;
   if(done) return `<div class="card card-body">${title}<div class="form-text my-2">感謝您的回饋，此課程的問卷已送出。</div></div>`;
-  if(!qs.length) return isAdmin() ? `<div class="card card-body">${title}<div class="text-center text-secondary p-4">目前沒有問卷題目，請至「同意書與問卷 → 問卷題目管理」新增或載入預設題目</div></div>` : "";
+  if(!qs.length) return isAdmin() ? `<div class="card card-body">${title}<div class="text-center text-secondary p-4">目前沒有問卷題目，請至「同意書與問卷 → 滿意度問卷管理」新增或載入預設題目</div></div>` : "";
   return `<div class="card card-body">${title}` + qs.map(q=>`<div class="card card-body" style="margin-bottom:10px">
     <b>${richI(q.text)}</b>${isReqQ(q)?` <span class="req">*</span>`:""}
     ${q.type==="text"
@@ -971,10 +989,10 @@ const VIEWS = {
         ["課程",r=>`<b>${esc(r.title)}</b><div class="form-text">${esc([r.code,r.unit,r.pathogen,r.topic,r.jit==="Y"?"即時訓練":""].filter(Boolean).join(" · "))}</div>`],
         ["教材",r=>`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span><div class="form-text">${esc(r.method||"")}</div>`],
         ["排程",r=>`${schedTag(r)}<div class="form-text">${esc(schedText(r))}</div>`],
-        ["類別 / 學分",r=>`${esc(reqLabel(r.required))} · ${esc(r.hours)} 小時<div class="form-text">${r.credit_mode==="manual"?"自行標記完成":"自動採認"}</div>`],
+        ["類別 / 學分",r=>`${esc(reqLabel(r.required))} · ${esc(r.hours)} 小時<div class="form-text">${esc(creditLabel(r))}</div>`],
         [admin?"完成人數":"我的進度",r=>admin ? DB.Records.filter(x=>x.course_id===r.id && stOf(x)==="合格").length+" 人"
             : (courseDone(user.email,r)?`<span class="badge rounded-pill bg-success-subtle text-success-emphasis">已完成</span>`:hasCredit(r.id)?`<span class="badge rounded-pill bg-danger-subtle text-danger-emphasis">待完成：${[quizOk(user.email,r)?"":"測驗", surveyOk(user.email,r)?"":"問卷"].filter(Boolean).join("、")}</span>`:(progPct(r)?`<span class="badge rounded-pill bg-danger-subtle text-danger-emphasis">${progPct(r)}%</span>`:`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">未開始</span>`))],
-        ["",r=>(canOpen(r)?`<a class="btn btn-primary btn-sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="btn btn-primary btn-sm" disabled>未開放</button>`) + (admin?` <button class="btn btn-outline-primary btn-sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="btn btn-outline-danger btn-sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button> <label class="form-check form-switch d-inline-block ms-2 mb-0 align-middle small text-secondary" title="${isClosed(r)?"目前未開放，滑動以開放":"目前開放，滑動以設為未開放"}"><input class="form-check-input" type="checkbox" role="switch" ${isClosed(r)?"":"checked"} onchange="toggleOpen('${esc(r.id)}')">${isClosed(r)?"未開放":"開放"}</label>`:"")]
+        ["",r=>(canOpen(r)?`<a class="btn btn-primary btn-sm" href="#course/${esc(r.id)}">開啟</a>`:`<button class="btn btn-primary btn-sm" disabled>關閉</button>`) + (admin?` <button class="btn btn-outline-primary btn-sm" onclick="editCourse('${esc(r.id)}')">編輯</button> <button class="btn btn-outline-danger btn-sm" onclick="deleteCourse('${esc(r.id)}')">刪除</button> <label class="form-check form-switch d-inline-block ms-2 mb-0 align-middle small text-secondary" title="${isClosed(r)?"目前關閉，滑動以開放":"目前開放，滑動以設為關閉"}"><input class="form-check-input" type="checkbox" role="switch" ${isClosed(r)?"":"checked"} onchange="toggleOpen('${esc(r.id)}')">${isClosed(r)?"關閉":"開放"}</label>`:"")]
       ], rows, "沒有符合的課程或教材", {size: admin ? 10 : PAGE_SIZE}) + `</div>`;
     }
     if(t==="form" && admin) body = courseForm();
@@ -1030,7 +1048,7 @@ const VIEWS = {
     <div class="card card-body"><input class="form-control" id="jq" value="${esc(tabState.jq||"")}">
     <div class="form-text my-2">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>
     ${rows.length? rows.map(c=>`<div class="card card-body" style="margin-top:10px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><div><b>${esc(c.title)}</b> ${c.topic?`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(c.topic)}</span> `:""}${c.pathogen?`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(c.pathogen)}</span> `:""}<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span></div>
-      ${canOpen(c)?`<a class="btn btn-primary btn-sm" href="#course/${esc(c.id)}">開啟教材</a>`:`<button class="btn btn-primary btn-sm" disabled>未開放</button>`}</div>${richP(c.content)}</div>`).join("") : `<div class="text-center text-secondary p-4">沒有符合的課程或教材</div>`}</div>`;
+      ${canOpen(c)?`<a class="btn btn-primary btn-sm" href="#course/${esc(c.id)}">開啟教材</a>`:`<button class="btn btn-primary btn-sm" disabled>關閉</button>`}</div>${richP(c.content)}</div>`).join("") : `<div class="text-center text-secondary p-4">沒有符合的課程或教材</div>`}</div>`;
   },
 
   tasks(){
@@ -1095,7 +1113,7 @@ const VIEWS = {
       ${field("a_date","上課日期","date")}${field("a_count","上課人數","number")}</div><button class="btn btn-primary" onclick="addAtt()">填報</button>
       <div style="height:12px"></div>${table([["日期",r=>esc(r.date)],["課程",r=>esc(r.course_id)],["人數",r=>esc(r.count)],["填報人",r=>esc(r.reporter)]],DB.Attendance,"尚無填報")}`;
     return head("同意書與問卷","依授權範圍管理與查閱資料。") + `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>同意書與簽署紀錄</b></div>` +
-      tabs("ft",[["consent","線上同意書"],...(isAdmin()?[["sq","問卷題目管理"]]:[])],"consent") + `<div class="card card-body">${body}</div>`;
+      tabs("ft",[["consent","線上同意書"],...(isAdmin()?[["sq","滿意度問卷管理"]]:[])],"consent") + `<div class="card card-body">${body}</div>`;
   },
 
   fit(){
@@ -1447,12 +1465,12 @@ function courseForm(){
 
   <fieldset class="fieldset"><legend>課程排程</legend><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
     ${field("c_start","開放時間","datetime-local","",e.schedule_start)}${field("c_end","截止時間","datetime-local","",e.schedule_end)}</div>
-    <div class="form-text">留空代表不限時間。學員只能在開放期間開啟課程；未開始或已結束的課程會顯示「未開放」。</div>
+    <div class="form-text">留空代表不限時間。學員只能在開放期間開啟課程；未開始的課程會顯示「關閉」，超過截止時間會自動關閉。</div>
     ${editing?"":`<div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="c_assign"><label class="form-check-label" for="c_assign">同時指派為全體成員的任務（期限＝截止日期）</label></div>`}</fieldset>
 
   <fieldset class="fieldset"><legend>學分採認</legend><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
-    <div><label class="form-label">採認方式</label><select class="form-select" id="c_cmode">${opts([["auto","自動採認（依學習行為）"]], e.credit_mode||"auto")}</select></div>
-    ${field("c_rule","達標條件","number","影片：80（%）／其他：10（分鐘）",e.credit_rule)}</div>
+    <div><label class="form-label">採認方式（可複選，全部達成才採認）</label>${(()=>{ const sel = e.id ? creditOpts(e) : ["video"]; return CREDIT_OPTS.map(([k,l])=>`<label class="opt d-flex align-items-center gap-2 my-1"><input class="form-check-input c_copt" type="checkbox" value="${k}" ${sel.includes(k)?"checked":""}> ${l}</label>`).join(""); })()}<div class="form-text">都不勾選＝由學員自行標記完成後採認。後測及格標準為答對 ${CONFIG.QUIZ_PASS_PCT}%。</div></div>
+    ${field("c_rule","達標條件","number","非影片教材停留分鐘，例：10（影片固定 95%）",e.credit_rule)}</div>
     <div class="form-text">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。學員第一次開啟課程時會自動記為「已選課」，達標後轉為「合格」。</div></fieldset>
 
   <fieldset class="fieldset" id="quiz_block"><legend>課後測驗</legend>
@@ -1542,8 +1560,9 @@ window.toggleOpen = act0(async id=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   const c = DB.Courses.find(x=>x.id===id); if(!c) return;
   const next = isOpenNow(c) ? "N" : "Y";   // 依目前實際狀態反向切換
+  if(next==="Y" && schedState(c)==="ended") throw new Error("已超過截止時間，請先編輯課程延後截止時間");
   await updateRow("Courses","id",id,{open:next});
-  toast(next==="Y" ? "已設為開放" : "已設為未開放");
+  toast(next==="Y" ? "已設為開放" : "已設為關閉");
 });
 window.deleteCourse = act0(async id=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
@@ -1570,7 +1589,7 @@ window.saveCourse = act0(async()=>{
   const s = val("c_start"), e = val("c_end");
   if(s && e && new Date(e) <= new Date(s)) throw new Error("截止時間必須晚於開放時間");
   const data = {title:val("c_title"),hours:val("c_hours")||0,jit:val("c_jit"),content:val("c_content"),
-    required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:val("c_cmode"),credit_rule:val("c_rule"),
+    required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:$(".c_copt:checked").map(function(){ return this.value; }).get().join(",") || "manual",credit_rule:val("c_rule"),
     code:val("c_code"),unit:val("c_unit"),method:val("c_method")};
   const quiz = $("#quiz_list .qrow").map(function(i){
     const $r = $(this), q = $r.find(".qz_text").val().trim(), t = $r.find(".qz_type").val();
@@ -1779,7 +1798,7 @@ window.openTask = id => {
   const t = DB.Tasks.find(x => String(x.id) === String(id)); if(!t) return;
   const c = taskCourse(t);
   if(!c){ toast("找不到此任務對應的課程"); return; }
-  if(!canOpen(c)){ toast("此課程目前未開放"); return; }
+  if(!canOpen(c)){ toast("此課程目前關閉"); return; }
   location.hash = "course/" + encodeURIComponent(c.id);
 };
 window.addExt = act(async()=>{ if(!val("e_title")) throw new Error("請輸入訓練名稱");
@@ -1801,6 +1820,7 @@ window.addSurvey = act(async cid=>{
   }
   tabState.cst = "survey";
   await addRow("Surveys",{email:user.email,course_id:c.id,course_title:c.title,survey:"課後滿意度",answer:JSON.stringify(ans),time:new Date().toISOString()});
+  await tryCredit(c);
   await syncTaskDone(c);
   toast("感謝填寫");
 });
@@ -1817,6 +1837,7 @@ window.addQuiz = act(async cid=>{
   const score = ans.filter(x=>x.correct).length;
   tabState.cst = "quiz"; tabState.qzRetake = null;
   await addRow("QuizResults",{email:user.email,course_id:c.id,course_title:c.title,score,total:qs.length,answers:JSON.stringify(ans),time:new Date().toISOString()});
+  await tryCredit(c);
   await syncTaskDone(c);
   toast(`測驗完成：答對 ${score} / ${qs.length} 題`);
 });
@@ -1895,6 +1916,19 @@ function route(keepFocus){
   if(k === "courses"){ syncMedia(); initCKEditor(); }
   if(k === "forms") initCKEditor();
 }
+/* 截止時間到自動關閉：每 30 秒檢查一次，有課程的開放狀態改變就重繪（管理者編輯表單、輸入中、彈窗開啟時不重繪） */
+let _openSnap = null;
+setInterval(()=>{
+  if(!user || !DB.Courses) return;
+  const snap = DB.Courses.map(c=>c.id+":"+(isOpenNow(c)?1:0)).join("|");
+  const changed = _openSnap !== null && snap !== _openSnap;
+  _openSnap = snap;
+  if(!changed) return;
+  if(window.Swal && Swal.isVisible()) return;
+  if($(document.activeElement).is("input:not([type=checkbox]),textarea,select,[contenteditable=true]")) return;
+  if(isAdmin() && /^#courses/.test(location.hash||"") && tabState.ct==="form") return;
+  route();
+}, 30000);
 /* 搜尋框：只更新搜尋框以外的內容、保留輸入框本身，因此輸入法組字（注音／拼音）期間也能即時搜尋 */
 function patchDom(oldEl,newEl,keepId){
   const on=[...oldEl.childNodes], nn=[...newEl.childNodes];
