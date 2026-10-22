@@ -660,7 +660,7 @@ const progKey = cid => `hcid_prog_${user.email}_${cid}`;
 function getProg(cid){ try{ return JSON.parse(localStorage.getItem(progKey(cid))) || {sec:0,dur:0}; }catch(e){ return {sec:0,dur:0}; } }
 function saveProg(cid,p){ try{ localStorage.setItem(progKey(cid), JSON.stringify(p)); }catch(e){} }
 const hasCredit = cid => DB.Records.some(r => eq(r.email,user.email) && r.course_id===cid && stOf(r)==="合格");
-/* 課程「已完成」＝ 學習進度與學分已採認 ＋ 課後測驗已作答（課程有測驗題才需要）＋ 課後滿意度問卷已填寫（有問卷題目才需要） */
+/* 課程「已完成」＝ 學習進度與學分已採認 ＋ 測驗專區已作答（課程有測驗題才需要）＋ 課後滿意度問卷已填寫（有問卷題目才需要） */
 const creditOk = (email,c) => DB.Records.some(r => eq(r.email,email) && r.course_id===c.id && stOf(r)==="合格");
 const quizOk   = (email,c) => !parseQuiz(c).length || (DB.QuizResults||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id));
 const surveyOk = (email,c) => !sortedQs().length || (DB.Surveys||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id));
@@ -864,6 +864,19 @@ function quizRow(q){
     <select class="qz_type form-select" onchange="qzType(this)">${Object.entries(QZ_TYPES).map(([k,l])=>`<option value="${k}" ${t===k?"selected":""}>${l}</option>`).join("")}</select>
     <button type="button" class="btn btn-outline-danger btn-sm" onclick="$(this).closest('.qrow').remove()">刪除</button></div>`;
 }
+/* 測驗專區：滿分 100 分、配分由系統平均分配（除不盡的餘數由前幾題各多 1 分）；作答時題目順序隨機（每次作答重新洗牌，作答期間重繪不重洗） */
+const qzPoints = qs => { const n = qs.length, b = Math.floor(100/n), r = 100 - b*n; return qs.map((_,i)=> b + (i < r ? 1 : 0)); };
+function qzOrderOf(c, n){
+  tabState.qzOrder = tabState.qzOrder || {};
+  let o = tabState.qzOrder[c.id];
+  if(!o || o.length !== n){
+    o = [...Array(n).keys()];
+    for(let i=n-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [o[i],o[j]] = [o[j],o[i]]; }
+    tabState.qzOrder[c.id] = o;
+  }
+  return o;
+}
+const qzScoreText = r => Number(r.total)===100 ? `${r.score} 分（滿分 100 分）` : `${r.score} / ${r.total}`;
 const lastQuiz = c => (DB.QuizResults||[]).filter(x=>eq(x.email,user.email) && String(x.course_id||"")===String(c.id))
   .sort((a,b)=>String(b.time).localeCompare(String(a.time)))[0];
 function courseQuizLearner(c){
@@ -873,7 +886,7 @@ function courseQuizLearner(c){
   if(last && !retake){
     let ans = []; try{ ans = JSON.parse(last.answers||"[]"); }catch(e){}
     const tries = DB.QuizResults.filter(x=>eq(x.email,user.email) && String(x.course_id||"")===String(c.id)).length;
-    return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課後測驗</b><span class="badge rounded-pill bg-success-subtle text-success-emphasis">最近成績：${esc(last.score)} / ${esc(last.total)}</span></div>
+    return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>測驗專區</b><span class="badge rounded-pill bg-success-subtle text-success-emphasis">最近成績：${esc(qzScoreText(last))}</span></div>
       <div class="form-text my-2">已作答 ${tries} 次，最近一次：${esc(fmtDT(last.time).slice(0,16))}</div>` +
       qs.map((q,i)=>{ const a = ans[i]; const ok = a && qzCorrect(q, a.a);
         return `<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}）</span>
@@ -881,17 +894,18 @@ function courseQuizLearner(c){
           ${ok?"":`<div class="opt d-flex align-items-center gap-2 my-2" style="cursor:default">正確答案：${esc(qzRightText(q))}</div>`}</div>`; }).join("") +
       `<button class="btn btn-primary" onclick="retakeQuiz('${cid}')">重新作答</button></div>`;
   }
-  return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課後測驗（共 ${qs.length} 題）</b>${last?`<span class="form-text">上次成績：${esc(last.score)} / ${esc(last.total)}</span>`:""}</div>` +
-    qs.map((q,i)=>`<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${richI(q.q)}</b> <span class="req">*</span> <span class="form-text">（${QZ_TYPES[q.t]}${q.t==="multi"?"，可複選":""}）</span>
-      ${qzOpts(q).map((o,k)=>`<label class="opt d-flex align-items-center gap-2 my-2"><input class="form-check-input" type="${q.t==="multi"?"checkbox":"radio"}" name="qz_${i}" value="${k}"> ${qzLetter(k)}. ${esc(o)}</label>`).join("")}</div>`).join("") +
+  return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>測驗專區（共 ${qs.length} 題，滿分 100 分）</b>${last?`<span class="form-text">上次成績：${esc(qzScoreText(last))}</span>`:""}</div>` +
+    (() => { const pts = qzPoints(qs); return qzOrderOf(c, qs.length).map((i,pos)=>{ const q = qs[i]; return `<div class="card card-body" style="margin-bottom:10px"><b>${pos+1}. ${richI(q.q)}</b> <span class="req">*</span> <span class="form-text">（${QZ_TYPES[q.t]}${q.t==="multi"?"，可複選":""}，${pts[i]} 分）</span>
+      ${qzOpts(q).map((o,k)=>`<label class="opt d-flex align-items-center gap-2 my-2"><input class="form-check-input" type="${q.t==="multi"?"checkbox":"radio"}" name="qz_${i}" value="${k}"> ${qzLetter(k)}. ${esc(o)}</label>`).join("")}</div>`; }).join(""); })() +
     `<button class="btn btn-primary" onclick="addQuiz('${cid}')">提交測驗</button></div>`;
 }
 function courseQuizAdmin(c){
   const qs = parseQuiz(c);
-  const head = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課後測驗（共 ${qs.length} 題）</b><button class="btn btn-outline-primary btn-sm" onclick="editCourse('${esc(c.id)}',true)">編輯測驗</button></div>`;
+  const head = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>測驗專區（共 ${qs.length} 題，滿分 100 分）</b><button class="btn btn-outline-primary btn-sm" onclick="editCourse('${esc(c.id)}',true)">編輯測驗</button></div>`;
   if(!qs.length) return `<div class="card card-body">${head}<div class="text-center text-secondary p-4">此課程尚未設定測驗題目</div></div>`;
+  const pts = qzPoints(qs);
   return `<div class="card card-body">${head}` + qs.map((q,i)=>{ const right = k => q.t==="multi" ? q.a.includes(k) : q.a===k;
-    return `<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}）</span>` +
+    return `<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}，${pts[i]} 分）</span>` +
     qzOpts(q).map((o,k)=>`<div class="opt d-flex align-items-center gap-2 my-2" style="cursor:default;${right(k)?"color:var(--ok);font-weight:700":""}">${right(k)?"✓":"○"} ${qzLetter(k)}. ${esc(o)}${right(k)?"（正解）":""}</div>`).join("") + `</div>`; }).join("") + `</div>`;
 }
 function sqAdminView(){
@@ -1025,7 +1039,7 @@ const VIEWS = {
     </div>
     <ul class="nav nav-pills gap-1 mb-3" id="ctabs" style="margin-top:12px">
       <li class="nav-item"><button data-k="progress" class="nav-link ${ctab==="progress"?"active":""}" onclick="cTab('progress')">學習進度與學分</button></li>
-      ${quizPanel?`<li class="nav-item"><button data-k="quiz" class="nav-link ${ctab==="quiz"?"active":""}" onclick="cTab('quiz')">課後測驗${quizDone?" ✓":""}</button></li>`:""}
+      ${quizPanel?`<li class="nav-item"><button data-k="quiz" class="nav-link ${ctab==="quiz"?"active":""}" onclick="cTab('quiz')">測驗專區${quizDone?" ✓":""}</button></li>`:""}
       ${survey?`<li class="nav-item"><button data-k="survey" class="nav-link ${ctab==="survey"?"active":""}" onclick="cTab('survey')">課後滿意度問卷${surveyDone?" ✓":""}</button></li>`:""}
     </ul>
     <div data-cp="progress" style="${ctab==="progress"?"":"display:none"}">
@@ -1475,12 +1489,12 @@ function courseForm(){
     <div class="form-text">都不勾選＝由學員自行標記完成後採認。後測及格標準為答對 ${CONFIG.QUIZ_PASS_PCT}%。</div>
     <div class="form-text">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。學員第一次開啟課程時會自動記為「已選課」，達標後轉為「合格」。</div></fieldset>
 
-  <fieldset class="fieldset" id="quiz_block"><legend>課後測驗</legend>
+  <fieldset class="fieldset" id="quiz_block"><legend>測驗專區</legend>
     <div id="quiz_list">${(editing ? parseQuiz(e) : DEFAULT_QUIZ).map(quizRow).join("")}</div>
     <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuizRow('tf')">＋ 新增是非題</button>
     <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuizRow('single')">＋ 新增單選題</button>
     <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuizRow('multi')">＋ 新增複選題</button>
-    <div class="form-text">是非題（A. 正確／B. 錯誤）、單選題（唯一正解）、複選題（需全部選對才算答對），每題需指定正解。全部刪除代表此課程沒有測驗。</div></fieldset>
+    <div class="form-text">是非題（A. 正確／B. 錯誤）、單選題（唯一正解）、複選題（需全部選對才算答對），每題需指定正解。全部刪除代表此課程沒有測驗。滿分 100 分，各題配分由系統自動平均分配；學員作答時題目順序隨機排列。</div></fieldset>
 
   <button class="btn btn-primary" onclick="saveCourse()">${editing?"儲存變更":"新增課程"}</button>
   ${editing?` <button class="btn btn-outline-danger" onclick="deleteCourse('${esc(e.id)}')">刪除此課程</button> <button class="btn btn-outline-primary" onclick="cancelEditCourse()">放棄修改</button>`:""}</div>`;
@@ -1535,7 +1549,7 @@ function initCKEditor(){
   if(window.CK_ED){ try{ window.CK_ED.destroy(); }catch(e){} window.CK_ED = null; }
   const ta = document.getElementById("c_content");
   if(ta) ckAttach(ta, false).then(ed=>{ if(ed) window.CK_ED = ed; });
-  document.querySelectorAll("#quiz_list .qz_text").forEach(t=>ckAttach(t, true));   // 課後測驗題目
+  document.querySelectorAll("#quiz_list .qz_text").forEach(t=>ckAttach(t, true));   // 測驗專區題目
   ckAttach(document.getElementById("sq_text"), true);                                 // 問卷題目
 }
 window.syncMedia = ()=>{
@@ -1832,18 +1846,20 @@ window.addQuiz = act(async cid=>{
   const ans = [];
   for(let i=0;i<qs.length;i++){
     const picked = $(`input[name="qz_${i}"]:checked`).map(function(){ return Number(this.value); }).get();
-    if(!picked.length) throw new Error(`請回答第 ${i+1} 題`);
+    if(!picked.length) throw new Error(`請回答第 ${((tabState.qzOrder||{})[c.id]||[]).indexOf(i)+1 || i+1} 題`);
     const a = qs[i].t==="multi" ? picked : picked[0];
     ans.push({q:qs[i].q, a, correct:qzCorrect(qs[i], a)});
   }
-  const score = ans.filter(x=>x.correct).length;
-  tabState.cst = "quiz"; tabState.qzRetake = null;
-  await addRow("QuizResults",{email:user.email,course_id:c.id,course_title:c.title,score,total:qs.length,answers:JSON.stringify(ans),time:new Date().toISOString()});
+  const pts = qzPoints(qs);
+  const score = ans.reduce((sum,x,i)=> sum + (x.correct ? pts[i] : 0), 0);
+  const right = ans.filter(x=>x.correct).length;
+  tabState.cst = "quiz"; tabState.qzRetake = null; if(tabState.qzOrder) delete tabState.qzOrder[c.id];
+  await addRow("QuizResults",{email:user.email,course_id:c.id,course_title:c.title,score,total:100,answers:JSON.stringify(ans),time:new Date().toISOString()});
   await tryCredit(c);
   await syncTaskDone(c);
-  toast(`測驗完成：答對 ${score} / ${qs.length} 題`);
+  toast(`測驗完成：${score} 分（答對 ${right} / ${qs.length} 題）`);
 });
-window.retakeQuiz = cid => { tabState.qzRetake = cid; tabState.cst = "quiz"; route(); };
+window.retakeQuiz = cid => { if(tabState.qzOrder) delete tabState.qzOrder[cid]; tabState.qzRetake = cid; tabState.cst = "quiz"; route(); };
 window.cTab = k => {
   tabState.cst = k;
   $("[data-cp]").each(function(){ $(this).toggle($(this).data("cp") === k); });
