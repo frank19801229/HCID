@@ -296,7 +296,7 @@ const CONFIG = {
 
 const TABLES = {
   Members:   ["email","name","role","unit","emp_id","job","active","dept","pid","phone","password"],   // password＝登入密碼（空白＝預設密碼）；dept＝部科、unit＝工作單位(部門)、job＝職類別、pid＝身分證字號、phone＝連絡電話；emp_id 已停用（保留欄位）
-  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule","code","unit","method","quiz","open","credits"],
+  Courses:   ["id","title","pathogen","topic","hours","jit","content","required","media_type","media_url","schedule_start","schedule_end","credit_mode","credit_rule","code","unit","method","quiz","open","credits","pass_score"],
   Tasks:     ["id","title","assignee","due","status"],
   Records:   ["id","email","course_id","code","course_title","unit","topic","method","hours","date","status","category"],
   FitTests:  ["email","date","model","result"],
@@ -665,8 +665,9 @@ const creditOk = (email,c) => DB.Records.some(r => eq(r.email,email) && r.course
 const quizOk   = (email,c) => !parseQuiz(c).length || (DB.QuizResults||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id));
 const surveyOk = (email,c) => !sortedQs().length || (DB.Surveys||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id));
 const courseDone = (email,c) => creditOk(email,c) && quizOk(email,c) && surveyOk(email,c);
-/* 後測及格：任一次作答的答對比例達 CONFIG.QUIZ_PASS_PCT（課程沒有測驗題則視為達成） */
-const quizPassed = (email,c) => !parseQuiz(c).length || (DB.QuizResults||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id) && Number(x.total) > 0 && Number(x.score)/Number(x.total)*100 >= CONFIG.QUIZ_PASS_PCT);
+/* 後測及格：任一次作答的分數（換算成滿分 100）達課程設定的及格分數 pass_score（未設定用 CONFIG.QUIZ_PASS_PCT；課程沒有測驗題則視為達成） */
+const passOf = c => { const v = c.pass_score; const n = Number(v); return (v === "" || v == null || !isFinite(n) || n < 0 || n > 100) ? CONFIG.QUIZ_PASS_PCT : n; };
+const quizPassed = (email,c) => !parseQuiz(c).length || (DB.QuizResults||[]).some(x => eq(x.email,email) && String(x.course_id||"")===String(c.id) && Number(x.total) > 0 && Number(x.score)/Number(x.total)*100 >= passOf(c));
 const creditStatus = (c, k) => k==="video" ? (playKind(c)==="none" ? true : reached(c)) : k==="quiz" ? quizPassed(user.email,c) : surveyOk(user.email,c);
 const creditReady = c => { const o = creditOpts(c); return o.length > 0 && o.every(k => creditStatus(c,k)); };
 async function tryCredit(c){ if(c.credit_mode==="manual" || hasCredit(c.id) || !creditReady(c)) return; await awardCredit(c); }
@@ -726,7 +727,7 @@ function updateProgressUI(c){
   else if(c.credit_mode==="manual") txt = "此課程由學員自行標記完成後採認學分。";
   else if(isOptMode(c) && creditOpts(c).length){
     const st = k => creditStatus(c,k) ? "✓" : "✗";
-    const parts = creditOpts(c).map(k => k==="video" ? (kind==="video" ? `影片觀看 ${progPct(c)}%／${rule}% ${st(k)}` : kind==="dwell" ? `教材停留 ${Math.floor(p.sec/60)}／${rule} 分鐘 ${st(k)}` : `教材 ${st(k)}`) : k==="quiz" ? `後測及格（${CONFIG.QUIZ_PASS_PCT}%）${st(k)}` : `滿意度問卷 ${st(k)}`);
+    const parts = creditOpts(c).map(k => k==="video" ? (kind==="video" ? `影片觀看 ${progPct(c)}%／${rule}% ${st(k)}` : kind==="dwell" ? `教材停留 ${Math.floor(p.sec/60)}／${rule} 分鐘 ${st(k)}` : `教材 ${st(k)}`) : k==="quiz" ? `後測及格（${passOf(c)} 分）${st(k)}` : `滿意度問卷 ${st(k)}`);
     txt = `採認條件：${parts.join("、")}；全部達成自動採認 ${c.hours} 小時。`;
   }
   else if(kind==="video") txt = `有效觀看 ${progPct(c)}%（${mm(p.sec)} / ${p.dur?mm(p.dur):"--:--"}），達 ${rule}% 自動採認 ${c.hours} 小時。快轉跳過的片段不計入。`;
@@ -908,6 +909,24 @@ function courseQuizAdmin(c){
     return `<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}，${pts[i]} 分）</span>` +
     qzOpts(q).map((o,k)=>`<div class="opt d-flex align-items-center gap-2 my-2" style="cursor:default;${right(k)?"color:var(--ok);font-weight:700":""}">${right(k)?"✓":"○"} ${qzLetter(k)}. ${esc(o)}${right(k)?"（正解）":""}</div>`).join("") + `</div>`; }).join("") + `</div>`;
 }
+/* 成績紀錄（管理者）：本課程每位學員的測驗分數（取最高分；舊紀錄換算成滿分 100） */
+function courseScoreAdmin(c){
+  const best = {};
+  (DB.QuizResults||[]).filter(x=>String(x.course_id||"")===String(c.id)).forEach(x=>{
+    const t = Number(x.total)||0, sc = t===100 ? Number(x.score) : (t > 0 ? Math.round(Number(x.score)/t*100) : 0), k = String(x.email||"").toLowerCase();
+    if(best[k] === undefined || sc > best[k]) best[k] = sc;
+  });
+  const rows = Object.keys(best).map(k=>{ const m = (DB.Members||[]).find(x=>eq(x.email,k)) || {}; return {dept:m.dept||"", unit:m.unit||"", job:m.job||"", name:m.name||k, score:best[k]}; })
+    .sort((a,b)=> String(a.dept).localeCompare(String(b.dept),"zh-Hant") || String(a.unit).localeCompare(String(b.unit),"zh-Hant") || String(a.name).localeCompare(String(b.name),"zh-Hant"));
+  return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>成績紀錄（共 ${rows.length} 人）</b><span class="form-text">每位學員取最高分，滿分 100 分</span></div>` +
+    table([
+      ["部科",r=>esc(r.dept)],
+      ["工作單位(部門)",r=>esc(r.unit)],
+      ["職類別",r=>esc(r.job)],
+      ["姓名",r=>esc(r.name)],
+      ["分數",r=>esc(r.score)]
+    ], rows, "尚無學員作答紀錄") + `</div>`;
+}
 function sqAdminView(){
   const qs = sortedQs();
   const e = tabState.sqEdit ? (DB.SurveyQuestions||[]).find(x=>x.id===tabState.sqEdit) : null;
@@ -1030,7 +1049,8 @@ const VIEWS = {
     const surveyDone = (DB.Surveys||[]).some(x => eq(x.email,user.email) && String(x.course_id||"")===String(c.id));
     const quizPanel = isAdmin() ? courseQuizAdmin(c) : courseQuizLearner(c);
     const quizDone = !isAdmin() && !!lastQuiz(c);
-    const ctab = (tabState.cst === "survey" && survey) ? "survey" : (tabState.cst === "quiz" && quizPanel) ? "quiz" : "progress";
+    const scorePanel = isAdmin() ? courseScoreAdmin(c) : "";
+    const ctab = (tabState.cst === "scores" && scorePanel) ? "scores" : (tabState.cst === "survey" && survey) ? "survey" : (tabState.cst === "quiz" && quizPanel) ? "quiz" : "progress";
     return head(esc(c.title), `${esc([c.pathogen,c.topic,reqLabel(c.required),c.hours+" 小時"].filter(Boolean).join(" · "))}`) + back + `
     <div class="card card-body">
       <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><div>${schedTag(c)} <span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span> <span class="form-text">${esc(schedText(c))}</span></div></div>
@@ -1041,6 +1061,7 @@ const VIEWS = {
       <li class="nav-item"><button data-k="progress" class="nav-link ${ctab==="progress"?"active":""}" onclick="cTab('progress')">學習進度與學分</button></li>
       ${quizPanel?`<li class="nav-item"><button data-k="quiz" class="nav-link ${ctab==="quiz"?"active":""}" onclick="cTab('quiz')">測驗專區${quizDone?" ✓":""}</button></li>`:""}
       ${survey?`<li class="nav-item"><button data-k="survey" class="nav-link ${ctab==="survey"?"active":""}" onclick="cTab('survey')">課後滿意度問卷${surveyDone?" ✓":""}</button></li>`:""}
+      ${scorePanel?`<li class="nav-item"><button data-k="scores" class="nav-link ${ctab==="scores"?"active":""}" onclick="cTab('scores')">成績紀錄</button></li>`:""}
     </ul>
     <div data-cp="progress" style="${ctab==="progress"?"":"display:none"}">
     <div class="card card-body">
@@ -1052,6 +1073,7 @@ const VIEWS = {
     </div>
     ${quizPanel?`<div data-cp="quiz" style="${ctab==="quiz"?"":"display:none"}">${quizPanel}</div>`:""}
     ${survey?`<div data-cp="survey" style="${ctab==="survey"?"":"display:none"}">${survey}</div>`:""}
+    ${scorePanel?`<div data-cp="scores" style="${ctab==="scores"?"":"display:none"}">${scorePanel}</div>`:""}
     <div class="form-text my-2">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>`;
   },
 
@@ -1485,8 +1507,9 @@ function courseForm(){
 
   <fieldset class="fieldset"><legend>學分採認</legend><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
     <div><label class="form-label">採認方式（可複選，全部達成才採認）</label>${(()=>{ const sel = e.id ? creditOpts(e) : ["video"]; return CREDIT_OPTS.map(([k,l])=>`<label class="opt d-flex align-items-center gap-2 my-1"><input class="form-check-input c_copt" type="checkbox" value="${k}" ${sel.includes(k)?"checked":""}> ${l}</label>`).join(""); })()}</div>
-    ${field("c_rule","達標條件","number","非影片教材停留分鐘，例：10（影片固定 95%）",e.credit_rule)}</div>
-    <div class="form-text">都不勾選＝由學員自行標記完成後採認。後測及格標準為答對 ${CONFIG.QUIZ_PASS_PCT}%。</div>
+    ${field("c_rule","達標條件","number","非影片教材停留分鐘，例：10（影片固定 95%）",e.credit_rule)}
+    ${field("c_pass","後測及格分數（0～100）","number","例：60",e.pass_score === undefined || e.pass_score === "" ? CONFIG.QUIZ_PASS_PCT : e.pass_score)}</div>
+    <div class="form-text">都不勾選＝由學員自行標記完成後採認。測驗專區滿分 100 分，達到「後測及格分數」才算及格。</div>
     <div class="form-text">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。學員第一次開啟課程時會自動記為「已選課」，達標後轉為「合格」。</div></fieldset>
 
   <fieldset class="fieldset" id="quiz_block"><legend>測驗專區</legend>
@@ -1604,8 +1627,10 @@ window.saveCourse = act0(async()=>{
   } else url = "";
   const s = val("c_start"), e = val("c_end");
   if(s && e && new Date(e) <= new Date(s)) throw new Error("截止時間必須晚於開放時間");
+  const ps = val("c_pass");
+  if(ps !== "" && !(Number(ps) >= 0 && Number(ps) <= 100)) throw new Error("後測及格分數請輸入 0～100 的數字");
   const data = {title:val("c_title"),hours:val("c_hours")||0,credits:$("input[name=c_credits]:checked").val()||"1",jit:val("c_jit"),content:val("c_content"),
-    required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:$(".c_copt:checked").map(function(){ return this.value; }).get().join(",") || "manual",credit_rule:val("c_rule"),
+    required:val("c_req"),media_type:type,media_url:url,schedule_start:s,schedule_end:e,credit_mode:$(".c_copt:checked").map(function(){ return this.value; }).get().join(",") || "manual",credit_rule:val("c_rule"),pass_score:ps === "" ? String(CONFIG.QUIZ_PASS_PCT) : ps,
     code:val("c_code"),unit:val("c_unit"),method:val("c_method")};
   const quiz = $("#quiz_list .qrow").map(function(i){
     const $r = $(this), q = $r.find(".qz_text").val().trim(), t = $r.find(".qz_type").val();
