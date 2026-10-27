@@ -1120,8 +1120,7 @@ const VIEWS = {
     </div>
     ${quizPanel?`<div data-cp="quiz" style="${ctab==="quiz"?"":"display:none"}">${quizPanel}</div>`:""}
     ${survey?`<div data-cp="survey" style="${ctab==="survey"?"":"display:none"}">${survey}</div>`:""}
-    ${scorePanel?`<div data-cp="scores" style="${ctab==="scores"?"":"display:none"}">${scorePanel}</div>`:""}
-    <div class="form-text my-2">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>`;
+    ${scorePanel?`<div data-cp="scores" style="${ctab==="scores"?"":"display:none"}">${scorePanel}</div>`:""}`;
   },
 
   jit(){
@@ -1130,8 +1129,7 @@ const VIEWS = {
       const jitRows = DB.Courses.filter(c => c.jit==="Y");
       const allRows = DB.Courses.filter(c => !q || JSON.stringify(c).toLowerCase().includes(q));
       return head("即時訓練","快速找到情境需要的訓練與作業資料。") + `
-      <div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>即時訓練課程列表</b><span class="form-text" style="font-size:16px;font-weight:700;color:#dc2626">共 ${jitRows.length} 筆</span></div>
-      <div class="form-text mb-2">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>` + table([
+      <div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>即時訓練課程列表</b><span class="form-text" style="font-size:16px;font-weight:700;color:#dc2626">共 ${jitRows.length} 筆</span></div>` + table([
         ["課程名稱",r=>`<b>${esc(r.title)}</b><div class="form-text">${esc([r.topic,r.pathogen].filter(Boolean).join(" · "))}</div>`],
         ["教材",r=>`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span>`],
         ["說明",r=>richP(r.content)],
@@ -1149,7 +1147,6 @@ const VIEWS = {
     const rows = DB.Courses.filter(c => c.jit==="Y" && (!q || JSON.stringify(c).toLowerCase().includes(q)));
     return head("即時訓練","快速找到情境需要的訓練與作業資料。") + `
     <div class="card card-body"><input class="form-control" id="jq" value="${esc(tabState.jq||"")}">
-    <div class="form-text my-2">請使用經院方核定之教材。示範教材僅供操作展示，不作為臨床指示。</div>
     ${rows.length? rows.map(c=>`<div class="card card-body" style="margin-top:10px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><div><b>${esc(c.title)}</b> ${c.topic?`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(c.topic)}</span> `:""}${c.pathogen?`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(c.pathogen)}</span> `:""}<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(MEDIA_LABEL[c.media_type]||"純文字教材")}</span></div>
       ${canOpen(c)?`<a class="btn btn-primary btn-sm" href="#course/${esc(c.id)}">開啟教材</a>`:`<button class="btn btn-primary btn-sm" disabled>關閉</button>`}</div>${richP(c.content)}</div>`).join("") : `<div class="text-center text-secondary p-4">沒有符合的課程或教材</div>`}</div>`;
   },
