@@ -292,7 +292,7 @@ aside .nav-link.active{color:#b84c78}
 .sp-mt12{margin-top:12px!important}
 .u-16{max-height:68vh!important}
 .u-17{max-width:520px!important}
-.u-18{color:var(--mute)!important;font-size:14px!important}
+.ov-summary{color:var(--ink)!important;font-size:18px!important;font-weight:700!important}
 .sp-mb16{margin-bottom:16px!important}
 .sp-mt16{margin-top:16px!important}
 .sp-mb10{margin-bottom:10px!important}
@@ -681,15 +681,42 @@ function hoursOf(email, year=curYear()){
   return sumH(effRecords(email,year).filter(r=>stOf(r)==="合格")) + sumH(extOf(email,year));
 }
 const isActive = m => m.active !== "N";
+/* ---------- 管理者年度：全部頁面的資料依「整備總覽」選的年度顯示 ---------- */
+const adminYear = () => Number(tabState.oy) || curYear();
+const pageYear = () => isAdmin() ? adminYear() : (Number(tabState.py) || curYear());
+const courseInYear = (c, y) => { const s = yearOf(c.schedule_start), e = yearOf(c.schedule_end); return (s ? y >= s : true) && (e ? y <= e : true); };   // 沒設排程（不限時間）的課程每個年度都會出現
+const dateInYear = (d, y) => { const v = yearOf(d); return !v || v === y; };   // 沒有日期的資料每個年度都會出現
+function yearView(full, y){
+  const keep = new Set([tabState.cid, tabState.editId].filter(Boolean).map(String));   // 正在檢視／編輯的課程一定要找得到
+  const inCourse = new Set((full.Courses||[]).filter(c => courseInYear(c,y) || keep.has(String(c.id))).map(c => String(c.id)));
+  const by = (name, f) => (full[name]||[]).filter(f);
+  return {...full,
+    Courses: by("Courses", c => inCourse.has(String(c.id))),
+    Tasks: by("Tasks", t => dateInYear(t.due, y)),
+    Records: by("Records", r => dateInYear(r.date, y)),
+    External: by("External", r => dateInYear(r.date, y)),
+    FitTests: by("FitTests", r => dateInYear(r.date, y)),
+    Attendance: by("Attendance", r => dateInYear(r.date, y)),
+    News: by("News", r => dateInYear(r.date, y)),
+    Surveys: by("Surveys", r => dateInYear(r.time, y)),
+    QuizResults: by("QuizResults", r => dateInYear(r.time, y))};
+}
+function withYear(fn){   // 只在畫面繪製時使用年度過濾後的資料；新增、修改、刪除仍操作完整資料
+  if(!user || !isAdmin() || !DB.Courses) return fn();
+  const full = DB; __fullDB = full; DB = yearView(full, adminYear());
+  try{ return fn(); }finally{ DB = full; __fullDB = null; }
+}
 function stats(yr=curYear()){
   const members = DB.Members.filter(isActive), ok = members.filter(m => hoursOf(m.email, yr) >= CONFIG.ANNUAL_TARGET).length;
   return {members:members.length, ok, pct: members.length ? Math.round(ok/members.length*100) : 0,
     courses: DB.Courses.length, openTasks: DB.Tasks.filter(t=>taskStatus(t)!=="已完成").length, fits: DB.FitTests.length};
 }
+let __fullDB = null;
 function yearOptions(email){
   const ys = new Set(Array.from({length:11}, (_,i)=>curYear()+i));   // 今年 ～ 後十年
-  DB.Records.filter(r=>!email||eq(r.email,email)).forEach(r=>{ const y=yearOf(r.date); if(y) ys.add(y); });
-  DB.External.filter(r=>!email||eq(r.email,email)).forEach(r=>{ const y=yearOf(r.date); if(y) ys.add(y); });
+  const src = __fullDB || DB;   // 年度選項要看完整資料，不受目前選的年度影響
+  src.Records.filter(r=>!email||eq(r.email,email)).forEach(r=>{ const y=yearOf(r.date); if(y) ys.add(y); });
+  src.External.filter(r=>!email||eq(r.email,email)).forEach(r=>{ const y=yearOf(r.date); if(y) ys.add(y); });
   return [...ys].sort((a,b)=>a-b);
 }
 
@@ -1057,7 +1084,7 @@ const VIEWS = {
     <div class="card card-body sp-mb16"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>${oy} 年度時數達標比例</b><select class="w-auto form-select" onchange="tabState.oy=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),oy)}</select></div>
       <div class="kpi"><div class="n">${s.pct} %</div></div>
       <div class="progress my-2 sp-h10"><div class="progress-bar" style="width:${s.pct}%"></div></div>
-      <div class="l u-18">${s.ok} / ${s.members} 位成員達標 · 依目前可見資料</div></div>
+      <div class="l ov-summary">${s.ok} / ${s.members} 位成員達標 · 依目前可見資料</div></div>
     <div class="row g-3 row-cols-2 row-cols-lg-4 mb-3">
       <div class="col"><div class="card card-body kpi"><div class="l">啟用團隊成員</div><div class="n">${s.members} 人</div></div></div>
       <div class="col"><div class="card card-body kpi"><div class="l">課程教材</div><div class="n">${s.courses} 堂</div></div></div>
@@ -1472,7 +1499,7 @@ const memberKey = (pid,name) => { let a=5381, b=52711; const s = String(pid||"")
   return "m-" + a.toString(36) + b.toString(36) + NOEMAIL; };
 const normHead = h => String(h||"").trim().toLowerCase().replace(/（/g,"(").replace(/）/g,")").replace(/\s+/g,"");
 function rosterFiltered(){
-  const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET;
+  const yr = pageYear(), tgt = CONFIG.ANNUAL_TARGET;
   const q = (tabState.rq||"").toLowerCase(), fd = tabState.rd||"", fu = tabState.ru||"", fr = tabState.rr||"", fs = tabState.rs||"", ff = tabState.rf||"";
   const all = DB.Members.map(m => ({...m, h: hoursOf(m.email, yr)}));
   const rows = all.filter(m =>
@@ -1497,7 +1524,7 @@ function rosterList(){
   <div class="card card-body">
     <div class="row g-2 mb-3">
       <div class="col-12 col-lg-3"><input class="form-control" id="rq" placeholder="搜尋部科、單位、職類別、姓名、身分證字號、電話、Email" value="${esc(tabState.rq||"")}"></div>
-      <div class="col-6 col-lg"><select class="form-select" onchange="tabState.py=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),yr)}</select></div>
+      <div class="col-6 col-lg"><select class="form-select" onchange="tabState.py=tabState.oy=Number(this.value);route()">${opts(yearOptions().map(y=>[y,y+" 年度"]),yr)}</select></div>
       <div class="col-6 col-lg"><select class="form-select" onchange="tabState.rd=this.value;tabState.ru='';route()"><option value="">部科</option>${opts(depts,fd)}</select></div>
       <div class="col-6 col-lg"><select class="form-select" onchange="tabState.ru=this.value;route()"><option value="">工作單位</option>${opts(units,fu)}</select></div>
       <div class="col-6 col-lg"><select class="form-select" onchange="tabState.rr=this.value;route()">${opts([["","角色"],...ROLES.map(r=>[r,r])],fr)}</select></div>
@@ -1555,7 +1582,7 @@ function importForm(){
 function memberView(){
   const email = viewEmail(), admin = isAdmin();
   const m = DB.Members.find(x=>eq(x.email,email)) || {email, name: email.split("@")[0], role:"學員"};
-  const yr = Number(tabState.py) || curYear(), tgt = CONFIG.ANNUAL_TARGET, t = admin ? "rec" : curTab("pt","rec");
+  const yr = pageYear(), tgt = CONFIG.ANNUAL_TARGET, t = admin ? "rec" : curTab("pt","rec");
   const eff = effRecords(email, yr).sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
   const done = hoursOf(email, yr), enr = sumH(eff.filter(r=>stOf(r)==="已選課"));
   const dp = Math.min(100, done/tgt*100), ep = Math.min(100-dp, enr/tgt*100), rp = Math.max(0, 100-dp-ep);
@@ -1578,7 +1605,7 @@ function memberView(){
 
   return head(admin ? esc(m.name)+" 的學習履歷" : "個人學習履歷", admin ? "檢視並維護此學員的年度時數與修課紀錄。" : "集中查看你的課程、時數與防護裝備紀錄。") + back + `
   <div class="card card-body d-flex flex-row justify-content-between align-items-center gap-2 flex-wrap mb-2"><div><b class="u-5">${esc(m.name)}</b><div class="text-secondary mb-3 u-4">${[showEmail(m.email)||"未填 Email", roleLabel(m.role), m.dept, m.unit, m.job].filter(Boolean).map(esc).join(" · ")}</div></div>
-    <div class="u-3"><select class="w-auto form-select" onchange="tabState.py=Number(this.value);route()">${opts(yearOptions(email).map(y=>[y,y+" 年度"]),yr)}</select>
+    <div class="u-3"><select class="w-auto form-select" onchange="tabState.py=tabState.oy=Number(this.value);route()">${opts(yearOptions(email).map(y=>[y,y+" 年度"]),yr)}</select>
     <button class="btn btn-outline-primary" onclick="downloadCSV()">下載履歷</button></div></div>
   <h2 class="sec">⏳ 整體進度</h2>
   <div class="card card-body"><div class="progress-stacked sp-h16"><div class="progress" style="width:${dp}%"><div class="progress-bar u-2"></div></div><div class="progress" style="width:${ep}%"><div class="progress-bar u-1"></div></div></div>
@@ -2147,7 +2174,7 @@ window.loadDefaultSQ = act0(async()=>{
 window.addAtt = act(async()=>{ if(!val("a_date")||!val("a_count")) throw new Error("請填寫日期與人數");
   await addRow("Attendance",{course_id:val("a_course"),date:val("a_date"),count:val("a_count"),reporter:user.email}); toast("已填報"); });
 window.downloadCSV = ()=>{
-  const email = viewEmail(), yr = Number(tabState.py) || curYear();
+  const email = viewEmail(), yr = pageYear();
   const m = DB.Members.find(x=>eq(x.email,email)) || {name:email};
   const lines = [csvLine(["姓名",m.name,"Email",email,"年度",yr]), csvLine(["類型","課程編號","名稱","開課單位","上課方式","時數","日期","狀態"])];
   effRecords(email,yr).forEach(r=>lines.push(csvLine(["修課",r.code||r.course_id,r.course_title,r.unit,r.method,r.hours,r.date,stOf(r)])));
@@ -2166,7 +2193,7 @@ function route(keepFocus){
   const v = VIEWS[k] || VIEWS.overview;
   const focusId = document.activeElement?.id, pos = document.activeElement?.selectionStart;
   tblReset(k);
-  $("#view").html(v());
+  $("#view").html(withYear(v));
   { const hk = k+"/"+(arg||""); if(!keepFocus){ document.querySelectorAll("#view, main>.site-logo, main>.d-flex.mb-1, main>.form-text").forEach(ve=>{ ve.classList.remove("slide-down"); void ve.offsetWidth; ve.classList.add("slide-down"); }); } route._h = hk; }   // 換頁時 slide-down 顯示
   const active = k === "course" ? "courses" : k;
   $("aside a").each(function(){ $(this).toggleClass("active", $(this).attr("href") === "#"+active); });
@@ -2207,7 +2234,7 @@ window.onSearch = el => {
   const k = (location.hash||"#overview").slice(1).split("/")[0], v = VIEWS[k];
   if(!v || !$("#"+$.escapeSelector(el.id)).length){ route(true); return; }
   tblReset(k);
-  patchDom($("#view")[0], $("<div>").html(v())[0], el.id);
+  patchDom($("#view")[0], $("<div>").html(withYear(v))[0], el.id);
 };
 $("#view").on("input keyup compositionupdate compositionend change search paste cut", SEARCH_IDS.map(id => "#" + id).join(","), function(e){
   const el = this;
