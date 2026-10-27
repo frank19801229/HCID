@@ -574,7 +574,12 @@ function curTab(id, def){ return tabState[id] || def; }
 function field(id,label,type="text",ph="",value="",extra=""){ return `<div><label class="form-label">${label}</label><input class="form-control" id="${id}" type="${type}" placeholder="${esc(ph)}" value="${esc(value)}" ${extra}></div>`; }
 const opts = (list,cur) => list.map(x=>{ const [v,l] = Array.isArray(x)?x:[x,x]; return `<option value="${esc(v)}" ${String(v)===String(cur)?"selected":""}>${esc(l)}</option>`; }).join("");
 const val = id => $("#"+id).val().trim();
-async function submit(fn){ try{ await fn(); route(); }catch(e){ toast("失敗：" + e.message); } }
+async function submit(fn){
+  try{
+    const y = window.scrollY; await fn();
+    if(isAdmin()){ route(true); window.scrollTo(0,y); } else route();   // 管理者新增／修改／刪除後：留在原頁、保留捲動位置
+  }catch(e){ toast("失敗：" + e.message); }
+}
 function act0(fn){ return (...a) => submit(() => fn(...a)); }
 const act = act0;
 function downloadText(name, text, type="text/csv"){
@@ -1740,6 +1745,7 @@ window.deleteCourse = act0(async id=>{
 });
 window.saveCourse = act0(async()=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
+  let savedId = tabState.editId;
   if(!val("c_title")) throw new Error("請輸入課程名稱");
   if(val("c_content").length > CK_CELL_LIMIT) throw new Error(ckTooBigMsg(val("c_content").length));
   const type = val("c_type"); let url = val("c_url");
@@ -1772,7 +1778,7 @@ window.saveCourse = act0(async()=>{
   if(tabState.editId){
     await updateRow("Courses","id",tabState.editId,data); toast("已儲存變更");
   } else {
-    await addRow("Courses",{id:"C"+uid(),pathogen:"",topic:"",...data});
+    savedId = "C"+uid(); await addRow("Courses",{id:savedId,pathogen:"",topic:"",...data});
     if($("#c_assign").prop("checked")){
       for(const m of DB.Members.filter(isActive)){
         await addRow("Tasks",{id:"T"+uid(),title:"完成課程："+data.title,assignee:String(m.email).toLowerCase(),due:(e||"").slice(0,10),status:"待完成"});
@@ -1780,7 +1786,7 @@ window.saveCourse = act0(async()=>{
     }
     toast("已新增課程");
   }
-  tabState.editId = null; tabState.ct = "list";
+  tabState.editId = savedId; tabState.ct = "form";   // 儲存後留在原畫面
 });
 
 /* ---------- 學員管理動作 ---------- */
@@ -1860,7 +1866,7 @@ window.saveMember = act0(async()=>{
     role:normRole(val("m_role")) || "一般學員",active:val("m_active")};
   if(editing){
     const cur = DB.Members.find(m=>eq(m.email,editing));
-    if(isNoEmail(cur.email) && email){ await rekeyMember(cur, email, data); toast("已儲存變更，Email 已更新"); }
+    if(isNoEmail(cur.email) && email){ await rekeyMember(cur, email, data); tabState.em = email; toast("已儲存變更，Email 已更新"); }
     else { await updateRow("Members","email",cur.email,data); toast("已儲存變更"); }
   } else {
     if(!email){
@@ -1868,9 +1874,9 @@ window.saveMember = act0(async()=>{
       email = memberKey(data.pid, name);
     }
     if(DB.Members.some(m=>eq(m.email,email))) throw new Error(isNoEmail(email) ? "此學員已存在（身分證字號與姓名相同）" : "此 Email 已存在");
-    await addRow("Members",normMember({email,...data})); toast("已新增學員");
+    await addRow("Members",normMember({email,...data})); tabState.em = email; toast("已新增學員");
   }
-  tabState.em = null; tabState.rt = "list";
+  tabState.rt = "form";   // 儲存後留在原畫面
 });
 window.deleteMember = act0(async email=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
@@ -1940,7 +1946,6 @@ async function importRows(list){
       recAdded++;
     }
   }
-  tabState.rt = "list";
   toast(`匯入完成：新增 ${added} 位、略過重複 ${skipped} 位、格式錯誤 ${bad} 列` + (roleUpd ? `；更新角色 ${roleUpd} 位` : "") + (filled ? `；補齊資料 ${filled} 位` : "") + (recAdded||recSkipped ? `；修課紀錄新增 ${recAdded} 筆、略過 ${recSkipped} 筆` : ""));
 }
 window.exportRoster = ()=>{
