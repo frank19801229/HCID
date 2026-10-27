@@ -891,6 +891,8 @@ function qzOrderOf(c, n){
   return o;
 }
 const qzScoreText = r => Number(r.total)===100 ? `${r.score} 分（滿分 100 分）` : `${r.score} / ${r.total}`;
+const qzNorm = r => { const t = Number(r.total)||0; return t===100 ? Number(r.score) : (t>0 ? Math.round(Number(r.score)/t*100) : 0); };
+const quizRange = c => { const sc = (DB.QuizResults||[]).filter(x=>eq(x.email,user.email) && String(x.course_id||"")===String(c.id)).map(qzNorm); return sc.length ? {max:Math.max(...sc), min:Math.min(...sc), n:sc.length} : null; };
 const lastQuiz = c => (DB.QuizResults||[]).filter(x=>eq(x.email,user.email) && String(x.course_id||"")===String(c.id))
   .sort((a,b)=>String(b.time).localeCompare(String(a.time)))[0];
 function courseQuizLearner(c){
@@ -899,8 +901,9 @@ function courseQuizLearner(c){
   const cid = esc(c.id);
   if(last && !retake){
     let ans = []; try{ ans = JSON.parse(last.answers||"[]"); }catch(e){}
-    const tries = DB.QuizResults.filter(x=>eq(x.email,user.email) && String(x.course_id||"")===String(c.id)).length;
+    const rg = quizRange(c); const tries = DB.QuizResults.filter(x=>eq(x.email,user.email) && String(x.course_id||"")===String(c.id)).length;
     return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>測驗專區</b><span class="badge rounded-pill bg-success-subtle text-success-emphasis">最近成績：${esc(qzScoreText(last))}</span></div>
+      <div class="d-flex gap-2 flex-wrap my-2"><span class="badge rounded-pill bg-primary-subtle text-primary-emphasis">最高分：${rg.max} 分</span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">最低分：${rg.min} 分</span></div>
       <div class="form-text my-2">已作答 ${tries} 次，最近一次：${esc(fmtDT(last.time).slice(0,16))}</div>` +
       qs.map((q,i)=>{ const a = ans[i]; const ok = a && qzCorrect(q, a.a);
         return `<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}）</span>
@@ -908,7 +911,7 @@ function courseQuizLearner(c){
           ${ok?"":`<div class="opt d-flex align-items-center gap-2 my-2" style="cursor:default">正確答案：${esc(qzRightText(q))}</div>`}</div>`; }).join("") +
       `<button class="btn btn-primary" onclick="retakeQuiz('${cid}')">重新作答</button></div>`;
   }
-  return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>測驗專區（共 ${qs.length} 題，滿分 100 分）</b>${last?`<span class="form-text">上次成績：${esc(qzScoreText(last))}</span>`:""}</div>` +
+  return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>測驗專區（共 ${qs.length} 題，滿分 100 分）</b>${last?`<span class="form-text">上次成績：${esc(qzScoreText(last))}　最高分：${quizRange(c).max} 分　最低分：${quizRange(c).min} 分</span>`:""}</div>` +
     (() => { const pts = qzPoints(qs); return qzOrderOf(c, qs.length).map((i,pos)=>{ const q = qs[i]; return `<div class="card card-body" style="margin-bottom:10px"><b>${pos+1}. ${richI(q.q)}</b> <span class="req">*</span> <span class="form-text">（${QZ_TYPES[q.t]}${q.t==="multi"?"，可複選":""}，${pts[i]} 分）</span>
       ${qzOpts(q).map((o,k)=>`<label class="opt d-flex align-items-center gap-2 my-2"><input class="form-check-input" type="${q.t==="multi"?"checkbox":"radio"}" name="qz_${i}" value="${k}"> ${qzLetter(k)}. ${esc(o)}</label>`).join("")}</div>`; }).join(""); })() +
     `<button class="btn btn-primary" onclick="addQuiz('${cid}')">提交測驗</button></div>`;
@@ -924,20 +927,24 @@ function courseQuizAdmin(c){
 }
 /* 成績紀錄（管理者）：本課程每位學員的測驗分數（取最高分；舊紀錄換算成滿分 100） */
 function courseScoreAdmin(c){
-  const best = {};
+  const best = {}, low = {}, cntN = {};
   (DB.QuizResults||[]).filter(x=>String(x.course_id||"")===String(c.id)).forEach(x=>{
-    const t = Number(x.total)||0, sc = t===100 ? Number(x.score) : (t > 0 ? Math.round(Number(x.score)/t*100) : 0), k = String(x.email||"").toLowerCase();
+    const sc = qzNorm(x), k = String(x.email||"").toLowerCase();
     if(best[k] === undefined || sc > best[k]) best[k] = sc;
+    if(low[k] === undefined || sc < low[k]) low[k] = sc;
+    cntN[k] = (cntN[k]||0) + 1;
   });
-  const rows = Object.keys(best).map(k=>{ const m = (DB.Members||[]).find(x=>eq(x.email,k)) || {}; return {dept:m.dept||"", unit:m.unit||"", job:m.job||"", name:m.name||k, score:best[k]}; })
+  const rows = Object.keys(best).map(k=>{ const m = (DB.Members||[]).find(x=>eq(x.email,k)) || {}; return {dept:m.dept||"", unit:m.unit||"", job:m.job||"", name:m.name||k, score:best[k], low:low[k], n:cntN[k]}; })
     .sort((a,b)=> String(a.dept).localeCompare(String(b.dept),"zh-Hant") || String(a.unit).localeCompare(String(b.unit),"zh-Hant") || String(a.name).localeCompare(String(b.name),"zh-Hant"));
-  return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>成績紀錄（共 ${rows.length} 人）</b><span class="form-text">每位學員取最高分，滿分 100 分</span></div>` +
+  return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>成績紀錄（共 ${rows.length} 人）</b><span class="form-text">每位學員記錄最高分與最低分，滿分 100 分</span></div>` +
     table([
       ["部科",r=>esc(r.dept)],
       ["工作單位(部門)",r=>esc(r.unit)],
       ["職類別",r=>esc(r.job)],
       ["姓名",r=>esc(r.name)],
-      ["分數",r=>esc(r.score)]
+      ["最高分",r=>esc(r.score)],
+      ["最低分",r=>esc(r.low)],
+      ["作答次數",r=>esc(r.n)]
     ], rows, "尚無學員作答紀錄") + `</div>`;
 }
 function sqAdminView(){
