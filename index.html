@@ -875,7 +875,7 @@ function quizRow(q){
   const t = q.t || "tf";
   return `<div class="qrow"><span class="qn"></span>
     <div><textarea class="qz_text form-control" rows="2" placeholder="題目">${esc(q.q)}</textarea><div class="qz_area" style="margin-top:8px">${qzArea(t,q)}</div>
-      <textarea class="qz_exp form-control" rows="2" placeholder="說明（選填，學員作答完後顯示於答案之後）" style="margin-top:8px">${esc(q.e||"")}</textarea></div>
+      <textarea class="qz_exp form-control" rows="2" placeholder="說明（選填，學員作答完後顯示於答案之後）" style="margin-top:8px;color:#1e3a8a">${esc(q.e||"")}</textarea></div>
     <select class="qz_type form-select" onchange="qzType(this)">${Object.entries(QZ_TYPES).map(([k,l])=>`<option value="${k}" ${t===k?"selected":""}>${l}</option>`).join("")}</select>
     <button type="button" class="btn btn-outline-danger btn-sm" onclick="$(this).closest('.qrow').remove()">刪除</button></div>`;
 }
@@ -910,7 +910,7 @@ function courseQuizLearner(c){
         return `<div class="card card-body" style="margin-bottom:10px"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}）</span>
           <div class="opt d-flex align-items-center gap-2 my-2" style="cursor:default;color:${ok?"var(--ok)":"var(--red)"}">${ok?"✓":"✗"} 您的答案：${a?esc(qzAnsText(q,a.a)):"未作答"}</div>
           ${ok?"":`<div class="opt d-flex align-items-center gap-2 my-2" style="cursor:default">正確答案：${esc(qzRightText(q))}</div>`}
-          ${q.e?`<div class="my-2" style="white-space:pre-wrap"><b>說明：</b>${esc(q.e)}</div>`:""}</div>`; }).join("") +
+          ${q.e?`<div class="my-2" style="white-space:pre-wrap;color:#1e3a8a"><b>說明：</b>${esc(q.e)}</div>`:""}</div>`; }).join("") +
       `<button class="btn btn-primary" onclick="retakeQuiz('${cid}')">重新作答</button></div>`;
   }
   return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>測驗專區（共 ${qs.length} 題，滿分 100 分）</b>${last?`<span class="form-text">上次成績：${esc(qzScoreText(last))}　最高分：${quizRange(c).max} 分　最低分：${quizRange(c).min} 分</span>`:""}</div>` +
