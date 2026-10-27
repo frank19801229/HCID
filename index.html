@@ -1757,6 +1757,7 @@ window.toggleJit = act0(async id=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   const c = DB.Courses.find(x=>x.id===id); if(!c) return;
   const next = c.jit==="Y" ? "N" : "Y";
+  if(next==="Y" && schedState(c)==="ended"){ await Swal.fire({title:"失敗", text:"已超過截止時間，請先編輯課程延後截止時間", ...ghImg("worry"), confirmButtonText:"確定"}); return; }
   await updateRow("Courses","id",id,{jit:next});
   toast(next==="Y" ? "已加入即時訓練" : "已移出即時訓練");
 });
