@@ -291,8 +291,9 @@ aside .nav-link.active{color:#b84c78}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
-<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/super-build/ckeditor.js"></script>
-<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/super-build/translations/zh.js"></script>
+<link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/42.0.0/ckeditor5.css">
+<script src="https://cdn.ckeditor.com/ckeditor5/42.0.0/ckeditor5.umd.js"></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/42.0.0/translations/zh.umd.js"></script>
 <script>
 /* ============ 設定區：部署 GAS 後，把網址貼在這裡 ============ */ 
 const CONFIG = { 
@@ -1624,13 +1625,14 @@ const richI = t => isRich(t) ? richClean(String(t)).replace(/<\/p>\s*<p>/gi,"<br
 window.CK_LIST = [];
 const CK_CELL_LIMIT = 50000;   // Google 試算表單一儲存格上限（字元）
 const ckTooBigMsg = n => `⚠ 說明 / 文字教材內容過大（${n.toLocaleString()} 字元，上限 ${CK_CELL_LIMIT.toLocaleString()}），無法儲存。多半是上傳的圖片檔案太大，請刪除圖片、改用較小的圖片，或改用「圖片網址」插入。`;
-function ckPlugins(names){ return names.map(n=>window.CKEDITOR && CKEDITOR[n]).filter(Boolean); }
+const CK_NS = () => window.CKEDITOR || window.ckeditor5;
+function ckPlugins(names){ const ns = CK_NS(); return names.map(n=>ns && ns[n]).filter(Boolean); }
 const CK_BASE = ["Essentials","Autoformat","Paragraph","PasteFromOffice","TextTransformation","Bold","Italic","Link","List"];
 const CK_FULL = CK_BASE.concat(["Heading","Underline","Strikethrough","Subscript","Superscript","Code","RemoveFormat","FontFamily","FontSize","FontColor","FontBackgroundColor","Highlight","Alignment",
   "AutoLink","ListProperties","TodoList","Indent","IndentBlock","BlockQuote","CodeBlock","HorizontalLine","PageBreak","SpecialCharacters","SpecialCharactersEssentials","FindAndReplace","SelectAll","ShowBlocks","SourceEditing",
   "Table","TableToolbar","TableProperties","TableCellProperties","TableColumnResize","TableCaption","Image","ImageToolbar","ImageCaption","ImageStyle","ImageResize","ImageInsert","ImageUpload","ImageTextAlternative","LinkImage","AutoImage","Base64UploadAdapter","PictureEditing","MediaEmbed","WordCount","AccessibilityHelp"]);
 function ckAttach(ta, compact){
-  const CK = window.CKEDITOR, EditorCls = CK && CK.ClassicEditor;
+  const CK = CK_NS(), EditorCls = CK && CK.ClassicEditor;
   if(!ta || !EditorCls) return Promise.resolve();   // CDN 載入失敗時維持原本的文字框
   if(ta.value && !isRich(ta.value)) ta.value = "<p>" + esc(ta.value).replace(/\n/g,"<br>") + "</p>";   // 舊的純文字保留換行
   const cfg = compact ? {
