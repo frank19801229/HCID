@@ -984,9 +984,9 @@ const VIEWS = {
       <div class="col"><div class="card card-body kpi"><div class="l">密合度測試紀錄</div><div class="n">${s.fits} 筆</div></div></div>
     </div>
     <div class="row g-3">
-      <div class="col-lg-6"><div class="card card-body h-100"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>近期任務</b><span class="form-text" style="font-size:16px;font-weight:700;color:#0d6efd">共 ${tasks.length} 筆</span><button class="btn btn-outline-primary btn-sm" onclick="location.hash='tasks'">全部任務</button></div>
+      <div class="col-lg-6"><div class="card card-body h-100"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>近期任務</b><span class="form-text" style="font-size:16px;font-weight:700;color:#dc2626">共 ${tasks.length} 筆</span><button class="btn btn-outline-primary btn-sm" onclick="location.hash='tasks'">全部任務</button></div>
         ${table([["任務",r=>esc(r.title)],["期限",r=>esc(r.due)]],tasks,"目前沒有任務")}</div></div>
-      <div class="col-lg-6"><div class="card card-body h-100"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>即時訓練捷徑</b><span class="form-text" style="font-size:16px;font-weight:700;color:#0d6efd">共 ${jit.length} 筆</span><button class="btn btn-outline-primary btn-sm" onclick="location.hash='jit'">全部即時訓練</button></div>
+      <div class="col-lg-6"><div class="card card-body h-100"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>即時訓練捷徑</b><span class="form-text" style="font-size:16px;font-weight:700;color:#dc2626">共 ${jit.length} 筆</span><button class="btn btn-outline-primary btn-sm" onclick="location.hash='jit'">全部即時訓練</button></div>
         ${table([["課程",r=>`<a href="#course/${esc(r.id)}">${esc(r.title)}</a>`]],jit,"目前沒有資料")}</div></div>
     </div>`;
   },
@@ -1010,7 +1010,7 @@ const VIEWS = {
     return head("帳號密碼管理", `管理學員的登入帳號（預設為 Email）與密碼（預設 ${esc(DP)}）。`) +
       `<div class="card card-body"><div class="row g-2 align-items-center"><div class="col-12 col-md-8"><input class="form-control" id="aq" placeholder="輸入姓名、Email、部科或單位搜尋" value="${esc(tabState.aq||"")}"></div>
       <div class="col-12 col-md-4"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" role="switch" id="pwShow" ${show?"checked":""} onchange="tabState.pwShow=this.checked;route()"><label class="form-check-label" for="pwShow">顯示密碼</label></div></div></div>
-      <div class="form-text my-2">共 ${rows.length} 位學員</div>` +
+      <div class="form-text my-2" style="font-size:16px;font-weight:700;color:#dc2626">共 ${rows.length} 位學員</div>` +
       table([
         ["姓名", m=>`<b>${esc(m.name)}</b>${isActive(m)?"":` <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">停用</span>`}<div class="form-text">${esc([m.dept,m.unit].filter(Boolean).join(" · "))}</div>`],
         ["帳號（Email）", m=> ok(m) ? esc(m.email) : `<span class="text-secondary">尚未設定 Email</span>`],
@@ -1031,7 +1031,7 @@ const VIEWS = {
       const cu = tabState.cu||"", cUnits = [...new Set([...DB.Courses.map(c=>String(c.unit||"").trim()).filter(Boolean), "急診", "C049", "TICU"])].sort((a,b)=>a.localeCompare(b,"zh-Hant"));
       const rows = DB.Courses.filter(c => (!q || JSON.stringify(c).toLowerCase().includes(q)) && (!cu || String(c.unit||"").trim()===cu));
       body = `<div class="card card-body"><div class="row g-2"><div class="col-12 col-sm-8"><input class="form-control" id="cq" placeholder="輸入課程名稱搜尋" value="${esc(tabState.cq||"")}"></div><div class="col-12 col-sm-4"><select class="form-select" onchange="tabState.cu=this.value;route()"><option value="">開課單位（全部）</option>${opts(cUnits,cu)}</select></div></div>
-      <div style="height:10px"></div><div class="mb-2"><span class="form-text" style="font-size:16px;font-weight:700;color:#0d6efd">共 ${rows.length} 筆</span></div>` + table([
+      <div style="height:10px"></div><div class="mb-2"><span class="form-text" style="font-size:16px;font-weight:700;color:#dc2626">共 ${rows.length} 筆</span></div>` + table([
         ["課程",r=>`<b>${esc(r.title)}</b><div class="form-text">${esc([r.code,r.unit,r.pathogen,r.topic,r.jit==="Y"?"即時訓練":""].filter(Boolean).join(" · "))}</div>`],
         ["教材",r=>`<span class="badge rounded-pill bg-info-subtle text-info-emphasis">${esc(MEDIA_LABEL[r.media_type]||"純文字教材")}</span><div class="form-text">${esc(r.method||"")}</div>`],
         ["排程",r=>`${schedTag(r)}<div class="form-text">${esc(schedText(r))}</div>`],
@@ -1104,11 +1104,11 @@ const VIEWS = {
     const mine = isAdmin() ? DB.Tasks : DB.Tasks.filter(t=>eq(t.assignee,user.email));
     const tq = (tabState.tq||"").trim().toLowerCase(), tqRows = DB.Courses.filter(c => !tq || String(c.title||"").toLowerCase().includes(tq) || String(c.code||"").toLowerCase().includes(tq));
         return head("任務與通知","依授權範圍管理與查閱資料。")  +
-    `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>任務列表</b><span class="form-text" style="font-size:16px;font-weight:700;color:#0d6efd">共 ${mine.length} 筆</span></div>${table([["任務",r=>esc(r.title)],["姓名",r=>esc(((DB.Members||[]).find(m=>eq(m.email,r.assignee))||{}).name||"")],["指派對象",r=>esc(r.assignee)],["期限",r=>esc(r.due)],
+    `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>任務列表</b><span class="form-text" style="font-size:16px;font-weight:700;color:#dc2626">共 ${mine.length} 筆</span></div>${table([["任務",r=>esc(r.title)],["姓名",r=>esc(((DB.Members||[]).find(m=>eq(m.email,r.assignee))||{}).name||"")],["指派對象",r=>esc(r.assignee)],["期限",r=>esc(r.due)],
       ["狀態",r=>{ const st = taskStatus(r); return `<span class="${TAGC(st==="已完成"?"green":st==="待完成"?"red":"")}">${esc(st==="待完成"?"未完成":st)}</span>`; }],
       ["",r=>{ if(isAdmin()){ const m = taskMissing(r); return m===null ? "" : m.length ? `<span class="badge rounded-pill bg-danger-subtle text-danger-emphasis">待完成：${m.join("、")}</span>` : `<span class="badge rounded-pill bg-success-subtle text-success-emphasis">已完成</span>`; }
         return taskStatus(r)!=="已完成"?`<button class="btn btn-primary btn-sm" onclick="openTask('${esc(r.id)}')">開啟</button>`:""; }]],mine,"目前沒有任務")}</div>` +
-    (isAdmin()?`<div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課程列表</b><span class="form-text" style="font-size:16px;font-weight:700;color:#0d6efd">共 ${tqRows.length} 堂</span></div>
+    (isAdmin()?`<div class="card card-body" style="margin-top:14px"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>課程列表</b><span class="form-text" style="font-size:16px;font-weight:700;color:#dc2626">共 ${tqRows.length} 堂</span></div>
       <input class="form-control" id="tq" placeholder="輸入課程名稱或課程編號搜尋" value="${esc(tabState.tq||"")}">
       <div style="height:10px"></div>${table([["課程編號",r=>esc(r.code)],["課程名稱",r=>`<b>${esc(r.title)}</b>`],["開課單位",r=>esc(r.unit)],["截止時間",r=>esc(fmtDT(r.schedule_end)||"不限")]],tqRows,"沒有符合的課程",{size:10,rowAttr:r=>`style="cursor:pointer" title="點選將課程名稱帶入任務名稱" onclick="pickCourseTitle('${esc(r.id)}')"`})}</div>`:"") +
     (isAdmin()?`<div class="card card-body" style="margin-top:14px"><b>指派任務（管理者）</b><div class="row g-2 row-cols-1 row-cols-sm-2 row-cols-lg-3 my-2">
@@ -1404,7 +1404,7 @@ function rosterList(){
       <div class="col-6 col-lg"><select class="form-select" onchange="tabState.rr=this.value;route()">${opts([["","角色"],...ROLES.map(r=>[r,r])],fr)}</select></div>
       <div class="col-6 col-lg"><select class="form-select" onchange="tabState.rs=this.value;route()">${opts([["","達標狀態"],["ok","已達標"],["no","未達標"]],fs)}</select></div>
       <div class="col-6 col-lg"><select class="form-select" onchange="tabState.rf=this.value;route()">${opts([["","密合度測試"],["通過","通過"],["未通過","未通過"]],ff)}</select></div></div>
-    <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><span class="form-text" style="font-size:16px;color:#0d6efd">共 ${rows.length} 位</span><button class="btn btn-outline-primary btn-sm" onclick="exportRoster()">匯出名單 CSV</button></div>` +
+    <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><span class="form-text" style="font-size:16px;font-weight:700;color:#dc2626">共 ${rows.length} 位</span><button class="btn btn-outline-primary btn-sm" onclick="exportRoster()">匯出名單 CSV</button></div>` +
     table([
       ["部科",r=>esc(r.dept)],
       ["工作單位(部門)",r=>esc(r.unit)],
