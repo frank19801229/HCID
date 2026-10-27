@@ -1141,7 +1141,7 @@ const VIEWS = {
         ["課程名稱",r=>`<b>${esc(r.title)}</b><div class="form-text">${esc([r.code,r.unit,r.pathogen,r.topic,r.jit==="Y"?"即時訓練":""].filter(Boolean).join(" · "))}</div>`],
         ["排程",r=>`${schedTag(r)}<div class="form-text">${esc(schedText(r))}</div>`],
         ["類別 / 學分 / 時數",r=>`${esc(reqLabel(r.required))} · ${esc(r.credits||1)} 學分 · ${esc(r.hours)} 小時<div class="form-text">${esc(creditLabel(r))}</div>`],
-        ["",r=>`<button class="btn btn-outline-primary btn-sm" onclick="editCourse('${esc(r.id)}')">編輯</button>`]
+        ["加入即時訓練",r=>`<label class="form-check form-switch d-inline-block mb-0 align-middle small text-secondary" title="${r.jit==="Y"?"已加入即時訓練，滑動以移除":"未加入即時訓練，滑動以加入"}"><input class="form-check-input" type="checkbox" role="switch" ${r.jit==="Y"?"checked":""} onchange="toggleJit('${esc(r.id)}')">${r.jit==="Y"?"是":"否"}</label>`]
       ], allRows, "沒有符合的課程") + `</div>`;
     }
     const rows = DB.Courses.filter(c => c.jit==="Y" && (!q || JSON.stringify(c).toLowerCase().includes(q)));
@@ -1752,6 +1752,13 @@ window.toggleOpen = act0(async id=>{
   if(next==="Y" && schedState(c)==="ended"){ await Swal.fire({title:"失敗", text:"已超過截止時間，請先編輯課程延後截止時間", ...ghImg("worry"), confirmButtonText:"確定"}); return; }
   await updateRow("Courses","id",id,{open:next});
   toast(next==="Y" ? "已設為開放" : "已設為關閉");
+});
+window.toggleJit = act0(async id=>{
+  if(!isAdmin()) throw new Error("僅管理者可操作");
+  const c = DB.Courses.find(x=>x.id===id); if(!c) return;
+  const next = c.jit==="Y" ? "N" : "Y";
+  await updateRow("Courses","id",id,{jit:next});
+  toast(next==="Y" ? "已加入即時訓練" : "已移出即時訓練");
 });
 window.deleteCourse = act0(async id=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
