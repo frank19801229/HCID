@@ -62,6 +62,7 @@ textarea.form-control{min-height:70px}
 .rich-content table{border-collapse:collapse;margin:.5rem 0}
 .rich-content th,.rich-content td{border:1px solid #adb5bd;padding:4px 8px}
 .rich-content figure.table{margin:0}
+.bg-deeporange{background-color:#ea580c!important}.text-deeporange-emphasis{color:#fff!important}
 .bg-orange-subtle{background-color:#ffedd5!important}.text-orange-emphasis{color:#c2410c!important}
 .rich-content img{max-width:100%;height:auto}
 .rich-content figure.image{margin:.5rem auto;display:table;text-align:center}
@@ -333,7 +334,7 @@ const today = () => new Date().toISOString().slice(0,10);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,5);
 const fmtDT = s => s ? String(s).replace("T"," ") : "";
 const reqLabel = v => (!v || v==="選修") ? "進階" : v;
-const TAGC = k => "badge rounded-pill " + ({green:"bg-success-subtle text-success-emphasis", red:"bg-danger-subtle text-danger-emphasis", orange:"bg-orange-subtle text-orange-emphasis", yellow:"bg-warning-subtle text-warning-emphasis", gray:"bg-secondary-subtle text-secondary-emphasis"}[k] || "bg-info-subtle text-info-emphasis");   // 徽章色彩（Bootstrap badge）
+const TAGC = k => "badge rounded-pill " + ({green:"bg-success-subtle text-success-emphasis", red:"bg-danger-subtle text-danger-emphasis", orange:"bg-orange-subtle text-orange-emphasis", deeporange:"bg-deeporange text-deeporange-emphasis", yellow:"bg-warning-subtle text-warning-emphasis", gray:"bg-secondary-subtle text-secondary-emphasis"}[k] || "bg-info-subtle text-info-emphasis");   // 徽章色彩（Bootstrap badge）
 const eq = (a,b) => String(a||"").toLowerCase() === String(b||"").toLowerCase();
 const curYear = () => new Date().getFullYear();
 const yearOf = d => { const m = String(d||"").match(/^(\d{4})/); return m ? Number(m[1]) : null; };
@@ -682,12 +683,12 @@ function schedState(c){
   if(e && now > e) return "ended";
   return "open";
 }
-const SCHED = {upcoming:["關閉","orange"], ended:["關閉","orange"], open:["開放中","green"]};
+const SCHED = {upcoming:["關閉","deeporange"], ended:["關閉","deeporange"], open:["開放中","green"]};
 /* 管理者手動覆寫：open=Y 強制開放、N 強制關閉、空白＝依排程（未開始／已結束皆不可開啟）；超過截止時間一律自動關閉 */
 const openFlag = c => String(c.open||"").toUpperCase();
 const isOpenNow = c => schedState(c)==="ended" ? false : openFlag(c)==="Y" ? true : openFlag(c)==="N" ? false : schedState(c)==="open";
 const isClosed = c => !isOpenNow(c);
-const schedTag = c => { const [l,k] = isOpenNow(c) ? SCHED.open : (openFlag(c)==="N" ? ["關閉","orange"] : SCHED[schedState(c)]); return `<span class="${TAGC(k)}">${l}</span>`; };
+const schedTag = c => { const [l,k] = isOpenNow(c) ? SCHED.open : (openFlag(c)==="N" ? ["關閉","deeporange"] : SCHED[schedState(c)]); return `<span class="${TAGC(k)}">${l}</span>`; };
 const schedText = c => (c.schedule_start||c.schedule_end) ? `${fmtDT(c.schedule_start)||"即日起"} ～ ${fmtDT(c.schedule_end)||"不限"}` : "不限時間";
 const canOpen = c => isAdmin() || isOpenNow(c);
 
