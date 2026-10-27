@@ -1650,13 +1650,23 @@ function ckAttach(ta, compact){
     fontSize: {options: [10,12,14,"default",18,20,24,28,32,36], supportAllValues: true},
     list: {properties: {styles: true, startIndex: true, reversed: true}},
     link: {addTargetToExternalLinks: true, defaultProtocol: "https://"},
-    image: {toolbar: ["imageStyle:inline","imageStyle:block","imageStyle:side","|","toggleImageCaption","imageTextAlternative","|","linkImage"],
-      resizeOptions: [{name:"resizeImage:original",value:null,label:"原始大小"},{name:"resizeImage:50",value:"50",label:"50%"},{name:"resizeImage:75",value:"75",label:"75%"}]},
+    image: {toolbar: ["imageStyle:inline","imageStyle:block","imageStyle:side","|","toggleImageCaption","imageTextAlternative","|","linkImage"]},
     table: {contentToolbar: ["tableColumn","tableRow","mergeTableCells","tableProperties","tableCellProperties","toggleTableCaption"]},
     mediaEmbed: {previewsInData: true}
   };
   if(window.CKEDITOR_TRANSLATIONS && window.CKEDITOR_TRANSLATIONS.zh) cfg.language = "zh";
-  return EditorCls.create(ta, cfg).then(ed=>{
+  const SAFE = compact ? null : {
+    plugins: ckPlugins(CK_BASE.concat(["Heading","Underline","Strikethrough","BlockQuote","Indent","Table","TableToolbar","Image","ImageToolbar","ImageCaption","ImageStyle","ImageInsert","ImageUpload","Base64UploadAdapter","MediaEmbed"])),
+    toolbar: ["heading","|","bold","italic","underline","strikethrough","|","numberedList","bulletedList","|","link","blockQuote","insertImage","insertTable","mediaEmbed","|","outdent","indent","|","undo","redo"],
+    language: cfg.language
+  };
+  const MIN = compact ? null : {plugins: ckPlugins(CK_BASE), toolbar: ["bold","italic","link","bulletedList","numberedList","|","undo","redo"], language: cfg.language};
+  const tryCreate = (c, rest) => EditorCls.create(ta, c).catch(err=>{
+    console.error("CKEditor 初始化失敗，改用精簡工具列：", err);
+    if(!rest.length) throw err;
+    return tryCreate(rest[0], rest.slice(1));
+  });
+  return tryCreate(cfg, compact ? [] : [SAFE, MIN]).then(ed=>{
     if(!document.body.contains(ta)){ ed.destroy().catch(()=>{}); return; }
     window.CK_LIST.push(ed);
     let warn = null;
