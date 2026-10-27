@@ -2384,7 +2384,7 @@ $(async function(){
   if(v){
     let t=0;
     new MutationObserver(()=>{clearTimeout(t);t=setTimeout(decorate,30);}).observe(v,{childList:true,subtree:true});
-    decorate(); 
+    decorate();
   }
 })();
 </script>
