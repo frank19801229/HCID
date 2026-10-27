@@ -1638,9 +1638,8 @@ function ckAttach(ta, compact){
     toolbar: ["bold","italic","link","bulletedList","numberedList","|","undo","redo"]
   } : {
     plugins: ckPlugins(CK_FULL),
-    toolbar: {shouldNotGroupWhenFull: true, items: ["undo","redo","|","heading","|","fontFamily","fontSize","fontColor","fontBackgroundColor","highlight","|",
-      "bold","italic","underline","strikethrough","subscript","superscript","code","removeFormat","|","link","insertImage","insertTable","mediaEmbed","blockQuote","codeBlock","horizontalLine","specialCharacters","pageBreak","|",
-      "alignment","|","bulletedList","numberedList","todoList","outdent","indent","|","findAndReplace","selectAll","showBlocks","sourceEditing","accessibilityHelp"]},
+    toolbar: {shouldNotGroupWhenFull: true, items: ["bold","italic","underline","strikethrough","|","numberedList","bulletedList","todoList","|","link","blockQuote","insertImage","insertTable","mediaEmbed","|","undo","redo","|",
+      "heading","fontFamily","fontSize","fontColor","fontBackgroundColor","highlight","|","subscript","superscript","code","removeFormat","|","alignment","outdent","indent","|","codeBlock","horizontalLine","specialCharacters","pageBreak","|","findAndReplace","selectAll","showBlocks","sourceEditing","accessibilityHelp"]},
     heading: {options: [
       {model:"paragraph", title:"段落", class:"ck-heading_paragraph"},
       {model:"heading1", view:"h1", title:"標題 1", class:"ck-heading_heading1"},
