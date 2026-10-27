@@ -1732,7 +1732,7 @@ window.toggleOpen = act0(async id=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   const c = DB.Courses.find(x=>x.id===id); if(!c) return;
   const next = isOpenNow(c) ? "N" : "Y";   // 依目前實際狀態反向切換
-  if(next==="Y" && schedState(c)==="ended") throw new Error("已超過截止時間，請先編輯課程延後截止時間");
+  if(next==="Y" && schedState(c)==="ended"){ await Swal.fire({title:"失敗", text:"已超過截止時間，請先編輯課程延後截止時間", ...ghImg("worry"), confirmButtonText:"確定"}); return; }
   await updateRow("Courses","id",id,{open:next});
   toast(next==="Y" ? "已設為開放" : "已設為關閉");
 });
