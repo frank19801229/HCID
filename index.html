@@ -62,6 +62,21 @@ textarea.form-control{min-height:70px}
 .rich-content table{border-collapse:collapse;margin:.5rem 0}
 .rich-content th,.rich-content td{border:1px solid #adb5bd;padding:4px 8px}
 .rich-content figure.table{margin:0}
+.rich-content img{max-width:100%;height:auto}
+.rich-content figure.image{margin:.5rem auto;display:table;text-align:center}
+.rich-content figure.image img{display:block;margin:0 auto}
+.rich-content figure.image-style-side{float:right;margin-left:1rem;max-width:50%}
+.rich-content figure.image-style-align-left,.rich-content img.image-style-align-left{float:left;margin-right:1rem}
+.rich-content figure.image-style-align-right,.rich-content img.image-style-align-right{float:right;margin-left:1rem}
+.rich-content figcaption,.rich-content caption{font-size:.85em;color:#6c757d;text-align:center;caption-side:bottom}
+.rich-content blockquote{border-left:4px solid #ced4da;margin:.5rem 0;padding-left:1rem;font-style:italic}
+.rich-content pre{background:#f1f3f5;padding:.6rem .8rem;border-radius:6px;overflow:auto}
+.rich-content hr{margin:1rem 0}
+.rich-content .page-break{page-break-after:always}
+.rich-content .todo-list{list-style:none;padding-left:0}
+.rich-content .media{margin:.5rem 0}
+.rich-content .marker-yellow{background:#fdfd77}.rich-content .marker-green{background:#62f962}.rich-content .marker-pink{background:#fc5c7d}.rich-content .marker-blue{background:#72ccfd}
+.rich-content .pen-red{color:#e71313;background:transparent}.rich-content .pen-green{color:#128a00;background:transparent}
 .sort-th{cursor:pointer;user-select:none;white-space:nowrap}
 .sort-th .sort-ar{font-size:17px;margin-left:4px;color:#6d28d9;font-weight:700;opacity:1}
 .sort-th.on .sort-ar{color:#6d28d9;font-weight:700}
@@ -276,8 +291,8 @@ aside .nav-link.active{color:#b84c78}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.14.5/dist/sweetalert2.all.min.js"></script>
-<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
-<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/translations/zh.js"></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/super-build/ckeditor.js"></script>
+<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/super-build/translations/zh.js"></script>
 <script>
 /* ============ 設定區：部署 GAS 後，把網址貼在這裡 ============ */ 
 const CONFIG = { 
@@ -1551,7 +1566,19 @@ const MEDIA_HINT = {
   iframe:"貼上網址或整段 <iframe …> 嵌入碼（YouTube、Google 簡報等）。"
 };
 /* ---------- CKEditor：課程「說明 / 文字教材」 ---------- */
-const RICH_OK = new Set("p br strong b em i u s ul ol li blockquote h1 h2 h3 h4 h5 h6 a table thead tbody tr th td figure span div hr code pre sub sup".split(" "));
+const RICH_OK = new Set("p br strong b em i u s ul ol li blockquote h1 h2 h3 h4 h5 h6 a table thead tbody tfoot tr th td caption colgroup col figure figcaption span div hr code pre sub sup mark img label iframe input".split(" "));
+const RICH_STYLE_OK = new Set("color background-color font-size font-family font-weight font-style text-align text-decoration width height min-width max-width margin margin-left margin-right padding padding-bottom padding-left padding-right padding-top border border-top border-bottom border-left border-right border-color border-style border-width vertical-align float position top left display".split(" "));
+const RICH_IFRAME_HOSTS = ["www.youtube.com","www.youtube-nocookie.com","player.vimeo.com","www.dailymotion.com","open.spotify.com"];
+function richStyle(v){
+  return String(v||"").split(";").map(x=>x.trim()).filter(Boolean).filter(x=>{
+    const i = x.indexOf(":"); if(i<1) return false;
+    const k = x.slice(0,i).trim().toLowerCase(), val = x.slice(i+1).trim().toLowerCase();
+    if(!RICH_STYLE_OK.has(k) || /url\(|expression|javascript|[<>\\]/.test(val)) return false;
+    if(k==="position") return val==="relative" || val==="absolute";
+    if(k==="display") return ["block","inline-block","table","inline","none"].includes(val)===true && val!=="none";
+    return true;
+  }).join(";");
+}
 function richClean(html){
   const doc = new DOMParser().parseFromString("<body>"+html+"</body>", "text/html");
   (function walk(node){
@@ -1559,10 +1586,32 @@ function richClean(html){
       if(ch.nodeType===3) return;
       if(ch.nodeType!==1){ ch.remove(); return; }
       const tag = ch.tagName.toLowerCase();
-      if(["script","style","iframe","object","embed","link","meta","form","input","textarea","button","svg","math"].includes(tag)){ ch.remove(); return; }
+      if(["script","style","object","embed","link","meta","form","textarea","button","svg","math"].includes(tag)){ ch.remove(); return; }
+      if(tag==="iframe"){
+        let u = null; try{ u = new URL(ch.getAttribute("src")||""); }catch(e){}
+        if(!u || u.protocol!=="https:" || !RICH_IFRAME_HOSTS.includes(u.hostname)){ ch.remove(); return; }
+        [...ch.attributes].forEach(a=>{ if(!["src","style","allowfullscreen","allow","frameborder"].includes(a.name)) ch.removeAttribute(a.name); });
+        const st = richStyle(ch.getAttribute("style")); if(st) ch.setAttribute("style",st); else ch.removeAttribute("style");
+        ch.setAttribute("sandbox","allow-scripts allow-same-origin allow-presentation allow-popups"); return;
+      }
+      if(tag==="input"){
+        if((ch.getAttribute("type")||"").toLowerCase()!=="checkbox"){ ch.remove(); return; }
+        [...ch.attributes].forEach(a=>{ if(!["type","checked"].includes(a.name)) ch.removeAttribute(a.name); });
+        ch.setAttribute("disabled","disabled"); return;
+      }
       walk(ch);
       if(!RICH_OK.has(tag)){ ch.replaceWith(...ch.childNodes); return; }
-      [...ch.attributes].forEach(a=>{ if(!(tag==="a" && a.name==="href")) ch.removeAttribute(a.name); });
+      if(tag==="img"){
+        const src = (ch.getAttribute("src")||"").trim();
+        if(!/^(https?:\/\/|data:image\/(png|jpe?g|gif|webp);base64,)/i.test(src)){ ch.remove(); return; }
+      }
+      [...ch.attributes].forEach(a=>{
+        const n = a.name;
+        const keep = (tag==="a" && n==="href") || (tag==="img" && ["src","alt","width","height"].includes(n)) || ((tag==="td"||tag==="th") && ["colspan","rowspan"].includes(n))
+          || n==="style" || (n==="class" && /^[\w\- ]+$/.test(a.value));
+        if(!keep){ ch.removeAttribute(n); return; }
+        if(n==="style"){ const st = richStyle(a.value); if(st) ch.setAttribute("style",st); else ch.removeAttribute("style"); }
+      });
       if(tag==="a"){ const h = ch.getAttribute("href")||""; if(/^(https?:|mailto:|#)/i.test(h.trim())){ ch.setAttribute("target","_blank"); ch.setAttribute("rel","noopener noreferrer"); } else ch.removeAttribute("href"); }
     });
   })(doc.body);
@@ -1573,16 +1622,53 @@ function richP(t){ return isRich(t) ? `<div class="rich-content mb-2">${richClea
 const plainText = t => isRich(t) ? new DOMParser().parseFromString("<body>"+String(t)+"</body>","text/html").body.textContent.trim() : String(t||"");   // 富文字轉純文字（提示訊息、問卷回覆存檔用）
 const richI = t => isRich(t) ? richClean(String(t)).replace(/<\/p>\s*<p>/gi,"<br>").replace(/^\s*<p>|<\/p>\s*$/gi,"") : esc(t);   // 行內顯示：富文字（已淨化）或舊的純文字
 window.CK_LIST = [];
+const CK_CELL_LIMIT = 50000;   // Google 試算表單一儲存格上限（字元）
+const ckTooBigMsg = n => `⚠ 說明 / 文字教材內容過大（${n.toLocaleString()} 字元，上限 ${CK_CELL_LIMIT.toLocaleString()}），無法儲存。多半是上傳的圖片檔案太大，請刪除圖片、改用較小的圖片，或改用「圖片網址」插入。`;
+function ckPlugins(names){ return names.map(n=>window.CKEDITOR && CKEDITOR[n]).filter(Boolean); }
+const CK_BASE = ["Essentials","Autoformat","Paragraph","PasteFromOffice","TextTransformation","Bold","Italic","Link","List"];
+const CK_FULL = CK_BASE.concat(["Heading","Underline","Strikethrough","Subscript","Superscript","Code","RemoveFormat","FontFamily","FontSize","FontColor","FontBackgroundColor","Highlight","Alignment",
+  "AutoLink","ListProperties","TodoList","Indent","IndentBlock","BlockQuote","CodeBlock","HorizontalLine","PageBreak","SpecialCharacters","SpecialCharactersEssentials","FindAndReplace","SelectAll","ShowBlocks","SourceEditing",
+  "Table","TableToolbar","TableProperties","TableCellProperties","TableColumnResize","TableCaption","Image","ImageToolbar","ImageCaption","ImageStyle","ImageResize","ImageInsert","ImageUpload","ImageTextAlternative","LinkImage","AutoImage","Base64UploadAdapter","PictureEditing","MediaEmbed","WordCount","AccessibilityHelp"]);
 function ckAttach(ta, compact){
-  if(!ta || !window.ClassicEditor) return Promise.resolve();   // CDN 載入失敗時維持原本的文字框
+  const CK = window.CKEDITOR, EditorCls = CK && CK.ClassicEditor;
+  if(!ta || !EditorCls) return Promise.resolve();   // CDN 載入失敗時維持原本的文字框
   if(ta.value && !isRich(ta.value)) ta.value = "<p>" + esc(ta.value).replace(/\n/g,"<br>") + "</p>";   // 舊的純文字保留換行
-  const cfg = {toolbar: compact ? ["bold","italic","link","bulletedList","numberedList","|","undo","redo"]
-    : ["heading","|","bold","italic","link","bulletedList","numberedList","|","outdent","indent","|","blockQuote","insertTable","undo","redo"]};
+  const cfg = compact ? {
+    plugins: ckPlugins(CK_BASE.concat(["Heading","BlockQuote","Indent","Table","TableToolbar"])),
+    toolbar: ["bold","italic","link","bulletedList","numberedList","|","undo","redo"]
+  } : {
+    plugins: ckPlugins(CK_FULL),
+    toolbar: {shouldNotGroupWhenFull: true, items: ["undo","redo","|","heading","|","fontFamily","fontSize","fontColor","fontBackgroundColor","highlight","|",
+      "bold","italic","underline","strikethrough","subscript","superscript","code","removeFormat","|","link","insertImage","insertTable","mediaEmbed","blockQuote","codeBlock","horizontalLine","specialCharacters","pageBreak","|",
+      "alignment","|","bulletedList","numberedList","todoList","outdent","indent","|","findAndReplace","selectAll","showBlocks","sourceEditing","accessibilityHelp"]},
+    heading: {options: [
+      {model:"paragraph", title:"段落", class:"ck-heading_paragraph"},
+      {model:"heading1", view:"h1", title:"標題 1", class:"ck-heading_heading1"},
+      {model:"heading2", view:"h2", title:"標題 2", class:"ck-heading_heading2"},
+      {model:"heading3", view:"h3", title:"標題 3", class:"ck-heading_heading3"},
+      {model:"heading4", view:"h4", title:"標題 4", class:"ck-heading_heading4"}]},
+    fontFamily: {supportAllValues: true},
+    fontSize: {options: [10,12,14,"default",18,20,24,28,32,36], supportAllValues: true},
+    list: {properties: {styles: true, startIndex: true, reversed: true}},
+    link: {addTargetToExternalLinks: true, defaultProtocol: "https://"},
+    image: {toolbar: ["imageStyle:inline","imageStyle:block","imageStyle:side","|","toggleImageCaption","imageTextAlternative","|","linkImage"],
+      resizeOptions: [{name:"resizeImage:original",value:null,label:"原始大小"},{name:"resizeImage:50",value:"50",label:"50%"},{name:"resizeImage:75",value:"75",label:"75%"}]},
+    table: {contentToolbar: ["tableColumn","tableRow","mergeTableCells","tableProperties","tableCellProperties","toggleTableCaption"]},
+    mediaEmbed: {previewsInData: true}
+  };
   if(window.CKEDITOR_TRANSLATIONS && window.CKEDITOR_TRANSLATIONS.zh) cfg.language = "zh";
-  return ClassicEditor.create(ta, cfg).then(ed=>{
+  return EditorCls.create(ta, cfg).then(ed=>{
     if(!document.body.contains(ta)){ ed.destroy().catch(()=>{}); return; }
     window.CK_LIST.push(ed);
-    const sync = () => { ta.value = ed.getData(); };
+    let warn = null;
+    if(!compact){
+      warn = document.createElement("div"); warn.className = "ck-size-warn"; warn.style.cssText = "display:none;color:#dc2626;font-weight:700;font-size:14px;margin-top:6px";
+      ed.ui.view.element.insertAdjacentElement("afterend", warn);
+    }
+    const sync = () => {
+      ta.value = ed.getData();
+      if(warn){ const n = ta.value.length; if(n > CK_CELL_LIMIT){ warn.textContent = ckTooBigMsg(n); warn.style.display = "block"; } else warn.style.display = "none"; }
+    };
     ed.model.document.on("change:data", sync); sync();
     return ed;
   }).catch(e=>console.error("CKEditor 載入失敗", e));
@@ -1644,6 +1730,7 @@ window.deleteCourse = act0(async id=>{
 window.saveCourse = act0(async()=>{
   if(!isAdmin()) throw new Error("僅管理者可操作");
   if(!val("c_title")) throw new Error("請輸入課程名稱");
+  if(val("c_content").length > CK_CELL_LIMIT) throw new Error(ckTooBigMsg(val("c_content").length));
   const type = val("c_type"); let url = val("c_url");
   const f = $("#c_file")[0].files[0];
   if(type !== "none"){
