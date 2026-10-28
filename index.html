@@ -1025,7 +1025,7 @@ function courseQuizAdmin(c){
   const pts = qzPoints(qs);
   return `<div class="card card-body">${head}` + qs.map((q,i)=>{ const right = k => q.t==="multi" ? q.a.includes(k) : q.a===k;
     return `<div class="card card-body sp-mb10"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}，${pts[i]} 分）</span>` +
-    qzOpts(q).map((o,k)=>`<div class="opt d-flex align-items-center gap-2 my-2 opt-static${right(k)?" opt-right":""}">${right(k)?"✓":"○"} ${qzLetter(k)}. ${esc(o)}${right(k)?"（正解）":""}</div>`).join("") + (q.e?`<div class="my-2 u-19"><b>說明：</b>${esc(q.e)}</div>`:"") + `</div>`; }).join("") + `</div>`;
+    qzOpts(q).map((o,k)=>`<div class="opt d-flex align-items-center gap-2 my-2 opt-static${right(k)?" opt-right":""}">${right(k)?"✓":"○"} ${qzLetter(k)}. ${esc(o)}${right(k)?"（正解）":""}</div>`).join("") + (q.e?`<div class="my-2 u-19"><b>說明：</b>${richI(q.e)}</div>`:"") + `</div>`; }).join("") + `</div>`;
 }
 /* 成績紀錄（管理者）：本課程每位學員的測驗分數（取最高分；舊紀錄換算成滿分 100） */
 function courseScoreAdmin(c){
@@ -1791,7 +1791,7 @@ function initCKEditor(){
   if(window.CK_ED){ try{ window.CK_ED.destroy(); }catch(e){} window.CK_ED = null; }
   const ta = document.getElementById("c_content");
   if(ta) ckAttach(ta, false).then(ed=>{ if(ed) window.CK_ED = ed; });
-  document.querySelectorAll("#quiz_list .qz_text").forEach(t=>ckAttach(t, true));   // 測驗專區題目
+  document.querySelectorAll("#quiz_list .qz_text").forEach(t=>ckAttach(t, false));   // 測驗專區題目：完整工具列
   document.querySelectorAll("#quiz_list .qz_exp").forEach(t=>ckAttach(t, false));   // 測驗專區說明：完整工具列
   ckAttach(document.getElementById("sq_text"), true);                                 // 問卷題目
 }
@@ -1808,7 +1808,7 @@ window.editCourse = (id, toQuiz) => {
   if(location.hash === "#courses") route(); else location.hash = "courses";
   if(toQuiz) setTimeout(()=>$("#quiz_block")[0]?.scrollIntoView({behavior:"smooth",block:"start"}), 150);
 };
-window.addQuizRow = (t="tf") => { $("#quiz_list").append(quizRow({q:"",t,a:t==="multi"?[]:t==="single"?-1:0})); ckAttach($("#quiz_list .qz_text").last()[0], true); ckAttach($("#quiz_list .qz_exp").last()[0], false); };
+window.addQuizRow = (t="tf") => { $("#quiz_list").append(quizRow({q:"",t,a:t==="multi"?[]:t==="single"?-1:0})); ckAttach($("#quiz_list .qz_text").last()[0], false); ckAttach($("#quiz_list .qz_exp").last()[0], false); };
 window.addQzOpt = (btn, id, multi) => { $(btn).prev().append(qzOptRow(id, multi, "", false)); };
 window.qzType = sel => {
   const $r = $(sel).closest(".qrow"), t = sel.value, prev = $r.find(".qz_otext").map(function(){ return this.value; }).get();
