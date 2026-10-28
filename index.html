@@ -1791,7 +1791,7 @@ function initCKEditor(){
   if(window.CK_ED){ try{ window.CK_ED.destroy(); }catch(e){} window.CK_ED = null; }
   const ta = document.getElementById("c_content");
   if(ta) ckAttach(ta, false).then(ed=>{ if(ed) window.CK_ED = ed; });
-  document.querySelectorAll("#quiz_list .qz_text").forEach(t=>ckAttach(t, true));   // 測驗專區題目
+  document.querySelectorAll("#quiz_list .qz_text").forEach(t=>ckAttach(t, false));   // 測驗專區題目：完整工具列
   document.querySelectorAll("#quiz_list .qz_exp").forEach(t=>ckAttach(t, false));   // 測驗專區說明：完整工具列
   ckAttach(document.getElementById("sq_text"), true);                                 // 問卷題目
 }
@@ -1808,7 +1808,7 @@ window.editCourse = (id, toQuiz) => {
   if(location.hash === "#courses") route(); else location.hash = "courses";
   if(toQuiz) setTimeout(()=>$("#quiz_block")[0]?.scrollIntoView({behavior:"smooth",block:"start"}), 150);
 };
-window.addQuizRow = (t="tf") => { $("#quiz_list").append(quizRow({q:"",t,a:t==="multi"?[]:t==="single"?-1:0})); ckAttach($("#quiz_list .qz_text").last()[0], true); ckAttach($("#quiz_list .qz_exp").last()[0], false); };
+window.addQuizRow = (t="tf") => { $("#quiz_list").append(quizRow({q:"",t,a:t==="multi"?[]:t==="single"?-1:0})); ckAttach($("#quiz_list .qz_text").last()[0], false); ckAttach($("#quiz_list .qz_exp").last()[0], false); };
 window.addQzOpt = (btn, id, multi) => { $(btn).prev().append(qzOptRow(id, multi, "", false)); };
 window.qzType = sel => {
   const $r = $(sel).closest(".qrow"), t = sel.value, prev = $r.find(".qz_otext").map(function(){ return this.value; }).get();
