@@ -407,8 +407,6 @@ const parseQuiz = c => { try{ const a = JSON.parse(c?.quiz || "[]"); return Arra
   }
   return {q:String(x.q),t:"tf",a:Number(x.a)===1?1:0,e:String(x.e||"")};
 }) : []; }catch(e){ return []; } };
-/* 測驗整體「說明」：存放在 quiz JSON 陣列中不含題目（q）的一個物件 {note}，parseQuiz 會自動略過，因此不影響題目與舊資料 */
-const quizNote = c => { try{ const a = JSON.parse(c?.quiz || "[]"); const m = Array.isArray(a) ? a.find(x=>x && !x.q && typeof x.note==="string") : null; return m ? m.note : ""; }catch(e){ return ""; } };
 /* 題型：tf＝是非題（舊格式）、single＝單選題、multi＝複選題 */
 const QZ_TYPES = {tf:"是非題",single:"單選題",multi:"複選題"};
 const qzLetter = k => String.fromCharCode(65+k);
@@ -1024,9 +1022,9 @@ function courseQuizAdmin(c){
   const head = `<div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>測驗專區（共 ${qs.length} 題，滿分 100 分）</b><button class="btn btn-outline-primary btn-sm" onclick="editCourse('${esc(c.id)}',true)">編輯測驗</button></div>`;
   if(!qs.length) return `<div class="card card-body">${head}<div class="text-center text-secondary p-4">此課程尚未設定測驗題目</div></div>`;
   const pts = qzPoints(qs);
-  return `<div class="card card-body">${head}${quizNote(c)?`<div class="my-2 u-19"><b>說明：</b>${esc(quizNote(c))}</div>`:""}` + qs.map((q,i)=>{ const right = k => q.t==="multi" ? q.a.includes(k) : q.a===k;
+  return `<div class="card card-body">${head}` + qs.map((q,i)=>{ const right = k => q.t==="multi" ? q.a.includes(k) : q.a===k;
     return `<div class="card card-body sp-mb10"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}，${pts[i]} 分）</span>` +
-    qzOpts(q).map((o,k)=>`<div class="opt d-flex align-items-center gap-2 my-2 opt-static${right(k)?" opt-right":""}">${right(k)?"✓":"○"} ${qzLetter(k)}. ${esc(o)}${right(k)?"（正解）":""}</div>`).join("") + `</div>`; }).join("") + `</div>`;
+    qzOpts(q).map((o,k)=>`<div class="opt d-flex align-items-center gap-2 my-2 opt-static${right(k)?" opt-right":""}">${right(k)?"✓":"○"} ${qzLetter(k)}. ${esc(o)}${right(k)?"（正解）":""}</div>`).join("") + (q.e?`<div class="my-2 u-19"><b>說明：</b>${esc(q.e)}</div>`:"") + `</div>`; }).join("") + `</div>`;
 }
 /* 成績紀錄（管理者）：本課程每位學員的測驗分數（取最高分；舊紀錄換算成滿分 100） */
 function courseScoreAdmin(c){
@@ -1652,7 +1650,6 @@ function courseForm(){
     <div class="form-text">MP4 / HLS：有效觀看比例（%），快轉跳過的片段不計。PDF / PPT / iframe / YouTube / Drive 預覽：頁面停留分鐘數。學員第一次開啟課程時會自動記為「已選課」，達標後轉為「合格」。</div></fieldset>
 
   <fieldset class="fieldset" id="quiz_block"><legend>測驗專區</legend>
-    <div class="mb-2"><label class="form-label" for="quiz_note">說明</label><textarea class="form-control" id="quiz_note" rows="2" placeholder="測驗整體說明（選填），例如：作答規則、注意事項">${esc(quizNote(e))}</textarea></div>
     <div id="quiz_list">${(editing ? parseQuiz(e) : DEFAULT_QUIZ).map(quizRow).join("")}</div>
     <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuizRow('tf')">＋ 新增是非題</button>
     <button type="button" class="btn btn-outline-primary btn-sm" onclick="addQuizRow('single')">＋ 新增單選題</button>
@@ -1889,8 +1886,7 @@ window.saveCourse = act0(async()=>{
     if(!a.length) throw new Error(`第 ${i+1} 題（${QZ_TYPES[t]}）請勾選正確答案`);
     return withE({q, t, o, a: t==="single" ? a[0] : a});
   }).get();
-  const qnote = ($("#quiz_note").val()||"").trim();
-  data.quiz = quiz.length ? JSON.stringify(qnote ? [...quiz, {note:qnote}] : quiz) : "";
+  data.quiz = quiz.length ? JSON.stringify(quiz) : "";
   if(tabState.editId){
     await updateRow("Courses","id",tabState.editId,data); toast("已儲存變更");
   } else {
