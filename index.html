@@ -113,7 +113,6 @@ main .pdf-marquee a:not(.btn),main .pdf-marquee a:not(.btn):hover,main .pdf-marq
 .qn{font-weight:700;padding-top:8px}
 .qn::before{counter-increment:qz;content:counter(qz) "."}
 .qrow textarea.form-control{min-height:44px}
-.qrow .qz_exp + .ck-editor{margin-top:8px}
 @media(max-width:760px){.qrow{grid-template-columns:auto 1fr}.qrow select,.qrow button{grid-column:2}}
 /* 課程紀錄群組 */
 details.grp{border-top:1px solid var(--line);background:#fafafa}
@@ -1010,7 +1009,7 @@ function courseQuizLearner(c){
         return `<div class="card card-body sp-mb10"><b>${i+1}. ${richI(q.q)}</b> <span class="form-text">（${QZ_TYPES[q.t]}）</span>
           <div class="opt d-flex align-items-center gap-2 my-2 opt-static ${ok?"opt-ok":"opt-bad"}">${ok?"✓":"✗"} 您的答案：${a?esc(qzAnsText(q,a.a)):"未作答"}</div>
           ${ok?"":`<div class="opt d-flex align-items-center gap-2 my-2 opt-static">正確答案：${esc(qzRightText(q))}</div>`}
-          ${q.e?`<div class="my-2 u-19"><b>說明：</b>${richI(q.e)}</div>`:""}</div>`; }).join("") +
+          ${q.e?`<div class="my-2 u-19"><b>說明：</b>${esc(q.e)}</div>`:""}</div>`; }).join("") +
       `<button class="btn btn-primary" onclick="retakeQuiz('${cid}')">重新作答</button></div>`;
   }
   return `<div class="card card-body"><div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-2"><b>測驗專區（共 ${qs.length} 題，滿分 100 分）</b>${last?`<span class="form-text">上次成績：${esc(qzScoreText(last))}　最高分：${quizRange(c).max} 分　最低分：${quizRange(c).min} 分</span>`:""}</div>` +
@@ -1792,7 +1791,6 @@ function initCKEditor(){
   const ta = document.getElementById("c_content");
   if(ta) ckAttach(ta, false).then(ed=>{ if(ed) window.CK_ED = ed; });
   document.querySelectorAll("#quiz_list .qz_text").forEach(t=>ckAttach(t, true));   // 測驗專區題目
-  document.querySelectorAll("#quiz_list .qz_exp").forEach(t=>ckAttach(t, false));   // 測驗專區說明：完整工具列
   ckAttach(document.getElementById("sq_text"), true);                                 // 問卷題目
 }
 window.syncMedia = ()=>{
@@ -1808,7 +1806,7 @@ window.editCourse = (id, toQuiz) => {
   if(location.hash === "#courses") route(); else location.hash = "courses";
   if(toQuiz) setTimeout(()=>$("#quiz_block")[0]?.scrollIntoView({behavior:"smooth",block:"start"}), 150);
 };
-window.addQuizRow = (t="tf") => { $("#quiz_list").append(quizRow({q:"",t,a:t==="multi"?[]:t==="single"?-1:0})); ckAttach($("#quiz_list .qz_text").last()[0], true); ckAttach($("#quiz_list .qz_exp").last()[0], false); };
+window.addQuizRow = (t="tf") => { $("#quiz_list").append(quizRow({q:"",t,a:t==="multi"?[]:t==="single"?-1:0})); ckAttach($("#quiz_list .qz_text").last()[0], true); };
 window.addQzOpt = (btn, id, multi) => { $(btn).prev().append(qzOptRow(id, multi, "", false)); };
 window.qzType = sel => {
   const $r = $(sel).closest(".qrow"), t = sel.value, prev = $r.find(".qz_otext").map(function(){ return this.value; }).get();
